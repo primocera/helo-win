@@ -189,8 +189,20 @@ function General({ info, update, setInfo }: { info: SettingsInfo; update: (p: Pa
         <Row label="Screen edge" hint="Bottom keeps it above the taskbar.">
           <div className="segmented">
             {(['top', 'bottom'] as const).map((edge) => (
-              <button key={edge} type="button" className={d.edge === edge ? 'active' : ''} onClick={() => update({ display: { edge } })}>
+              <button key={edge} type="button" className={!d.position && d.edge === edge ? 'active' : ''} onClick={() => update({ display: { edge, position: null } })}>
                 {edge === 'top' ? 'Top' : 'Bottom'}
+              </button>
+            ))}
+          </div>
+        </Row>
+        <Row label="Lock position" hint={d.position ? 'You moved the island. Pick a screen edge above to put it back.' : 'Unlocked, you can drag the island anywhere. The lock is also in the panel\'s top row.'}>
+          <Switch label="Lock position" on={d.locked} onChange={(v) => update({ display: { locked: v } })} />
+        </Row>
+        <Row label="Accent colour" hint="The colour of the playing bars, the timer and other highlights.">
+          <div className="segmented">
+            {([['mint', 'Mint'], ['rose', 'Rose']] as const).map(([value, label]) => (
+              <button key={value} type="button" className={d.accent === value ? 'active' : ''} onClick={() => update({ display: { accent: value } })}>
+                {label}
               </button>
             ))}
           </div>

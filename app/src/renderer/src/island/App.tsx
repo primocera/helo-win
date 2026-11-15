@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type PointerEvent } from 'react';
 import { useIslandState, useNow } from './store';
 import { IdleView, BannerView, CardView, HudView } from './Views';
 import { Panel, visibleTabs } from './Panel';
@@ -11,9 +11,14 @@ type Mode = 'idle' | 'banner' | 'card' | 'hud' | 'panel';
 const WIDTH: Record<Mode, number> = { idle: 214, banner: 440, card: 488, hud: 300, panel: 648 };
 const FIXED_HEIGHT: Partial<Record<Mode, number>> = { idle: 34, banner: 62, hud: 40 };
 const OPEN_DELAY = 220;
-// While idle the island lets clicks through to what is under it (browser tabs,
-// title bars). Resting the pointer on it this long opens the panel instead.
+// While idle and locked in place the island lets clicks through to what is under it
+// (browser tabs, title bars). Resting the pointer on it this long opens the panel instead.
+// Unlocked, it waits as long, so there is time to take hold of it.
 const PEEK_DELAY = 500;
+/** The work map is drawn at its full size, so its panel is wider. */
+const MAP_WIDTH = 820;
+/** The pointer goes this far with the button down before the island follows it. */
+const DRAG_START = 4;
 const CLOSE_DELAY = 420;
 
 function useConverter() {
@@ -53,7 +58,18 @@ export function App() {
   const contentRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState(0);
+  // A press that may become a drag, and whether it has.
+  const press = useRef<{ x: number; y: number; id: number; dragging: boolean } | null>(null);
+  const draggedAt = useRef(0);
+  const [dragging, setDragging] = useState(false);
   useConverter();
+
+  // The accent colour the person chose (the stylesheet's own is mint).
+  const accent = state?.settings.display.accent;
+  useEffect(() => {
+    if (accent === 'rose') document.documentElement.style.setProperty('--mint', '#ff8fb4');
+    else document.documentElement.style.removeProperty('--mint');
+  }, [accent]);
 
   useEffect(() => window.helo.onSmoke((v) => setSmoke(v as SmokeView & { backdrop?: boolean })), []);
   useEffect(() => window.helo.onCursor((v) => {
@@ -130,10 +146,12 @@ export function App() {
   const onEnter = () => {
     setHovered(true);
     setLastActivity(Date.now());
-    // Idle: stay click-through and fade, so the tab underneath can be seen and clicked.
-    // Click-to-open: the island catches the pointer at once and waits for a click.
+    if (press.current?.dragging) return;
+    // Idle and locked in place: stay click-through for a moment, so the tab underneath can be clicked.
+    // Click-to-open, or free to move: the island catches the pointer at once.
     const clickToOpen = state.settings.display.open === 'click';
-    const peeking = mode === 'idle' && !panelOpen && !clickToOpen;
+    const resting = mode === 'idle' && !panelOpen && !clickToOpen;
+    const peeking = resting && state.settings.display.locked;
     if (!peeking) window.helo.hover(true);
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
     closeTimer.current = null;
@@ -147,15 +165,45 @@ export function App() {
         }
         window.helo.hover(true);
         setPanelOpen(true);
-      }, peeking ? PEEK_DELAY : OPEN_DELAY);
+      }, resting ? PEEK_DELAY : OPEN_DELAY);
     }
   };
 
   const openOnClick = () => {
+    if (Date.now() - draggedAt.current < 300) return; // the click that ends a drag
     if (state.settings.display.open === 'click' && mode === 'idle' && !panelOpen) setPanelOpen(true);
   };
 
+  // Moving the island: unlocked, it is held by the pill, the face or the empty part of the panel's top row.
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (state.settings.display.locked || e.button !== 0 || smoke) return;
+    const at = e.target as HTMLElement;
+    const handle = e.currentTarget.classList.contains('blink') || mode === 'idle' || (at.closest('.toolbar') !== null && at.closest('button') === null);
+    if (handle) press.current = { x: e.screenX, y: e.screenY, id: e.pointerId, dragging: false };
+  };
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const p = press.current;
+    if (!p || p.dragging || Math.hypot(e.screenX - p.x, e.screenY - p.y) < DRAG_START) return;
+    p.dragging = true;
+    setDragging(true);
+    if (openTimer.current) window.clearTimeout(openTimer.current);
+    openTimer.current = null;
+    e.currentTarget.setPointerCapture(p.id);
+    window.helo.hover(true);
+    window.helo.drag(true);
+  };
+  const onPointerEnd = () => {
+    const p = press.current;
+    press.current = null;
+    if (!p?.dragging) return;
+    draggedAt.current = Date.now();
+    setDragging(false);
+    window.helo.drag(false);
+  };
+  const dragHandlers = { onPointerDown, onPointerMove, onPointerUp: onPointerEnd, onPointerCancel: onPointerEnd, onLostPointerCapture: onPointerEnd };
+
   const onLeave = () => {
+    if (press.current?.dragging) return;
     setHovered(false);
     if (openTimer.current) window.clearTimeout(openTimer.current);
     openTimer.current = null;
@@ -190,9 +238,9 @@ export function App() {
   };
 
   const decide = (id: string, b: Behavior) => window.helo.decide(id, b);
-  const width = WIDTH[mode];
+  const width = mode === 'panel' && activeTab === 'map' ? MAP_WIDTH : WIDTH[mode];
   const height = FIXED_HEIGHT[mode] ?? Math.max(60, contentHeight);
-  const bottom = state.settings.display.edge === 'bottom';
+  const bottom = state.place.edge === 'bottom';
   const isHover = hovered || Boolean(smoke?.hover);
   // The pointer is close to the face (about 150 px): it looks happy to see you.
   const near = Math.abs(look.x) < 0.38 && Math.abs(look.y) < 0.5;
@@ -211,7 +259,7 @@ export function App() {
   });
 
   return (
-    <div className={`stage ${bottom ? 'edge-bottom' : 'edge-top'} ${smoke?.backdrop ? 'backdrop' : ''} ${hovered && mode === 'idle' && !panelOpen && state.settings.display.open !== 'click' ? 'peek' : ''} ${compact ? 'face-only' : ''}`}>
+    <div className={`stage ${bottom ? 'edge-bottom' : 'edge-top'} ${smoke?.backdrop ? 'backdrop' : ''} ${state.place.floating ? 'floating' : ''} ${dragging ? 'dragging' : ''} ${compact ? 'face-only' : ''}`}>
       {smoke?.faces ? <FaceSheet /> : (
         <>
           {state.settings.features.mascot && (
@@ -221,6 +269,7 @@ export function App() {
               onMouseEnter={onEnter}
               onMouseLeave={onLeave}
               onClick={openOnClick}
+              {...dragHandlers}
               title={FACE_LABELS[face]}
             >
               <BlinkFace face={face} look={look} />
@@ -232,6 +281,7 @@ export function App() {
             onMouseEnter={onEnter}
             onMouseLeave={onLeave}
             onClick={openOnClick}
+            {...dragHandlers}
             onDragEnter={onDragEnter}
             onDragOver={onDragOver}
             onDragLeave={(e) => { if (e.currentTarget === e.target) setFileOver(false); }}

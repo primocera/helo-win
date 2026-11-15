@@ -66,7 +66,12 @@ const CODEX_HOOKS = path.join(CODEX_DIR, 'hooks.json');
 
 // The window is only as big as it needs to be: transparent windows on Windows
 // repaint all of their pixels on every animation frame.
-const SIZES = { full: { width: 820, height: 460 }, compact: { width: 600, height: 84 } } as const;
+// Full fits the widest panel (the work map, 820) with the face beside it.
+const SIZES = { full: { width: 940, height: 520 }, compact: { width: 600, height: 84 } } as const;
+/** Height of the idle island. */
+const PILL = 34;
+/** Dragged this close to the top or bottom of the screen, the island attaches to it. */
+const SNAP = 10;
 type IslandSize = keyof typeof SIZES;
 let islandSize: IslandSize = 'compact';
 let shrinkTimer: NodeJS.Timeout | null = null;
@@ -142,6 +147,7 @@ const state: IslandState = {
   finished: { watch: null, recent: [], doneAt: 0, steamFound: false },
   helper: 'off',
   faceOnly: false,
+  place: { edge: 'top', floating: false },
 };
 
 /** Merges a patch into the state and sends it to the island. */
@@ -458,18 +464,78 @@ function targetDisplay() {
   return screen.getPrimaryDisplay();
 }
 
+/** While the island is being dragged: where it is (as settings.display.position) and which way it opened when the drag began. */
+let dragSpot: { x: number; y: number; top: boolean } | null = null;
+let dragTimer: NodeJS.Timeout | null = null;
+
+/**
+ * Where the pill is on the screen: its middle (x) and its top (y), which way the island opens from there, and
+ * whether it is away from the top and bottom of the screen. It always stays where the whole panel fits.
+ */
+function islandSpot() {
+  const d = targetDisplay();
+  const lowest = d.workArea.y + d.workArea.height - PILL;
+  const pos = dragSpot ?? settings.display.position;
+  if (!pos) {
+    const top = settings.display.edge === 'top';
+    return { x: d.bounds.x + d.bounds.width / 2, y: top ? d.bounds.y : lowest, top, floating: false };
+  }
+  const half = Math.min(SIZES.full.width, d.bounds.width) / 2;
+  const x = Math.min(Math.max(d.bounds.x + pos.x, d.bounds.x + half), d.bounds.x + d.bounds.width - half);
+  let y = Math.min(Math.max(d.bounds.y + pos.y, d.bounds.y), lowest);
+  if (y - d.bounds.y <= SNAP) y = d.bounds.y;
+  else if (lowest - y <= SNAP) y = lowest;
+  // In the upper half of the screen the panel opens downwards, in the lower half upwards. Not while dragging: the panel would jump.
+  const top = dragSpot ? dragSpot.top : y + PILL / 2 < d.bounds.y + d.bounds.height / 2;
+  return { x, y, top, floating: y !== d.bounds.y && y !== lowest };
+}
+
 function placeIsland() {
   if (!island || island.isDestroyed()) return;
-  const d = targetDisplay();
-  const top = settings.display.edge === 'top';
-  const area = top ? d.bounds : d.workArea;
+  const spot = islandSpot();
   const { width, height } = SIZES[smokeDir ? 'full' : islandSize];
   island.setBounds({
-    x: Math.round(d.bounds.x + (d.bounds.width - width) / 2),
-    y: top ? d.bounds.y : area.y + area.height - height,
+    x: Math.round(spot.x - width / 2),
+    y: Math.round(spot.top ? spot.y : spot.y + PILL - height),
     width,
     height,
   });
+  const edge = spot.top ? 'top' : 'bottom';
+  // Screenshots set the place themselves.
+  if (!smokeDir && (state.place.edge !== edge || state.place.floating !== spot.floating)) push({ place: { edge, floating: spot.floating } });
+}
+
+function saveDisplay(patch: Partial<Settings['display']>) {
+  settings = updateSettings(settings, { display: patch });
+  writeJson(userFile('settings.json'), settings);
+  push({ settings });
+}
+
+/** The island follows the pointer until the page says the button is up. */
+function startDrag() {
+  if (!island || island.isDestroyed() || dragTimer || settings.display.locked || smokeDir) return;
+  const d = targetDisplay().bounds;
+  const from = islandSpot();
+  const start = screen.getCursorScreenPoint();
+  dragTimer = setInterval(() => {
+    const p = screen.getCursorScreenPoint();
+    dragSpot = { x: from.x - d.x + p.x - start.x, y: from.y - d.y + p.y - start.y, top: from.top };
+    placeIsland();
+  }, 16);
+}
+
+function endDrag() {
+  if (!dragTimer) return;
+  clearInterval(dragTimer);
+  dragTimer = null;
+  if (dragSpot) {
+    // Saved as it was clamped and snapped, so the island does not move again later.
+    const d = targetDisplay().bounds;
+    const spot = islandSpot();
+    dragSpot = null;
+    saveDisplay({ position: { x: Math.round(spot.x - d.x), y: Math.round(spot.y - d.y) } });
+  }
+  placeIsland();
 }
 
 /** Grows the window at once; shrinks it after the collapse animation has played. */
@@ -570,7 +636,7 @@ let outsideSince = 0;
  * the panel.
  */
 function checkPointerLeft() {
-  if (!island || island.isDestroyed() || smokeDir || (!hoverOn && !panelOpen) || island.isFocused()) {
+  if (!island || island.isDestroyed() || smokeDir || dragTimer || (!hoverOn && !panelOpen) || island.isFocused()) {
     outsideSince = 0;
     return;
   }
@@ -1142,6 +1208,11 @@ function registerIpc() {
     hoverOn = v === true;
     if (island && !island.isDestroyed() && !smokeDir) island.setIgnoreMouseEvents(!hoverOn, { forward: true });
   });
+  on('island:drag', isIsland, (_e, v) => (v === true ? startDrag() : endDrag()));
+  on('island:lock', isIsland, (_e, v) => {
+    endDrag();
+    saveDisplay({ locked: v === true });
+  });
   on('island:panel', isIsland, (_e, v) => setPanelOpen(v === true));
   on('island:size', isIsland, (_e, v) => setIslandSize(v === 'full' ? 'full' : 'compact'));
   on('decide', isIsland, (_e, msg) => {
@@ -1421,7 +1492,7 @@ function sendCursor() {
   if (!island || island.isDestroyed() || !islandReady || !settings.features.mascot || testMode) return;
   const p = screen.getCursorScreenPoint();
   const b = island.getBounds();
-  const top = settings.display.edge === 'top';
+  const top = state.place.edge === 'top';
   const cx = b.x + b.width / 2 - (state.faceOnly ? 0 : 130);
   const cy = top ? b.y + 16 : b.y + b.height - 16;
   const x = Math.max(-1, Math.min(1, (p.x - cx) / 400));

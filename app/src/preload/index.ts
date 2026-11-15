@@ -17,6 +17,8 @@ const api: HeloApi = {
   onConvertJob: (fn) => listen('convert:job', fn),
   ready: () => ipcRenderer.send('island:ready'),
   hover: (on) => ipcRenderer.send('island:hover', Boolean(on)),
+  drag: (on) => ipcRenderer.send('island:drag', Boolean(on)),
+  setLocked: (on) => ipcRenderer.send('island:lock', Boolean(on)),
   panel: (open) => ipcRenderer.send('island:panel', Boolean(open)),
   size: (size) => ipcRenderer.send('island:size', size === 'full' ? 'full' : 'compact'),
   decide: (id, behavior) => ipcRenderer.send('decide', { id: String(id), behavior }),

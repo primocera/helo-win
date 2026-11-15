@@ -27,6 +27,7 @@ export function visibleTabs(state: IslandState) {
 export function Panel({ state, tab, setTab, now, fileOver }: { state: IslandState; tab: PanelTab; setTab: (t: PanelTab) => void; now: number; fileOver: boolean }) {
   const tabs = visibleTabs(state);
   const locked = state.license.state === 'expired';
+  const fixed = state.settings.display.locked;
   return (
     <div className="panel">
       <div className="toolbar" role="tablist">
@@ -45,6 +46,15 @@ export function Panel({ state, tab, setTab, now, fileOver }: { state: IslandStat
         ))}
         <span className="toolbar-gap" />
         {state.agents.mood !== 'idle' && <span className={`mood-dot mood-${state.agents.mood}`} title={`Agents: ${state.agents.mood}`} />}
+        <button
+          type="button"
+          className={`tool ${fixed ? '' : 'unlocked'}`}
+          aria-pressed={fixed}
+          title={fixed ? 'Locked in place. Click to move the island.' : 'Drag the island where you want it, then click to lock it there.'}
+          onClick={() => window.helo.setLocked(!fixed)}
+        >
+          <Icon name={fixed ? 'lock' : 'unlock'} size={15} />
+        </button>
         <button type="button" className="tool" title="Settings" onClick={() => window.helo.openSettings()}>
           <Icon name="settings" size={15} />
         </button>

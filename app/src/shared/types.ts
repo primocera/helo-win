@@ -252,7 +252,19 @@ export type Edge = 'top' | 'bottom';
 export interface Settings {
   features: FeatureFlags;
   /** compact: when the idle island shrinks to just the face. */
-  display: { monitor: 'primary' | number; edge: Edge; compact: 'never' | 'browsers' | 'always'; hideInFullscreen: boolean; open: 'hover' | 'click' };
+  display: {
+    monitor: 'primary' | number;
+    edge: Edge;
+    compact: 'never' | 'browsers' | 'always';
+    hideInFullscreen: boolean;
+    open: 'hover' | 'click';
+    /** Where the user dragged the island: the pill's middle (x) and its top (y), in pixels from the display's top-left corner. Null: centred on `edge`. */
+    position: { x: number; y: number } | null;
+    /** Locked, the island cannot be dragged. */
+    locked: boolean;
+    /** The colour of the bars, the timer, Blink's blush and other highlights. */
+    accent: 'mint' | 'rose';
+  };
   clipboard: { maxItems: number; images: boolean };
   timer: { focusMin: number; breakMin: number };
   battery: { lowPercent: number };
@@ -320,6 +332,8 @@ export interface IslandState {
   helper: 'starting' | 'running' | 'failed' | 'off';
   /** The idle island shows only the face right now (e.g. a browser is in front). */
   faceOnly: boolean;
+  /** Where the island sits now: which way it opens, and whether it is away from the screen edge. */
+  place: { edge: Edge; floating: boolean };
 }
 
 export type PanelTab =
@@ -393,6 +407,10 @@ export interface HeloApi {
   onConvertJob(fn: (job: { id: string; bytes: Uint8Array; mime: string; to: ConvertFormat }) => void): () => void;
   ready(): void;
   hover(on: boolean): void;
+  /** The island follows the pointer from now on (true) or stays where it is (false). */
+  drag(on: boolean): void;
+  /** Locks or unlocks the island's position. */
+  setLocked(on: boolean): void;
   panel(open: boolean): void;
   /** The window size the current view needs. */
   size(size: 'compact' | 'full'): void;

@@ -28,7 +28,7 @@ test('settings: garbage falls back to defaults field by field', () => {
   expect(s.features.agents).toBe(true);
   expect('bogus' in s.features).toBe(false);
   expect(s.timer.focusMin).toBe(180);
-  expect(s.display).toEqual({ monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover' });
+  expect(s.display).toEqual({ monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint' });
 });
 
 test('settings: partial updates merge and are validated', () => {
@@ -36,7 +36,7 @@ test('settings: partial updates merge and are validated', () => {
   expect(s.features.lyrics).toBe(true);
   expect(s.features.media).toBe(true);
   expect(s.clipboard.maxItems).toBe(5);
-  expect(s.display).toEqual({ monitor: 7, edge: 'bottom', compact: 'browsers', hideInFullscreen: true, open: 'hover' });
+  expect(s.display).toEqual({ monitor: 7, edge: 'bottom', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint' });
 });
 
 test('settings: calendar URL must be http(s); webcal is rewritten', () => {
@@ -351,6 +351,11 @@ test('settings: the new display options are validated', () => {
   expect(s.display).toMatchObject({ open: 'click', hideInFullscreen: false, compact: 'always' });
   const bad = updateSettings(s, { display: { open: 'shake', hideInFullscreen: 'yes', compact: 7 } });
   expect(bad.display).toMatchObject({ open: 'click', hideInFullscreen: false, compact: 'always' });
+  // Where the island was dragged, and the lock: kept until set again, and a screen edge can clear the place.
+  const moved = updateSettings(s, { display: { position: { x: 640.4, y: 212 }, locked: true } });
+  expect(moved.display).toMatchObject({ position: { x: 640, y: 212 }, locked: true });
+  expect(updateSettings(moved, { display: { position: 'left', locked: 1 } }).display).toMatchObject({ position: { x: 640, y: 212 }, locked: true });
+  expect(updateSettings(moved, { display: { edge: 'bottom', position: null } }).display).toMatchObject({ edge: 'bottom', position: null, locked: true });
 });
 
 test('clipboard: links, colours and images are told apart', () => {

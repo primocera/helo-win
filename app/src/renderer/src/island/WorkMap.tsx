@@ -8,7 +8,8 @@ import { EMPTY_BOARD, MAP_SETUP } from '../../../shared/workmap';
 import type { IslandState } from '../../../shared/types';
 import type { Board } from '../../../shared/map/types';
 
-const ROWS = 12;
+// As many as fit beside the map at its full height.
+const ROWS = 19;
 
 /**
  * The drawing as an image. It animates by itself (SMIL inside the SVG), so it is drawn again only when the board

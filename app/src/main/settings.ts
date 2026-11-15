@@ -27,7 +27,7 @@ export const DEFAULT_FEATURES: FeatureFlags = {
 
 export const DEFAULT_SETTINGS: Settings = {
   features: DEFAULT_FEATURES,
-  display: { monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover' },
+  display: { monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint' },
   clipboard: { maxItems: 50, images: true },
   timer: { focusMin: 25, breakMin: 5 },
   battery: { lowPercent: 20 },
@@ -76,6 +76,9 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
     : base.display.monitor;
   const edge = d.edge === 'top' || d.edge === 'bottom' ? d.edge : base.display.edge;
   const compact = d.compact === 'never' || d.compact === 'browsers' || d.compact === 'always' ? d.compact : base.display.compact;
+  const pos = isObj(d.position) && Number.isFinite(d.position.x) && Number.isFinite(d.position.y)
+    ? { x: int(d.position.x, 0, 20000, 0), y: int(d.position.y, 0, 20000, 0) }
+    : d.position === null ? null : base.display.position;
   const c = isObj(r.clipboard) ? r.clipboard : {};
   const t = isObj(r.timer) ? r.timer : {};
   const b = isObj(r.battery) ? r.battery : {};
@@ -84,7 +87,7 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
   const sh = isObj(r.shelf) ? r.shelf : {};
   return {
     features,
-    display: { monitor, edge, compact, hideInFullscreen: bool(d.hideInFullscreen, base.display.hideInFullscreen), open: d.open === 'click' || d.open === 'hover' ? d.open : base.display.open },
+    display: { monitor, edge, compact, hideInFullscreen: bool(d.hideInFullscreen, base.display.hideInFullscreen), open: d.open === 'click' || d.open === 'hover' ? d.open : base.display.open, position: pos, locked: bool(d.locked, base.display.locked), accent: d.accent === 'mint' || d.accent === 'rose' ? d.accent : base.display.accent },
     clipboard: { maxItems: int(c.maxItems, 5, 200, base.clipboard.maxItems), images: bool(c.images, base.clipboard.images) },
     timer: { focusMin: int(t.focusMin, 1, 180, base.timer.focusMin), breakMin: int(t.breakMin, 1, 60, base.timer.breakMin) },
     battery: { lowPercent: int(b.lowPercent, 5, 50, base.battery.lowPercent) },

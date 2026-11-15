@@ -219,11 +219,15 @@ export async function runSmoke(ctx: SmokeCtx) {
     smoke({ panel: 'finished' });
     await shot('10-panel-finished-pick');
     smoke({});
-    push({ settings: { ...ctx.state.settings, display: { ...ctx.state.settings.display, edge: 'bottom' } } });
+    push({ settings: { ...ctx.state.settings, display: { ...ctx.state.settings.display, edge: 'bottom' } }, place: { edge: 'bottom', floating: false } });
     await shot('15-edge-bottom-idle');
     smoke({ panel: 'media' });
     await shot('15-edge-bottom-panel');
-    push({ settings: { ...ctx.state.settings, display: { ...ctx.state.settings.display, edge: 'top' } } });
+    push({ place: { edge: 'top', floating: true } });
+    await shot('16-floating-panel');
+    smoke({});
+    await shot('16-floating-idle');
+    push({ settings: { ...ctx.state.settings, display: { ...ctx.state.settings.display, edge: 'top' } }, place: { edge: 'top', floating: false } });
     smoke({ faces: true });
     await shot('20-faces', island, 1200);
     smoke({});
