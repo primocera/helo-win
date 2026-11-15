@@ -4,6 +4,7 @@ import type { FeatureFlags, Settings } from '../shared/types';
 
 export const DEFAULT_FEATURES: FeatureFlags = {
   agents: true,
+  map: true,
   usage: true,
   mascot: true,
   media: true,

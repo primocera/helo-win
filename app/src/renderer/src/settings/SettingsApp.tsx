@@ -363,6 +363,9 @@ function Agents({ info, update, setInfo }: { info: SettingsInfo; update: (p: Pat
         <Row label="Usage rings" hint="5-hour and weekly limits from Claude Code's status line (Pro, Max and Ultra plans). Adds a short status line unless you already have your own.">
           <Switch label="Usage rings" on={f.usage} onChange={(v) => update({ features: { usage: v } })} />
         </Row>
+        <Row label="Work map" hint="A live map in the island of what Claude Code is using: files, shell, network, memory, subagents. Adds hooks for tool calls; Helo only watches them and never holds a call up. Shows names only, never file contents.">
+          <Switch label="Work map" on={f.map} onChange={(v) => update({ features: { map: v } })} />
+        </Row>
       </AgentCard>
       <AgentCard agent="codex" title="Codex CLI" info={info} setInfo={setInfo}>
         <p className="row-hint">Writes command hooks to ~/.codex/hooks.json. Codex asks you to review new hooks: run /hooks in Codex once and trust them.</p>

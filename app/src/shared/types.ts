@@ -1,6 +1,8 @@
 // Types shared by the main process, the preload script and the renderer.
 // Everything that crosses IPC is plain JSON data described here.
 
+import type { WorkMapState } from './workmap';
+
 /** 'always' = allow and add the rule Claude Code suggested (Claude Code only). */
 export type Behavior = 'allow' | 'deny' | 'always';
 export type AgentName = 'claude' | 'codex';
@@ -223,6 +225,8 @@ export interface CalendarState {
 
 export interface FeatureFlags {
   agents: boolean;
+  /** The work map: a live picture of what Claude Code is using (files, shell, network, subagents). */
+  map: boolean;
   usage: boolean;
   mascot: boolean;
   media: boolean;
@@ -297,6 +301,7 @@ export interface IslandState {
   requests: PermissionView[];
   banner: Banner | null;
   agents: AgentsState;
+  map: WorkMapState | null;
   media: MediaState | null;
   lyrics: LyricsState | null;
   timer: TimerState;
@@ -319,6 +324,7 @@ export interface IslandState {
 
 export type PanelTab =
   | 'agents'
+  | 'map'
   | 'media'
   | 'timer'
   | 'clipboard'

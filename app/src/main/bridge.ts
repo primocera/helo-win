@@ -10,6 +10,8 @@ export const STATUS_PATH = '/helo/status';
 /** The browser extension posts here, with its own token. */
 export const WEB_PATH = '/helo/web';
 const MAX_BODY = 1_000_000;
+// Hook events carry whole tool inputs and outputs (a file being written, an image that was read).
+const MAX_HOOK_BODY = 8_000_000;
 
 // These tools are not a plain Allow/Deny. Per the hooks docs they are approved
 // with "allow" plus `updatedInput` (the answers, or the plan echoed back).
@@ -28,7 +30,7 @@ export interface BridgeHandlers {
   token: string;
   /** Resolves to 'allow', 'deny' or null ("no decision": the agent asks in the terminal). */
   onPermission: (input: HookInput, signal: AbortSignal, agent: AgentName) => Promise<Behavior | PermissionReply | null>;
-  /** Every other hook event (Notification, Stop, UserPromptSubmit, NeedsInput). */
+  /** Every other hook event (Notification, Stop, UserPromptSubmit, NeedsInput, and the work map's tool events). */
   onEvent: (input: HookInput, agent: AgentName) => void;
   /** Claude Code status line data. Returns the text the status line shows. */
   onStatus?: (input: HookInput) => string;
@@ -67,9 +69,10 @@ export function createBridge({ token, onPermission, onEvent, onStatus, webToken,
     req.on('data', (chunk: Buffer) => {
       if (tooBig) return;
       size += chunk.length;
-      if (size > MAX_BODY) {
+      if (size > (route === HOOK_PATH ? MAX_HOOK_BODY : MAX_BODY)) {
         tooBig = true;
-        res.writeHead(413).end();
+        // For a hook, an empty 200 is "no decision": the agent carries on as if Helo were not there.
+        res.writeHead(route === HOOK_PATH ? 200 : 413).end();
         req.destroy();
         return;
       }

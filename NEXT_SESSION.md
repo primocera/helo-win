@@ -12,7 +12,17 @@ Written 2026-11-15. Read this first; the full reasoning is in `audit/`. The audi
 - **Not yet tried on a live session:** answering a question, approving a plan, rejecting a plan.
 - **Never tried on hardware:** Bluetooth levels, contrast and input writes, a real screenshot, an AltGr keyboard.
 
+## Done on 2026-11-15 (branch `session-map`)
+
+- **P1** — everything is committed (`main`, first commit).
+- **B1** — the first `.helo-backup` is kept; later writes no longer replace it.
+- **Work map** — a new panel tab drawn with lot-map's code (`app/src/shared/map/`), fed by `app/src/main/workmap.ts`. Self-test: 40 of 41 pass (the failure is still B20).
+- **Not yet tried on a live session:** the work map. The first start of the new build adds six hooks to `~/.claude/settings.json` by itself (an older connection is upgraded); only Claude Code sessions started after that send tool events.
+- S9 changed: the hook route now takes bodies up to 8 MB and answers an oversized one with an empty 200.
+
 ## Do in this order
+
+Items 1 (P1) and 6 (B1) are done.
 
 Each item names its finding. Stop and test after each.
 

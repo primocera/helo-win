@@ -15,6 +15,7 @@ import { createLicense, type License } from './license';
 import { permissionView, eventBanner, buildAnswers, AGENT_LABEL } from './format';
 import { readJson, writeJson, debounced } from './jsonfile';
 import { normalizeSettings, updateSettings, DEFAULT_SETTINGS } from './settings';
+import { WorkMap, MAP_EVENTS } from './workmap';
 import { AgentTracker, parseUsage, parseModel, freshUsage, statusLineText } from './agents';
 import * as timerFns from './timer';
 import { ClipboardHistory } from './clipboard-history';
@@ -101,6 +102,7 @@ let hudTimer: NodeJS.Timeout | null = null;
 let shortcutsOn = false;
 let panelOpen = false;
 const tracker = new AgentTracker();
+const workMap = new WorkMap();
 const pending = new Map<string, { view: PermissionView; resolve: (b: Behavior | PermissionReply | null) => void; sessionId: unknown; toolInput: Record<string, unknown> }>();
 const shelfIcons = new Map<string, string | null>();
 const artByKey = new Map<string, string | null>();
@@ -122,6 +124,7 @@ const state: IslandState = {
     claude: { connected: false, note: '' },
     codex: { connected: false, note: '' },
   },
+  map: null,
   media: null,
   lyrics: null,
   timer: timerFns.initialTimer(),
@@ -205,8 +208,13 @@ function settle(id: string, behavior: Behavior | null, picks?: unknown) {
   pending.delete(id);
   entry.resolve(reply);
   if (behavior) tracker.record({ hook_event_name: behavior === 'deny' ? 'Stop' : 'PermissionResolved', session_id: entry.sessionId }, entry.view.agent);
+  if (behavior === 'deny' && entry.view.agent === 'claude' && workMap.refuse(entry.sessionId, entry.view.tool)) pushMap();
   pushRequests();
   pushAgents();
+}
+
+function pushMap() {
+  push({ map: workMap.view() });
 }
 
 // Ctrl+Alt+Y / Ctrl+Alt+N answer the request on screen. They are only
@@ -257,6 +265,9 @@ function onPermission(input: HookInput, signal: AbortSignal, agent: AgentName): 
 }
 
 function onEvent(input: HookInput, agent: AgentName) {
+  if (agent === 'claude' && settings.features.map && workMap.record(input)) pushMap();
+  // The work map's own events mean nothing to the cards, banners and the face.
+  if ((MAP_EVENTS as readonly string[]).includes(String(input.hook_event_name))) return;
   if (!settings.features.agents) return;
   // How long this session had been working, read before the event changes its state.
   const before = tracker.list().find((s) => s.key === `${agent}:${typeof input.session_id === 'string' && input.session_id ? input.session_id : 'default'}`);
@@ -316,6 +327,7 @@ function onStatus(input: HookInput): string {
   if (modelChanged) state.agents.model = model;
   if (usage && settings.features.usage) state.agents.usage = usage;
   if (modelChanged || (usage && settings.features.usage)) pushAgents();
+  if (settings.features.map && workMap.status(input)) pushMap();
   return statusLineText(input, usage);
 }
 
@@ -351,7 +363,7 @@ function refreshConnections() {
 function connectAgent(agent: AgentName, on: boolean) {
   if (bridgeError) throw bridgeError;
   if (agent === 'claude') {
-    if (on) hooks.install(CLAUDE_SETTINGS, { ...bridgeInfo, statusLine: settings.features.usage });
+    if (on) hooks.install(CLAUDE_SETTINGS, { ...bridgeInfo, statusLine: settings.features.usage, map: settings.features.map });
     else hooks.uninstall(CLAUDE_SETTINGS);
   } else if (on) hooks.installCodex(CODEX_HOOKS, bridgeInfo);
   else hooks.uninstallCodex(CODEX_HOOKS);
@@ -383,12 +395,19 @@ function applySettings(prev: Settings | null) {
   else if (prev && !prev.features.lyrics) maybeFetchLyrics(true);
   if (!prev || prev.calendar.icsUrl !== settings.calendar.icsUrl || prev.features.calendar !== settings.features.calendar) refreshCalendar().catch(() => {});
   // Turning the usage rings on/off adds/removes the status line if Claude Code is connected.
-  if (prev && prev.features.usage !== settings.features.usage && hooks.isInstalled(CLAUDE_SETTINGS, bridgeInfo)) {
+  // The same for the work map and its tool events. This also runs at startup, so a connection
+  // made by an older version gets the map's events without the user connecting again.
+  const claude = hooks.inspect(CLAUDE_SETTINGS, bridgeInfo);
+  if (claude.installed && ((prev && prev.features.usage !== settings.features.usage) || claude.map !== settings.features.map)) {
     try {
-      hooks.install(CLAUDE_SETTINGS, { ...bridgeInfo, statusLine: settings.features.usage });
+      hooks.install(CLAUDE_SETTINGS, { ...bridgeInfo, statusLine: settings.features.usage, map: settings.features.map });
     } catch (err) {
-      log(`status line update failed: ${(err as Error).message}`);
+      log(`hooks update failed: ${(err as Error).message}`);
     }
+  }
+  if (!settings.features.map && state.map) {
+    workMap.clear();
+    push({ map: null });
   }
   if (!settings.features.usage) state.agents.usage = null;
   syncHelperFeatures();

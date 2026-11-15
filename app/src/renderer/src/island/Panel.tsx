@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { Icon } from '../common/icons';
 import { Bars } from './Views';
+import { WorkMapView } from './WorkMap';
 import { formatClock, formatRemaining, relativeTime, eventWhen } from '../../../shared/time';
 import { livePosition, lineAt } from '../../../shared/playback';
 import type { CalendarEvent, ClipItem, ConvertFormat, IslandState, PanelTab, SessionSource, ShelfItem, WatchCondition, WatchTarget } from '../../../shared/types';
@@ -9,6 +10,7 @@ import type { CalendarEvent, ClipItem, ConvertFormat, IslandState, PanelTab, Ses
 const TABS: { id: PanelTab; icon: string; label: string; feature: (f: IslandState['settings']['features']) => boolean }[] = [
   { id: 'media', icon: 'home', label: 'Home', feature: () => true },
   { id: 'agents', icon: 'agents', label: 'Agents', feature: (f) => f.agents || f.usage },
+  { id: 'map', icon: 'map', label: 'Work map', feature: (f) => f.map },
   { id: 'timer', icon: 'timer', label: 'Focus timer', feature: (f) => f.timer },
   { id: 'clipboard', icon: 'clipboard', label: 'Clipboard', feature: (f) => f.clipboard },
   { id: 'notes', icon: 'notes', label: 'Notes', feature: (f) => f.notes },
@@ -58,6 +60,7 @@ export function Panel({ state, tab, setTab, now, fileOver }: { state: IslandStat
           <>
             {tab === 'media' && <Home state={state} now={now} />}
             {tab === 'agents' && <Agents state={state} now={now} />}
+            {tab === 'map' && <WorkMapView state={state} />}
             {tab === 'timer' && <Timer state={state} now={now} />}
             {tab === 'clipboard' && <Clipboard state={state} now={now} />}
             {tab === 'notes' && <Notes initial={state.notes} />}

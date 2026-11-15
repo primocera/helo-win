@@ -30,6 +30,7 @@ files (they never touch `~/.claude` or `~/.codex`):
 | Area | What it does | How |
 | --- | --- | --- |
 | Agents | Allow / Always allow / Deny cards for Claude Code and Codex CLI, with a queue; red/green changed lines on Claude Code's Edit and Write cards; answer Claude Code's multiple-choice questions and approve or reject its plans from the island (or send either back to the terminal); "finished" and "needs your answer" banners; Ctrl+Alt+Y / Ctrl+Alt+N | Claude Code HTTP hooks (questions and plans are answered with `updatedInput`, as the hooks docs describe); Codex command hooks that `curl.exe` the same local endpoint |
+| Work map | A panel tab with a live map of what Claude Code is using: You, Model, Memory, Files, Shell, Network, Browser, Agents, Skills, with pulses for each call and the rows of what it did. Names only, never contents | The drawing, classifier and rows are lot-map's (MIT, copied into `src/shared/map/`); the board is built in `src/main/workmap.ts` from extra Claude Code HTTP hooks (`PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `SubagentStart`, `SubagentStop`, `PreCompact`) and the status line. Model steps are inferred from the gaps between tool calls; the Hooks station stays quiet because a hook cannot see other hooks |
 | Browser chats | Blink "thinks" while Claude or ChatGPT writes an answer on the web; a "finished answering" banner if you were looking elsewhere | The extension in `extension/` (Chrome/Edge, load unpacked) posts to the local endpoint with its own pairing code |
 | Startup apps | Lists the apps that open when you sign in to Windows and switches them on or off | The same `StartupApproved` flags Task Manager uses (`reg.exe`); all-users entries are read-only |
 | Usage rings | Claude 5-hour and weekly limits | `rate_limits` from Claude Code's documented status line input (Pro/Max/Ultra plans); only added if you have no status line of your own |
@@ -46,10 +47,10 @@ files (they never touch `~/.claude` or `~/.codex`):
 
 ### Layout
 
-- `src/main/` — main process. `index.ts` wires everything; `bridge.ts` (local hook endpoint on 127.0.0.1 with a bearer token), `hooks-install.ts` (Claude Code + Codex config, with `.helo-backup`), `license.ts` (7-day trial, Lemon Squeezy key), `winhelper.ts` (client for the helper), `finished*.ts`, `clipboard-history.ts`, `shelf.ts`, `timer.ts`, `calendar.ts`, `lyrics.ts`, `system.ts`, `smoke.ts` (test modes), `config.ts` (price, store IDs).
+- `src/main/` — main process. `index.ts` wires everything; `bridge.ts` (local hook endpoint on 127.0.0.1 with a bearer token), `hooks-install.ts` (Claude Code + Codex config, with `.helo-backup`), `workmap.ts` (the work map's board, from hook events), `license.ts` (7-day trial, Lemon Squeezy key), `winhelper.ts` (client for the helper), `finished*.ts`, `clipboard-history.ts`, `shelf.ts`, `timer.ts`, `calendar.ts`, `lyrics.ts`, `system.ts`, `smoke.ts` (test modes), `config.ts` (price, store IDs).
 - `src/preload/index.ts` — the only API the pages get (`window.helo`); context isolation and sandbox on, no Node in pages.
 - `src/renderer/` — React pages: `island.html` (the island) and `settings.html`.
-- `src/shared/` — types and small helpers used on both sides.
+- `src/shared/` — types and small helpers used on both sides. `shared/map/` is lot-map's code (see its README and LICENSE).
 - `resources/winhelper.ps1` — one long-lived PowerShell 5.1 process (WinRT + C# compiled by Windows' own .NET Framework) that speaks JSON lines over stdio and exits when the app does. No native npm modules.
 - `test/` — unit tests for the bridge, hook installers, license, settings, timer, clipboard, calendar, lyrics, Steam/download/app-watch logic and the helper protocol.
 

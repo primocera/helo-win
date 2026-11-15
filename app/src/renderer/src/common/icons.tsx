@@ -22,6 +22,15 @@ const paths: Record<string, JSX.Element> = {
       <path d="M12.5 14.5h4" />
     </>
   ),
+  map: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <circle cx="12" cy="4" r="1.6" />
+      <circle cx="19" cy="15.5" r="1.6" />
+      <circle cx="5" cy="15.5" r="1.6" />
+      <path d="M12 9V5.6M14.6 13.4l3 1.4M9.4 13.4l-3 1.4" />
+    </>
+  ),
   timer: (
     <>
       <circle cx="12" cy="13.5" r="6.5" />

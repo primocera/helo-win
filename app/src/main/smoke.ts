@@ -15,6 +15,8 @@ import { DownloadWatcher, SteamWatcher, findSteamPath } from './finished-watch';
 import { BusyIdleDetector, parseAcf } from './finished';
 import { drawMark } from './icon';
 import { permissionView } from './format';
+import { WorkMap } from './workmap';
+import { MAP_SETUP } from '../shared/workmap';
 import type { WinHelper } from './winhelper';
 import type { ClipboardHistory } from './clipboard-history';
 import type { IslandState, PanelTab, SmokeView } from '../shared/types';
@@ -207,7 +209,8 @@ export async function runSmoke(ctx: SmokeCtx) {
     push({ requests: [], agents: { ...ctx.state.agents, mood: 'idle' }, hud: { kind: 'volume', level: 64, muted: false, at: Date.now() } });
     await shot('06-hud-volume');
     push({ hud: null });
-    const tabs: PanelTab[] = ['media', 'agents', 'timer', 'clipboard', 'notes', 'shelf', 'system', 'calendar', 'finished'];
+    push({ map: sampleMap() });
+    const tabs: PanelTab[] = ['media', 'agents', 'map', 'timer', 'clipboard', 'notes', 'shelf', 'system', 'calendar', 'finished'];
     for (const tab of tabs) {
       smoke({ panel: tab });
       await shot(`10-panel-${tab}`);
@@ -353,6 +356,25 @@ export async function runSelfTest(ctx: SelfTestCtx) {
       return okSeen;
     };
     const permission = JSON.stringify({ hook_event_name: 'PermissionRequest', session_id: 'self', cwd: 'C:\\code\\selftest', tool_name: 'Bash', tool_input: { command: 'echo hi' } });
+    {
+      // The work map: tool events go through the real bridge and reach the island's state.
+      const post = (body: unknown) => fetch(`http://127.0.0.1:${port}/helo/hook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const base = { session_id: 'self-map', cwd: 'C:\\code\\selftest', tool_name: 'Read', tool_use_id: 'm1' };
+      const hasFile = (status: string) => ctx.state.map?.board.entries.some((e) => e.station === 'files' && e.status === status) === true;
+      const started = Date.now();
+      const res = await post({ ...base, hook_event_name: 'PreToolUse', tool_input: { file_path: 'C:\\code\\selftest\\a.ts' } });
+      const took = Date.now() - started;
+      const body = await res.text();
+      const shown = await until(() => hasFile('run'), 3000);
+      await post({ ...base, hook_event_name: 'PostToolUse', tool_response: {} });
+      const done = await until(() => hasFile('ok'), 3000);
+      check('work map: a tool call is answered with no decision and shows on the map', res.status === 200 && body === '' && shown && done && ctx.state.requests.length === 0,
+        `status ${res.status} in ${took} ms, shown ${shown}, finished ${done}`);
+    }
     const codexCmd = hooks.codexCommand({ port, token }, 30);
     {
       const pending = run('cmd.exe', ['/d', '/s', '/c', `"${codexCmd}"`], permission);
@@ -643,4 +665,31 @@ export async function runSelfTest(ctx: SelfTestCtx) {
   const failed = checks.filter((c) => !c.ok).length;
   console.log(`[helo] self-test: ${checks.length - failed} passed, ${failed} failed`);
   ctx.quit(failed ? 1 : 0);
+}
+
+/** A board for the screenshots, made the way a real one is: from hook events. */
+function sampleMap() {
+  let t = Date.now() - 9000;
+  const map = new WorkMap(MAP_SETUP, () => t);
+  const send = (event: string, extra: Record<string, unknown> = {}, ms = 600) => {
+    t += ms;
+    map.record({ hook_event_name: event, session_id: 'smoke', cwd: 'C:\\code\\shop-api', ...extra });
+  };
+  const call = (id: string, tool: string, input: Record<string, unknown>, ms = 500, extra: Record<string, unknown> = {}) => {
+    send('PreToolUse', { tool_name: tool, tool_use_id: id, tool_input: input, ...extra }, 300);
+    send('PostToolUse', { tool_name: tool, tool_use_id: id, tool_response: {}, ...extra }, ms);
+  };
+  send('UserPromptSubmit', { prompt: 'Add quantities to the cart' });
+  map.status({ session_id: 'smoke', model: { id: 'claude-opus-5-5' }, context_window: { used_percentage: 34 } });
+  call('1', 'Read', { file_path: 'C:\\code\\shop-api\\src\\cart.ts' });
+  call('2', 'Grep', { pattern: 'total(' });
+  call('3', 'mcp__memory__search_nodes', { query: 'cart' });
+  call('4', 'WebFetch', { url: 'https://docs.example.com/rounding' }, 900);
+  send('PreToolUse', { tool_name: 'Agent', tool_use_id: '5', tool_input: { description: 'check the tests', prompt: 'x' } });
+  send('SubagentStart', { agent_id: 'sub1', agent_type: 'Explore' }, 50);
+  call('6', 'Glob', { pattern: 'test/**' }, 300, { agent_id: 'sub1' });
+  call('7', 'Edit', { file_path: 'C:\\code\\shop-api\\src\\cart.ts' });
+  send('PreToolUse', { tool_name: 'Bash', tool_use_id: '8', tool_input: { command: 'npm test', description: 'Run the tests' } }, 700);
+  t = Date.now();
+  return map.view();
 }

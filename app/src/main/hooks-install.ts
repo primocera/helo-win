@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { HOOK_PATH, STATUS_PATH } from './bridge';
+import { MAP_EVENTS } from './workmap';
 
 type Json = Record<string, unknown>;
 type Hook = Json & { type?: unknown; url?: unknown; command?: unknown; headers?: Json };
@@ -79,7 +80,11 @@ export function readSettings(file: string): Json {
 
 export function writeSettings(file: string, settings: Json): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  if (fs.existsSync(file)) fs.copyFileSync(file, `${file}.helo-backup`);
+  // The backup is the file as it was before Helo touched it: a later write must not replace it with a file that already has Helo's hooks.
+  if (fs.existsSync(file)) {
+    const backup = `${file}.helo-backup`;
+    if (!fs.existsSync(backup) || !fs.readFileSync(file, 'utf8').includes('/helo/hook')) fs.copyFileSync(file, backup);
+  }
   const tmp = `${file}.helo-tmp`;
   fs.writeFileSync(tmp, `${JSON.stringify(settings, null, 2)}\n`);
   fs.renameSync(tmp, file);
@@ -94,6 +99,8 @@ const OUR_STATUS = /127\.0\.0\.1:\d+\/helo\/status/;
 // Seconds Claude Code waits for each hook. The permission hook stays open
 // while the user decides; the bridge gives up a little earlier (280 s).
 const EVENTS: Record<string, number> = { PermissionRequest: 300, Notification: 5, Stop: 5, UserPromptSubmit: 5 };
+// The work map's extra events. Helo answers them at once and never decides anything, so the wait is short.
+const MAP_TIMEOUT = 3;
 
 function isOurs(hook: Hook): boolean {
   return Boolean(hook) && hook.type === 'http' && typeof hook.url === 'string' && OUR_URL.test(hook.url);
@@ -133,14 +140,17 @@ export function stripHooks(settings: Json): Json {
 export interface InstallOptions extends BridgeOpts {
   /** Also add the status line used for the usage rings (never replaces the user's own). */
   statusLine?: boolean;
+  /** Also add the tool and subagent events the work map is drawn from. */
+  map?: boolean;
 }
 
 /** Returns a copy of settings with Helo's hooks added (replacing older ones). */
-export function applyHooks(settings: Json, { port, token, statusLine = false }: InstallOptions): Json {
+export function applyHooks(settings: Json, { port, token, statusLine = false, map = false }: InstallOptions): Json {
   const hadOwnStatusLine = statusLineState(settings) === 'other';
   const next = stripHooks(settings);
   const events: Record<string, Hook> = {};
-  for (const [event, timeout] of Object.entries(EVENTS)) {
+  const all = map ? { ...EVENTS, ...Object.fromEntries(MAP_EVENTS.map((e) => [e, MAP_TIMEOUT])) } : EVENTS;
+  for (const [event, timeout] of Object.entries(all)) {
     events[event] = { type: 'http', url: hookUrl(port), timeout, headers: { Authorization: `Bearer ${token}` } };
   }
   addGroups(next, events);
@@ -152,6 +162,12 @@ export function applyHooks(settings: Json, { port, token, statusLine = false }: 
 
 export function hasHooks(settings: Json, { port, token }: BridgeOpts): boolean {
   return hasAll(settings, Object.keys(EVENTS), (h) =>
+    isOurs(h) && h.url === hookUrl(port) && Boolean(h.headers) && h.headers?.Authorization === `Bearer ${token}`);
+}
+
+/** Whether the work map's events are installed too. */
+export function hasMapHooks(settings: Json, { port, token }: BridgeOpts): boolean {
+  return hasAll(settings, [...MAP_EVENTS], (h) =>
     isOurs(h) && h.url === hookUrl(port) && Boolean(h.headers) && h.headers?.Authorization === `Bearer ${token}`);
 }
 
@@ -174,12 +190,12 @@ export function isInstalled(file: string, opts: BridgeOpts): boolean {
 }
 
 /** Status of the Claude settings file without throwing. */
-export function inspect(file: string, opts: BridgeOpts): { installed: boolean; statusLine: StatusLineState; error: string } {
+export function inspect(file: string, opts: BridgeOpts): { installed: boolean; map: boolean; statusLine: StatusLineState; error: string } {
   try {
     const s = readSettings(file);
-    return { installed: hasHooks(s, opts), statusLine: statusLineState(s), error: '' };
+    return { installed: hasHooks(s, opts), map: hasMapHooks(s, opts), statusLine: statusLineState(s), error: '' };
   } catch (err) {
-    return { installed: false, statusLine: 'none', error: (err as Error).message };
+    return { installed: false, map: false, statusLine: 'none', error: (err as Error).message };
   }
 }
 
