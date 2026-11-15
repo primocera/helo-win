@@ -1,0 +1,17 @@
+.lock {
+  display: block;
+  width: clamp(52px, 8vw, 64px);
+  height: auto;
+  margin: 0 auto 28px;
+  color: #1d1d1f;
+}
+
+.points {
+  list-style: none;
+  max-width: 640px;
+  margin: clamp(48px, 8vw, 72px) auto 0;
+  padding: 0;
+  display: grid;
+  gap: 32px;
+  text-align: left;
+}

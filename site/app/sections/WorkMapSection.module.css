@@ -1,0 +1,147 @@
+/* The work map: a dark band with the app's map drawing and the rows of what the agent did. */
+.section {
+  background: #0a0d14;
+  color: #ebe6dc;
+  /* Narrow phones keep the map at 320 px by giving up some of the side margin. */
+  padding: 72px clamp(8px, calc((100vw - 320px) / 2), 20px);
+}
+
+.inner {
+  max-width: 880px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "head"
+    "map"
+    "feed";
+  gap: 28px;
+}
+
+.head {
+  grid-area: head;
+}
+
+.head h2 {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: clamp(28px, 6vw, 44px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.head p {
+  margin: 0;
+  max-width: 560px;
+  font-size: 18px;
+  color: #a6a6ae;
+}
+
+.map {
+  grid-area: map;
+  justify-self: center;
+  width: 100%;
+  min-width: 320px;
+  max-width: 460px;
+}
+
+.map img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 460 / 430;
+  user-select: none;
+}
+
+.feed {
+  grid-area: feed;
+  min-width: 0;
+  font-family: "Cascadia Mono", Consolas, ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.now {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 8px;
+  color: #ebe6dc;
+}
+
+.what {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meter {
+  flex: none;
+  color: #6b7280;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* Room for every row from the start, so the page below does not move as the list fills. */
+  min-height: calc(8 * 1.75em);
+}
+
+.rows li {
+  display: flex;
+  gap: 1ch;
+  color: #8a909a;
+  white-space: nowrap;
+}
+
+.rows li.run {
+  color: #e1ac6e;
+}
+
+.mark {
+  flex: none;
+  width: 1ch;
+  text-align: center;
+}
+
+.station {
+  flex: none;
+  width: 8ch;
+}
+
+.label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.took {
+  flex: none;
+  margin-left: 1ch;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 900px) {
+  .inner {
+    grid-template-columns: 460px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "map head"
+      "map feed";
+    column-gap: 44px;
+    row-gap: 24px;
+    align-items: start;
+  }
+
+  .map {
+    justify-self: start;
+  }
+
+  .head {
+    padding-top: 24px;
+  }
+}

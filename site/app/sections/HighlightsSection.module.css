@@ -1,0 +1,196 @@
+/* "Get the highlights": a light band with a carousel of feature cards. */
+
+.section {
+  overflow: hidden;
+}
+
+.title {
+  font-size: clamp(32px, 6vw, 56px);
+  margin-bottom: clamp(28px, 5vw, 48px);
+}
+
+/* ---- the track: full width, with the first card lined up with the column above ---- */
+
+.track {
+  --pad: max(16px, calc((100% - 932px) / 2));
+  display: flex;
+  gap: 16px;
+  padding-inline: var(--pad);
+  scroll-padding-inline: var(--pad);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  position: relative;
+  outline: none;
+}
+.track::-webkit-scrollbar {
+  display: none;
+}
+.track:focus-visible .card {
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px #0071e3;
+}
+
+.slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+  /* Room for the focus ring around the card. */
+  padding-block: 6px;
+}
+
+@media (min-width: 700px) {
+  .track {
+    gap: 20px;
+  }
+  /* The next card peeks in from the right. */
+  .slide {
+    flex-basis: calc(100% - 64px);
+  }
+}
+
+/* ---- a card: the desktop with an island at the top and the caption at the bottom ---- */
+
+.card {
+  --desk-aspect: 4 / 5;
+  --island-hfit: 0.58;
+  --island-max: 1px;
+}
+@media (min-width: 600px) {
+  .card {
+    --desk-aspect: 5 / 4;
+    --island-hfit: 0.6;
+  }
+}
+@media (min-width: 900px) {
+  .card {
+    --desk-aspect: 16 / 10;
+    --island-max: 1.2px;
+    --island-hfit: 0.64;
+  }
+}
+
+.caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: clamp(56px, 10vw, 96px) clamp(20px, 4vw, 40px) clamp(22px, 4vw, 36px);
+  background: linear-gradient(to bottom, rgba(245, 245, 247, 0), rgba(245, 245, 247, 0.82) 45%, rgba(245, 245, 247, 0.95));
+  font-size: clamp(17px, 2.4vw, 21px);
+  line-height: 1.4;
+  color: #6e6e73;
+  text-wrap: pretty;
+}
+.caption strong {
+  font-weight: 650;
+  color: #1d1d1f;
+}
+@media (min-width: 900px) {
+  .caption {
+    padding-right: 30%;
+  }
+}
+
+/* ---- dots and the play button ---- */
+
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 0 16px;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #ececf0;
+}
+
+.dot {
+  display: grid;
+  place-items: center;
+  height: 48px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.dot:focus-visible,
+.play:focus-visible {
+  outline: 2px solid #0071e3;
+  outline-offset: -2px;
+}
+
+.dotShape {
+  position: relative;
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #a1a1a6;
+  overflow: hidden;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+.dot:hover .dotShape {
+  background: #6e6e73;
+}
+.current .dotShape,
+.dot.current:hover .dotShape {
+  width: 40px;
+  background: #c7c7cc;
+}
+
+.fill,
+.fillFull {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #1d1d1f;
+  transform-origin: left center;
+}
+.fill {
+  transform: scaleX(0);
+  animation-name: grow;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes grow {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.play {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #ececf0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.play:hover {
+  background: #e0e0e5;
+}
+.play svg {
+  width: 22px;
+  height: 22px;
+  fill: #1d1d1f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dotShape {
+    transition: none;
+  }
+}
