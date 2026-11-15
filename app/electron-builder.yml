@@ -1,0 +1,36 @@
+# Windows installer (NSIS). Build with: npm run dist
+# The installer is unsigned; Windows SmartScreen will warn until it is code-signed.
+appId: app.helo.island
+productName: Helo
+copyright: Copyright © 2026 Helo
+directories:
+  buildResources: resources
+  output: dist
+files:
+  - out/**/*
+  - package.json
+extraResources:
+  # The Windows helper runs with powershell.exe -File, so it must sit outside app.asar.
+  - from: resources/winhelper.ps1
+    to: winhelper.ps1
+  # The browser extension, loaded by the user with "Load unpacked".
+  - from: extension
+    to: extension
+asar: true
+npmRebuild: false
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.png
+  artifactName: ${productName}-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Helo
+  uninstallDisplayName: Helo
+  deleteAppDataOnUninstall: false

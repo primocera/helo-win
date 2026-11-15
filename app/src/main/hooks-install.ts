@@ -1,0 +1,234 @@
+// Adds and removes Helo's hooks in the agents' own config files:
+//   Claude Code: HTTP hooks + an optional status line in ~/.claude/settings.json
+//   Codex CLI:   command hooks (curl to the same local endpoint) in ~/.codex/hooks.json
+// Other hooks and settings are always kept. Every write leaves a .helo-backup copy.
+import fs from 'node:fs';
+import path from 'node:path';
+import { HOOK_PATH, STATUS_PATH } from './bridge';
+
+type Json = Record<string, unknown>;
+type Hook = Json & { type?: unknown; url?: unknown; command?: unknown; headers?: Json };
+type Group = Json & { hooks?: Hook[] };
+
+export interface BridgeOpts {
+  port: number;
+  token: string;
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+
+/** Returns a copy of settings without hooks matching `isOurs`. Other hooks are kept. */
+function stripMatching(settings: Json, isOurs: (h: Hook) => boolean): Json {
+  const next = structuredClone(settings) as Json & { hooks?: Record<string, unknown> };
+  if (!next.hooks || typeof next.hooks !== 'object') return next;
+  for (const event of Object.keys(next.hooks)) {
+    const groups = next.hooks[event];
+    if (!Array.isArray(groups)) continue;
+    const kept: unknown[] = [];
+    for (const group of groups as Group[]) {
+      if (!group || !Array.isArray(group.hooks) || !group.hooks.some(isOurs)) {
+        kept.push(group);
+        continue;
+      }
+      const others = group.hooks.filter((h) => !isOurs(h));
+      if (others.length) kept.push({ ...group, hooks: others });
+    }
+    if (kept.length) next.hooks[event] = kept;
+    else delete next.hooks[event];
+  }
+  if (!Object.keys(next.hooks).length) delete next.hooks;
+  return next;
+}
+
+function addGroups(settings: Json, events: Record<string, Hook>): Json {
+  const next = settings as Json & { hooks?: Record<string, unknown[]> };
+  if (!next.hooks || typeof next.hooks !== 'object') next.hooks = {};
+  for (const [event, hook] of Object.entries(events)) {
+    if (!Array.isArray(next.hooks[event])) next.hooks[event] = [];
+    next.hooks[event].push({ hooks: [hook] });
+  }
+  return next;
+}
+
+function hasAll(settings: Json, events: string[], matches: (h: Hook) => boolean): boolean {
+  const hooks = (settings.hooks || {}) as Record<string, unknown>;
+  return events.every((event) => {
+    const groups = hooks[event];
+    return Array.isArray(groups) && (groups as Group[]).some((g) => g && Array.isArray(g.hooks) && g.hooks.some(matches));
+  });
+}
+
+// A missing file is an empty object. A file that is not valid JSON throws,
+// so we never overwrite something we could not read.
+export function readSettings(file: string): Json {
+  let text: string;
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return {};
+    throw err;
+  }
+  if (!text.trim()) return {};
+  const parsed: unknown = JSON.parse(text.replace(/^﻿/, ''));
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`${path.basename(file)} is not a JSON object`);
+  }
+  return parsed as Json;
+}
+
+export function writeSettings(file: string, settings: Json): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  if (fs.existsSync(file)) fs.copyFileSync(file, `${file}.helo-backup`);
+  const tmp = `${file}.helo-tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(settings, null, 2)}\n`);
+  fs.renameSync(tmp, file);
+}
+
+// ---------------------------------------------------------------------------
+// Claude Code
+
+const OUR_URL = /^http:\/\/127\.0\.0\.1:\d+\/helo\/hook$/;
+const OUR_STATUS = /127\.0\.0\.1:\d+\/helo\/status/;
+
+// Seconds Claude Code waits for each hook. The permission hook stays open
+// while the user decides; the bridge gives up a little earlier (280 s).
+const EVENTS: Record<string, number> = { PermissionRequest: 300, Notification: 5, Stop: 5, UserPromptSubmit: 5 };
+
+function isOurs(hook: Hook): boolean {
+  return Boolean(hook) && hook.type === 'http' && typeof hook.url === 'string' && OUR_URL.test(hook.url);
+}
+
+export function hookUrl(port: number): string {
+  return `http://127.0.0.1:${port}${HOOK_PATH}`;
+}
+
+/**
+ * The status line command. Claude Code pipes its status JSON (which includes the
+ * documented rate_limits object) to curl, curl posts it to Helo and prints the
+ * line Helo answers with. curl.exe ships with Windows 10 1803+ and Git for Windows.
+ */
+export function statusLineCommand({ port, token }: BridgeOpts): string {
+  return `curl.exe -s -m 2 -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" --data-binary "@-" http://127.0.0.1:${port}${STATUS_PATH}`;
+}
+
+function isOurStatusLine(sl: unknown): boolean {
+  return Boolean(sl) && typeof sl === 'object' && typeof (sl as Json).command === 'string' && OUR_STATUS.test((sl as Json).command as string);
+}
+
+export type StatusLineState = 'ours' | 'other' | 'none';
+
+export function statusLineState(settings: Json): StatusLineState {
+  if (!settings.statusLine) return 'none';
+  return isOurStatusLine(settings.statusLine) ? 'ours' : 'other';
+}
+
+/** Returns a copy of settings without any Helo hooks or Helo status line. */
+export function stripHooks(settings: Json): Json {
+  const next = stripMatching(settings, isOurs);
+  if (isOurStatusLine(next.statusLine)) delete next.statusLine;
+  return next;
+}
+
+export interface InstallOptions extends BridgeOpts {
+  /** Also add the status line used for the usage rings (never replaces the user's own). */
+  statusLine?: boolean;
+}
+
+/** Returns a copy of settings with Helo's hooks added (replacing older ones). */
+export function applyHooks(settings: Json, { port, token, statusLine = false }: InstallOptions): Json {
+  const hadOwnStatusLine = statusLineState(settings) === 'other';
+  const next = stripHooks(settings);
+  const events: Record<string, Hook> = {};
+  for (const [event, timeout] of Object.entries(EVENTS)) {
+    events[event] = { type: 'http', url: hookUrl(port), timeout, headers: { Authorization: `Bearer ${token}` } };
+  }
+  addGroups(next, events);
+  if (statusLine && !hadOwnStatusLine) {
+    next.statusLine = { type: 'command', command: statusLineCommand({ port, token }), padding: 0 };
+  }
+  return next;
+}
+
+export function hasHooks(settings: Json, { port, token }: BridgeOpts): boolean {
+  return hasAll(settings, Object.keys(EVENTS), (h) =>
+    isOurs(h) && h.url === hookUrl(port) && Boolean(h.headers) && h.headers?.Authorization === `Bearer ${token}`);
+}
+
+export function install(file: string, opts: InstallOptions): { statusLine: StatusLineState } {
+  const next = applyHooks(readSettings(file), opts);
+  writeSettings(file, next);
+  return { statusLine: statusLineState(next) };
+}
+
+export function uninstall(file: string): void {
+  writeSettings(file, stripHooks(readSettings(file)));
+}
+
+export function isInstalled(file: string, opts: BridgeOpts): boolean {
+  try {
+    return hasHooks(readSettings(file), opts);
+  } catch {
+    return false;
+  }
+}
+
+/** Status of the Claude settings file without throwing. */
+export function inspect(file: string, opts: BridgeOpts): { installed: boolean; statusLine: StatusLineState; error: string } {
+  try {
+    const s = readSettings(file);
+    return { installed: hasHooks(s, opts), statusLine: statusLineState(s), error: '' };
+  } catch (err) {
+    return { installed: false, statusLine: 'none', error: (err as Error).message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Codex CLI (~/.codex/hooks.json). Codex runs command hooks with the event JSON
+// on stdin and reads a decision from stdout; curl forwards both ways.
+
+const CODEX_EVENTS: Record<string, number> = { PermissionRequest: 300, Stop: 10, UserPromptSubmit: 10 };
+const CODEX_MARK = /127\.0\.0\.1:\d+\/helo\/hook\?agent=codex/;
+
+function isOurCodexHook(hook: Hook): boolean {
+  return Boolean(hook) && hook.type === 'command' && typeof hook.command === 'string' && CODEX_MARK.test(hook.command);
+}
+
+export function codexCommand({ port, token }: BridgeOpts, maxSeconds: number): string {
+  return `curl.exe -s -m ${maxSeconds} -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" --data-binary "@-" "http://127.0.0.1:${port}${HOOK_PATH}?agent=codex"`;
+}
+
+export function stripCodexHooks(settings: Json): Json {
+  return stripMatching(settings, isOurCodexHook);
+}
+
+export function applyCodexHooks(settings: Json, opts: BridgeOpts): Json {
+  const next = stripCodexHooks(settings);
+  const events: Record<string, Hook> = {};
+  for (const [event, timeout] of Object.entries(CODEX_EVENTS)) {
+    const command = codexCommand(opts, Math.max(2, timeout - 10));
+    events[event] = { type: 'command', command, commandWindows: command, timeout };
+  }
+  return addGroups(next, events);
+}
+
+export function hasCodexHooks(settings: Json, opts: BridgeOpts): boolean {
+  return hasAll(settings, Object.keys(CODEX_EVENTS), (h) =>
+    isOurCodexHook(h) && typeof h.command === 'string' && h.command.includes(`Bearer ${opts.token}`) && h.command.includes(`:${opts.port}/`));
+}
+
+export function installCodex(file: string, opts: BridgeOpts): void {
+  writeSettings(file, applyCodexHooks(readSettings(file), opts));
+}
+
+export function uninstallCodex(file: string): void {
+  writeSettings(file, stripCodexHooks(readSettings(file)));
+}
+
+export function isCodexInstalled(file: string, opts: BridgeOpts): boolean {
+  try {
+    return hasCodexHooks(readSettings(file), opts);
+  } catch {
+    return false;
+  }
+}

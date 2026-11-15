@@ -1,0 +1,253 @@
+// The compact island states: idle pill, banner, permission card, HUD.
+// All text from hooks, media or files is rendered as React text (never HTML).
+import { useEffect, useState } from 'react';
+import { Icon, Mark } from '../common/icons';
+import { relativeTime } from '../../../shared/time';
+import type { Banner, BannerKind, Behavior, DiffView, Hud, IslandState, PermissionView } from '../../../shared/types';
+
+const STILL = [0.3, 0.3, 0.3, 0.3];
+
+/**
+ * A small level meter. It steps about 6 times a second from a timer instead of
+ * a 60 fps CSS animation: every frame of a transparent window costs a full
+ * repaint on Windows, so this keeps idle CPU low while music plays.
+ */
+export function Bars({ playing }: { playing: boolean }) {
+  const [levels, setLevels] = useState(STILL);
+  useEffect(() => {
+    if (!playing) {
+      setLevels(STILL);
+      return;
+    }
+    const t = window.setInterval(() => {
+      setLevels((prev) => prev.map((v, i) => {
+        const target = 0.25 + Math.random() * (i === 1 || i === 2 ? 0.75 : 0.55);
+        return Math.round((v * 0.35 + target * 0.65) * 20) / 20;
+      }));
+    }, 160);
+    return () => window.clearInterval(t);
+  }, [playing]);
+  return (
+    <span className={`bars ${playing ? 'playing' : ''}`} aria-hidden="true">
+      {levels.map((v, i) => <i key={i} style={{ transform: `scaleY(${v})` }} />)}
+    </span>
+  );
+}
+
+export function IdleView({ state, now }: { state: IslandState; now: number }) {
+  const playing = state.media?.status === 'Playing';
+  const t = state.timer;
+  const timerOn = state.settings.features.timer && t.running && t.endsAt != null;
+  const left = timerOn ? Math.max(0, t.endsAt! - now) : 0;
+  const micOn = state.privacy.microphone.length > 0 || state.privacy.camera.length > 0;
+  const trial = state.license.state === 'trial' ? `Trial · ${state.license.daysLeft}d` : state.license.state === 'expired' ? 'Trial ended' : '';
+  return (
+    <div className="idle">
+      <Mark size={15} />
+      <span className="idle-middle">
+        {timerOn ? (
+          <span className={`idle-chip ${t.phase}`}>
+            <Icon name="timer" size={12} />
+            {formatShort(left)}
+          </span>
+        ) : trial && !playing ? (
+          <span className="idle-trial">{trial}</span>
+        ) : null}
+      </span>
+      {state.finished.watch && <Icon name="eye" size={13} className="idle-watch" />}
+      {micOn && <span className="mic-dot" title="Microphone or camera in use" />}
+      {state.keepAwake && <Icon name="cup" size={13} className="idle-awake" />}
+      <Bars playing={playing} />
+    </div>
+  );
+}
+
+function formatShort(ms: number) {
+  const s = Math.ceil(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+const BANNER_ICON: Record<BannerKind, string> = {
+  done: 'check',
+  input: 'question',
+  info: 'info',
+  warn: 'alert',
+  timer: 'timer',
+  battery: 'battery',
+  calendar: 'calendar',
+  privacy: 'mic',
+  download: 'download',
+  steam: 'gamepad',
+  app: 'bell',
+};
+
+export function BannerView({ banner, now }: { banner: Banner; now: number }) {
+  return (
+    <div
+      className={`banner ${banner.clickable ? 'clickable' : ''}`}
+      onClick={banner.clickable ? () => window.helo.bannerClick() : undefined}
+      title={banner.clickable ? (banner.kind === 'input' ? 'Click to dismiss' : 'Click to open') : undefined}
+    >
+      <span className={`app-icon kind-${banner.kind}`}>
+        <Icon name={BANNER_ICON[banner.kind]} size={17} />
+      </span>
+      <span className="banner-lines">
+        <span className="banner-title">{banner.title}</span>
+        {banner.text && <span className="banner-text">{banner.text}</span>}
+      </span>
+      <span className="banner-time">{relativeTime(banner.at ?? now, now)}</span>
+    </div>
+  );
+}
+
+const AGENT_NAME = { claude: 'Claude Code', codex: 'Codex' } as const;
+
+function CardHead({ request, more, label }: { request: PermissionView; more: number; label: string }) {
+  return (
+    <div className="card-head">
+      <span className={`app-icon small agent-${request.agent}`}>
+        <Icon name="agents" size={14} />
+      </span>
+      <span className="card-agent">{AGENT_NAME[request.agent]}</span>
+      <span className="card-tool">{label}</span>
+      {request.project && <span className="card-project">{request.project}</span>}
+      {more > 0 && <span className="card-more">+{more} more</span>}
+    </div>
+  );
+}
+
+const DIFF_SIGN = { add: '+', del: '−', same: ' ' } as const;
+
+function DiffBox({ diff }: { diff: DiffView }) {
+  return (
+    <div className="diff">
+      <div className="diff-head">
+        <span className="diff-file">{diff.file}</span>
+        {diff.added > 0 && <span className="diff-added">+{diff.added}</span>}
+        {diff.removed > 0 && <span className="diff-removed">−{diff.removed}</span>}
+      </div>
+      <div className="diff-lines">
+        {diff.lines.map((l, i) => (
+          <div key={i} className={`diff-line ${l.kind}`}>
+            <span className="diff-sign">{DIFF_SIGN[l.kind]}</span>
+            <span className="diff-text">{l.text || ' '}</span>
+          </div>
+        ))}
+        {diff.more > 0 && <div className="diff-more">{diff.more} more changed {diff.more === 1 ? 'line' : 'lines'}</div>}
+      </div>
+    </div>
+  );
+}
+
+/** One question at a time; the answers go back to Claude Code when the last one is picked. */
+function QuestionCard({ request, more }: { request: PermissionView; more: number }) {
+  const questions = request.questions ?? [];
+  const [step, setStep] = useState(0);
+  const [picks, setPicks] = useState<string[][]>(() => questions.map(() => []));
+  const q = questions[Math.min(step, questions.length - 1)];
+  const last = step >= questions.length - 1;
+  const chosen = picks[step] ?? [];
+
+  const advance = (next: string[][]) => {
+    if (last) window.helo.answer(request.id, next);
+    else setStep(step + 1);
+  };
+  const pick = (label: string) => {
+    const next = picks.map((p, i) => (i !== step ? p : q.multi ? (p.includes(label) ? p.filter((x) => x !== label) : [...p, label]) : [label]));
+    setPicks(next);
+    if (!q.multi) advance(next);
+  };
+
+  return (
+    <div className="card">
+      <CardHead request={request} more={more} label={questions.length > 1 ? `Question ${step + 1} of ${questions.length}` : 'Question'} />
+      <div className="question">
+        {q.header && <span className="question-header">{q.header}</span>}
+        <span className="question-text">{q.question}</span>
+        {q.multi && <span className="question-hint">Pick one or more</span>}
+      </div>
+      <div className="options">
+        {q.options.map((o) => (
+          <button
+            key={o.label}
+            type="button"
+            className={`option ${chosen.includes(o.label) ? 'on' : ''}`}
+            aria-pressed={chosen.includes(o.label)}
+            onClick={() => pick(o.label)}
+          >
+            <span className="option-label">{o.label}</span>
+            {o.description && <span className="option-text">{o.description}</span>}
+          </button>
+        ))}
+      </div>
+      <div className="card-actions">
+        {step > 0 && <button type="button" className="btn ghost" onClick={() => setStep(step - 1)}>Back</button>}
+        <button type="button" className="btn ghost" title="Type your own answer in the terminal" onClick={() => window.helo.skip(request.id)}>
+          Answer in terminal
+        </button>
+        {q.multi && (
+          <button type="button" className="btn primary" disabled={!chosen.length} onClick={() => advance(picks)}>
+            {last ? 'Send' : 'Next'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PlanCard({ request, more, onDecide }: { request: PermissionView; more: number; onDecide: (id: string, b: Behavior) => void }) {
+  return (
+    <div className="card">
+      <CardHead request={request} more={more} label="Plan" />
+      <div className="plan">{request.plan || 'The plan text was not sent. Read it in the terminal.'}</div>
+      <div className="card-actions">
+        <button type="button" className="btn" title="Claude keeps planning and asks what to change" onClick={() => onDecide(request.id, 'deny')}>
+          Reject <kbd>Ctrl Alt N</kbd>
+        </button>
+        <button type="button" className="btn ghost" title="Choose in the terminal, where you can also type feedback" onClick={() => window.helo.skip(request.id)}>
+          Decide in terminal
+        </button>
+        <button type="button" className="btn primary" onClick={() => onDecide(request.id, 'allow')}>
+          Approve <kbd>Ctrl Alt Y</kbd>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function CardView({ request, more, onDecide }: { request: PermissionView; more: number; onDecide: (id: string, b: Behavior) => void }) {
+  if (request.kind === 'question' && request.questions?.length) return <QuestionCard key={request.id} request={request} more={more} />;
+  if (request.kind === 'plan') return <PlanCard request={request} more={more} onDecide={onDecide} />;
+  return (
+    <div className="card">
+      <CardHead request={request} more={more} label={request.tool} />
+      {request.diff ? <DiffBox diff={request.diff} /> : <div className="card-summary">{request.summary || 'No details'}</div>}
+      <div className="card-actions">
+        <button type="button" className="btn" onClick={() => onDecide(request.id, 'deny')}>
+          Deny <kbd>Ctrl Alt N</kbd>
+        </button>
+        {request.always && (
+          <button type="button" className="btn ghost" title={`Allow and add the rule ${request.always}`} onClick={() => onDecide(request.id, 'always')}>
+            Always allow
+          </button>
+        )}
+        <button type="button" className="btn primary" onClick={() => onDecide(request.id, 'allow')}>
+          Allow <kbd>Ctrl Alt Y</kbd>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function HudView({ hud }: { hud: Hud }) {
+  const icon = hud.kind === 'brightness' ? 'sun' : hud.muted || hud.level === 0 ? 'mute' : 'speaker';
+  return (
+    <div className="hud">
+      <Icon name={icon} size={16} />
+      <span className="hud-track">
+        <span className="hud-fill" style={{ width: `${hud.muted ? 0 : hud.level}%` }} />
+      </span>
+      <span className="hud-value">{hud.muted ? 'Muted' : `${hud.level}`}</span>
+    </div>
+  );
+}

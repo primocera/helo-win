@@ -1,0 +1,14 @@
+{
+  "name": "plaza",
+  "version": "0.1.0",
+  "description": "Foundations for an original 2D social hangout game.",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "ws": "^8.22.2"
+  }
+}
