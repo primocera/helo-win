@@ -72,7 +72,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Footer with links
 - [x] `robots.txt`, `sitemap.xml`, share image and social tags
 - [ ] Download button for the trial (waits on hosting)
-- [ ] Tech specs section
-- [ ] Changelog page
-- [ ] More FAQ questions (fullscreen, which agents, do I need Claude Code)
+- [x] Tech specs section
+- [x] Changelog page
+- [x] More FAQ questions (fullscreen, which agents, do I need Claude Code)
 - [x] Deploy the updated copy (pushed to main on 2026-11-16)

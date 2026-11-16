@@ -32,9 +32,15 @@ export default function PrivacyPage() {
       <ul>
         <li>Your settings, notes, clipboard history, the list of files on the shelf and your license key.</li>
         <li>
-          Clipboard history holds the text and images you copy, until you clear it or it reaches the size you set. It
-          skips copies that a password manager marks as private. It is stored in {n}&apos;s data folder and is not
-          encrypted.
+          Clipboard history holds the text and images you copy. A copy is forgotten after a day (you can change the
+          time) unless you pin it, and you can pause the history or clear it. It skips copies that a password manager
+          marks as private. It is stored in {n}&apos;s data folder, encrypted with Windows&apos; data protection for
+          your account.
+        </li>
+        <li>
+          A log file of errors, for the &quot;Copy diagnostics&quot; button in Settings. It never holds clipboard
+          text, notification text, license keys or the tokens your agents use, and it is not sent anywhere: you
+          paste it yourself if you ask for help.
         </li>
         <li>
           What your coding agents ask and report. Claude Code, Codex CLI, Gemini CLI and Cursor send their events to{" "}
@@ -67,7 +73,7 @@ export default function PrivacyPage() {
       <p>
         Connecting an agent adds hooks to that agent&apos;s own settings file, and for Claude Code a status line unless
         you have your own. A backup of the file is kept beside it. Disconnecting removes only what {n} added.
-        Uninstalling does not remove them yet, so disconnect first.
+        Uninstalling removes it too, and asks whether to delete {n}&apos;s data folder or keep it.
       </p>
 
       <h2>Buying</h2>

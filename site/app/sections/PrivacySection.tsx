@@ -42,8 +42,9 @@ export default function PrivacySection() {
           <li>
             <h3 className={shared.pointTitle}>Kept on this PC</h3>
             <p className={shared.pointText}>
-              Notes, clipboard history, the file shelf and your settings are saved on this PC. Clipboard history stays
-              until you clear it. The bridge your coding agents talk to listens on this machine only.
+              Notes, clipboard history, the file shelf and your settings are saved on this PC. Clipboard history is
+              encrypted and forgets a copy after a day unless you pin it. The bridge your coding agents talk to listens
+              on this machine only.
             </p>
           </li>
           <li>

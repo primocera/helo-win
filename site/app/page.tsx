@@ -12,6 +12,7 @@ import WorkMapSection from "./sections/WorkMapSection";
 import MonitorSection from "./sections/MonitorSection";
 import NumbersSection from "./sections/NumbersSection";
 import PrivacySection from "./sections/PrivacySection";
+import TechSpecsSection from "./sections/TechSpecsSection";
 
 // The public build lists only what the app really does today.
 const showAll = process.env.NODE_ENV !== "production";
@@ -105,6 +106,8 @@ export default function Home() {
 
         <PrivacySection />
 
+        <TechSpecsSection />
+
         <section className={styles.faq} aria-labelledby="questions">
           <div className={shared.wrap}>
             <h2 id="questions" className={styles.faqTitle}>
@@ -135,7 +138,9 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <nav className={styles.footerLinks} aria-label="Footer">
+          <a href="#specs">Tech specs</a>
           <a href="#questions">Questions</a>
+          <Link href="/changelog">Changelog</Link>
           <Link href="/privacy">Privacy</Link>
         </nav>
         © {product.name}. Made by an independent developer.

@@ -51,3 +51,8 @@
     font-size: 16px;
   }
 }
+
+.page h3 {
+  margin: 24px 0 6px;
+  font-size: 17px;
+}
