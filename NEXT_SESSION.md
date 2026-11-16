@@ -7,7 +7,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 - **Everything is committed and pushed to `main`.** The site deploys from `main` to https://helo-win.vercel.app.
 - **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (159 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
 - **The user tested the app on 2026-11-16** and reported that the work map and everything else works. That was before this session's changes were built, so the points under "Not yet tried" below are still open.
-- **The installer in `app/dist` is from 13 Nov** and has none of the work since. Rebuild with `npm run dist` in `app/`.
+- **The installer was rebuilt on 2026-11-16** with everything below: `app/dist/Helo-Setup-0.1.0.exe` (116 MB, unsigned). It has not been installed or uninstalled by hand yet.
 
 ## Built on 2026-11-16
 
@@ -31,19 +31,91 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 
 ## Not yet tried
 
-- Gemini CLI and Cursor against a live session. Neither is installed on this PC; they were built from the published hook docs and checked with unit tests and the real hook commands run through `cmd.exe` and PowerShell. Gemini CLI's docs say it was replaced by Antigravity CLI in June 2026; whether Antigravity reads the same file was not checked.
-- The half-second click guard on cards, by hand.
-- The new shortcuts on the user's keyboard.
-- Notifications on Windows 11 or a clean account (Windows may ask for permission there; here access was already allowed).
+Everything here was built and unit-tested but not used by hand. A live Claude Code session and ten minutes with the installed app cover most of it.
+
+- **The new installer:** install it, then uninstall it. Check that the hooks leave `~/.claude/settings.json`, that it asks about the data folder, and that an update over an existing install leaves both alone.
+- **Typing on a card (A5):** a real Claude Code question and a real plan. Does the text field take the keyboard, and does focus go back to the terminal after sending?
+- **"Needs your answer" coming back** after "Copied" or a download banner covers it.
+- **Copy diagnostics** and **Show log file** in Settings, General, Help.
+- **Clipboard:** the Pause button in the tab, and that the old history is still there after the first start (it is encrypted on that start).
+- **Calendar Join** with a real feed that has Zoom, Meet or Teams links, and the banner a minute before.
+- **Low disk space** banner on screen (set the limit above the free space to see it; this PC has 44 GB free).
+- **Port fallback:** only with care. It rewrites the real hook files when 47615 is taken.
+- Gemini CLI and Cursor against a live session. Neither is installed on this PC. Gemini CLI's docs say it was replaced by Antigravity CLI in June 2026; whether Antigravity reads the same file was not checked.
+- The half-second click guard on cards, and the Alt+Shift+Y / Alt+Shift+N shortcuts on the user's keyboard.
+- Notifications on Windows 11 or a clean account (Windows may ask for permission there).
 - The lines-changed count on a live Claude Code session.
+
+## Gaps against halo-mac.com
+
+Checked on 2026-11-16 against the home page and the changelog (Halo 3.0.2). This is what Halo lists that Helo does not have, most useful first. The tick boxes are in `TODO.md`.
+
+Agents:
+
+1. **Click the finished banner to jump back to the terminal.** Halo's banner does this. Helo's banner is not clickable. The helper can already bring a window to the front (`activate`); what is missing is knowing which window belongs to a session.
+2. **A sound when an agent needs you.** Halo plays one for a permission, a question or a plan. Helo is silent.
+3. **Agents tab: the file being edited, and an Answer button** on a session that waits. Helo shows the session, its state and lines changed.
+4. **OpenCode connection.** Waits on OpenCode being installed here (see "Needs you" in `TODO.md`).
+5. **Codex usage rings.** Halo shows usage limits for Claude Code and Codex. Helo has Claude Code only.
+
+Notifications:
+
+6. **Click a notification banner to open the app that sent it.**
+7. **"Never twice":** Halo hides the system's own banner while it shows the notification. On Windows both show. Check first whether Windows lets an app do this at all; if not, say so in the FAQ and drop it.
+
+Meetings:
+
+8. **Camera check a minute before a meeting** (a mirror with a Join button).
+9. **Calls:** how long an app has had the microphone, click to go back to the meeting, and a mute switch. Helo shows which app uses the microphone or camera, nothing more.
+
+Tools:
+
+10. **`helo://` links** for scripts: show a banner, start a timer, keep awake, add to the shelf, open a tab.
+11. **Document conversion on the shelf** (Markdown, HTML, Word, PDF). Helo converts images only (PNG, JPG, WebP).
+12. **Hold-to-talk dictation.** The largest item here. Windows has its own (Win+H), so decide whether it is worth building.
+13. **Step aside for a minute** (Halo: Option-click the island) and a right-click menu on the island (Settings, Hide, Quit). Helo has these in the tray menu only.
+14. **Timer set by dragging a ruler**, up to three hours. Helo sets lengths in Settings.
+15. **Music:** shuffle and repeat buttons, and the song title or current lyric line beside the closed island.
+
+Product:
+
+16. **Updates.** Halo updates itself after asking. Helo has no update check (R3; signing comes first, R2).
+17. **Languages.** Halo is in eight. Helo is in English.
+18. **Show on several displays.** Halo can be on any set of displays. Helo sits on one.
+19. **Look:** Halo has glass, tint, corner and shadow controls. Helo has two accent colours.
+
+Site (all wait on the user): the film, quotes from buyers, the terms page, and a pricing section with a working buy link.
+
+Not gaps, so do not build them: Halo's lock screen controls and its notch options are for Macs; Helo has a 7-day trial, the work map and Steam and app-watch alerts, which Halo does not.
 
 ## Do next, in this order
 
-6. **OpenCode connection.** Install OpenCode on this PC first (ask the user); its docs describe two plugin APIs and leave the permission payloads out.
-7. **S12: clipboard safety** (expiry, pause switch, encrypted on disk), then **S10 / S11** (licence file and timeouts).
-8. **Smaller features from the Halo comparison:** calendar Join button, clipboard search and pins, long break, disk-space warning. See `TODO.md`.
-9. **Site:** tech specs section, changelog page, more FAQ questions.
-10. **Rebuild the installer** and run the release checklist (R6 in `audit/05-release-readiness.md`).
+1. **Click the finished banner to jump to the terminal** (gap 1), and with the same window lookup, **click a notification to open its app** (gap 6).
+2. **A sound when an agent needs you** (gap 2), with a switch and a volume in Settings. Off in fullscreen is the user's call; default on.
+3. **Agents tab: file being edited and an Answer button** (gap 3).
+4. **`helo://` links** (gap 10). Register the protocol in the installer; accept only the five actions, and never a file path from a link without the user seeing it.
+5. **Right-click menu on the island and "step aside for a minute"** (gap 13).
+6. **Music: shuffle, repeat, and the title beside the closed island** (gap 15).
+7. **Calls: duration and click to return** (gap 9). Mute needs a per-app audio API; look before promising it.
+8. **OpenCode** once it is installed, then **Codex usage rings** (gaps 4 and 5).
+9. **Camera check** (gap 8), then **document conversion** (gap 11).
+10. Still open from the audit: precompile the helper's C# (A2), CI (P2), `safeStorage` async calls, a visible status line when the app is closed (B2), the packaged build failing on unset store IDs (R1, once the store exists).
+
+## Prompt for the next session
+
+Paste this to start:
+
+    Read NEXT_SESSION.md and TODO.md in C:\Users\primo\helo-win, then carry on
+    down "Do next, in this order" in NEXT_SESSION.md, starting with item 1
+    (click the finished banner to jump to the terminal). These are the gaps
+    against halo-mac.com; the full list is under "Gaps against halo-mac.com".
+    Work through as many items as you can without stopping to ask. After each
+    item: run typecheck, tests and build, tick it in TODO.md, commit and push
+    to main. Keep NEXT_SESSION.md up to date as you go. Keep the site's copy
+    (site/lib/product.ts, the changelog and the privacy page) in step with
+    what you build. Run things for me instead of telling me the command. If
+    something needs my decision, pick the sensible default, note it in TODO.md
+    under "Needs you", and keep going. At the end, rebuild the installer.
 
 ## Waiting on the user
 

@@ -1,6 +1,6 @@
 # To do before launch
 
-Written 2026-11-16. Everything found missing in the launch check and in the comparison with halo-mac.com.
+Written 2026-11-16. Everything found missing in the launch check and in the comparison with halo-mac.com (checked again the same day against Halo 3.0.2; the ordered list is in `NEXT_SESSION.md`).
 Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built and checked.
 
 ## Needs you (I cannot do these)
@@ -14,6 +14,10 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] **Try on a live session:** you tested the app on 2026-11-16 and reported that the map and everything else works.
 - [ ] **Try Gemini CLI and Cursor once** (built from their docs; neither is installed on this PC).
 - [ ] **Install OpenCode on this PC** (`npm i -g opencode-ai`), or say I may. The OpenCode connection needs it to see the real permission payloads; I skipped it for now.
+- [ ] **Install the new installer, then uninstall it** (`app/dist/Helo-Setup-0.1.0.exe`). Check that the hooks leave `~/.claude/settings.json` and that it asks about your data. I did not run it on this PC because it would touch your real setup.
+- [ ] **Try on a live Claude Code session:** type an answer to a question, send feedback on a plan, and see "needs your answer" come back after another banner. The list is under "Not yet tried" in `NEXT_SESSION.md`.
+- [ ] **Two choices I made for you; say if you want them changed.** Deleting the licence file still restarts the trial. A licensed PC that stays offline keeps working (Halo stops after two weeks offline).
+- [ ] **Dictation:** build hold-to-talk, or leave it to Windows' own (Win+H)? I left it out.
 - [ ] **Install on a clean Windows account** and run the release checklist (R6).
 - [ ] **Film, testimonials** for the site.
 
@@ -32,8 +36,9 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] OpenCode connection (needs OpenCode installed here to test; its docs leave the payloads out)
 - [x] Type a free answer or plan feedback on the island (A5)
 - [x] Finished banner and Agents tab show lines changed
-- [ ] Agents tab shows the file a session is editing
 - [ ] Click the finished banner to jump to the terminal
+- [ ] A sound when an agent needs you (permission, question, plan)
+- [ ] Agents tab shows the file a session is editing, and an Answer button on a session that waits
 - [ ] Codex usage rings
 
 ## App: release
@@ -44,7 +49,8 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Licence file protected with `safeStorage`; timeouts on licence calls (S10, S11)
 - [ ] Packaged build fails when store IDs are unset (R1)
 - [ ] Auto-update or a new-version check (R3)
-- [ ] Rebuild the installer (the one in `app/dist` is from 13 Nov)
+- [x] Rebuild the installer (`app/dist/Helo-Setup-0.1.0.exe`, built 2026-11-16, unsigned)
+- [ ] A visible status line in Claude Code when the app is not running (B2, second half)
 - [ ] Move clipboard encryption to `safeStorage`'s async calls (Electron 45 marks the ones used as deprecated; they still work)
 - [ ] Precompile the Windows helper's C# (A2)
 - [ ] Browser extension: publish to the stores, or drop web chats from the first release (R5)
@@ -56,14 +62,21 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Clipboard: search, filters, pins (already built; checked 2026-11-16)
 - [x] Focus timer: long break
 - [x] Disk-space warning
-- [ ] Camera check before a call
+- [ ] Camera check a minute before a meeting, with the Join button
+- [ ] Calls: how long an app has had the microphone, click to return to the meeting, mute
 - [ ] Document conversion on the shelf (PDF, Markdown, Word)
 - [ ] `helo://` links for scripts
 - [x] Notifications from other apps, with a switch per app (works without a Store package; checked with a real toast)
 - [ ] Notifications: click the banner to open the app that sent it
+- [ ] Notifications: hide Windows' own banner while the island shows it, if Windows allows it
 - [ ] Notifications: try on Windows 11 and on a clean account (does Windows ask for permission there?)
-- [ ] Hold-to-talk dictation
-- [ ] More languages
+- [ ] Hold-to-talk dictation (see "Needs you")
+- [ ] More languages (Halo has eight)
+- [ ] Right-click menu on the island (Settings, Hide, Quit) and "step aside for a minute"
+- [ ] Timer: set the length by dragging, up to three hours
+- [ ] Music: shuffle and repeat, and the title or lyric line beside the closed island
+- [ ] Show the island on more than one display
+- [ ] Look: more than two accent colours (Halo has glass, tint, corners, shadow)
 
 ## Site
 
