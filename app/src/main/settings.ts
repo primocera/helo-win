@@ -31,7 +31,7 @@ export const DEFAULT_FEATURES: FeatureFlags = {
 export const DEFAULT_SETTINGS: Settings = {
   features: DEFAULT_FEATURES,
   notifications: { apps: {} },
-  display: { monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true },
+  display: { monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true, joined: false },
   clipboard: { maxItems: 50, images: true, expireHours: 24, paused: false },
   timer: { focusMin: 25, breakMin: 5, longBreakMin: 15, longEvery: 4 },
   battery: { lowPercent: 20 },
@@ -99,7 +99,7 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
   return {
     features,
     notifications: { apps: cleanApps(notif.apps, base.notifications.apps) },
-    display: { monitor, edge, compact, hideInFullscreen: bool(d.hideInFullscreen, base.display.hideInFullscreen), open: d.open === 'click' || d.open === 'hover' ? d.open : base.display.open, position: pos, locked: bool(d.locked, base.display.locked), accent: d.accent === 'mint' || d.accent === 'rose' ? d.accent : base.display.accent, title: bool(d.title, base.display.title) },
+    display: { monitor, edge, compact, hideInFullscreen: bool(d.hideInFullscreen, base.display.hideInFullscreen), open: d.open === 'click' || d.open === 'hover' ? d.open : base.display.open, position: pos, locked: bool(d.locked, base.display.locked), accent: d.accent === 'mint' || d.accent === 'rose' ? d.accent : base.display.accent, title: bool(d.title, base.display.title), joined: bool(d.joined, base.display.joined) },
     clipboard: { maxItems: int(c.maxItems, 5, 200, base.clipboard.maxItems), images: bool(c.images, base.clipboard.images), expireHours: int(c.expireHours, 0, 720, base.clipboard.expireHours), paused: bool(c.paused, base.clipboard.paused) },
     timer: {
       focusMin: int(t.focusMin, 1, 180, base.timer.focusMin),

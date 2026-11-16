@@ -277,6 +277,8 @@ export function App() {
   const near = Math.abs(look.x) < 0.38 && Math.abs(look.y) < 0.5;
   // Just the face while idle, when a browser is in front or the user chose it.
   const compact = state.faceOnly && mode === 'idle';
+  // Joined, the face is the island's left end. Alone in the middle (face only) there is nothing to join.
+  const joined = state.settings.display.joined && state.settings.features.mascot && !compact;
   const brokenNote = state.agents.claude.note.startsWith('Port ');
   const face: Face = faceFor({
     mood: strongestMood(state.agents.mood, watchMood(Boolean(state.finished.watch), state.finished.doneAt, now)),
@@ -290,13 +292,13 @@ export function App() {
   });
 
   return (
-    <div className={`stage ${bottom ? 'edge-bottom' : 'edge-top'} ${smoke?.backdrop ? 'backdrop' : ''} ${state.place.floating ? 'floating' : ''} ${dragging ? 'dragging' : ''} ${compact ? 'face-only' : ''}`}>
+    <div className={`stage ${bottom ? 'edge-bottom' : 'edge-top'} ${smoke?.backdrop ? 'backdrop' : ''} ${state.place.floating ? 'floating' : ''} ${dragging ? 'dragging' : ''} ${compact ? 'face-only' : ''} ${joined ? 'joined' : ''}`}>
       {smoke?.faces ? <FaceSheet /> : (
         <>
           {state.settings.features.mascot && (
             <div
               className="blink"
-              style={{ right: compact ? 'calc(50% - 24px)' : `calc(50% + ${width / 2 + 10}px)` }}
+              style={{ right: compact ? 'calc(50% - 24px)' : `calc(50% + ${width / 2 + (joined ? -1 : 10)}px)` }}
               onMouseEnter={onEnter}
               onMouseLeave={onLeave}
               onClick={openOnClick}

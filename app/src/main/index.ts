@@ -1969,7 +1969,7 @@ function sendCursor() {
   const p = screen.getCursorScreenPoint();
   const b = island.getBounds();
   const top = state.place.edge === 'top';
-  const cx = b.x + b.width / 2 - (state.faceOnly ? 0 : 130);
+  const cx = b.x + b.width / 2 - (state.faceOnly ? 0 : settings.display.joined ? 120 : 130);
   const cy = top ? b.y + 16 : b.y + b.height - 16;
   const x = Math.max(-1, Math.min(1, (p.x - cx) / 400));
   const y = Math.max(-1, Math.min(1, (p.y - cy) / 300));

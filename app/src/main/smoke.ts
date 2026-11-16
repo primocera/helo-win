@@ -238,6 +238,22 @@ export async function runSmoke(ctx: SmokeCtx) {
     push({ settings: { ...ctx.state.settings, display: { ...ctx.state.settings.display, edge: 'top' } }, place: { edge: 'top', floating: false } });
     smoke({ faces: true });
     await shot('20-faces', island, 1200);
+    // The face joined to the island: closed, with a banner, and open.
+    const joinedOn = { ...ctx.state.settings, display: { ...ctx.state.settings.display, joined: true } };
+    push({ settings: joinedOn, banner: null });
+    smoke({});
+    await shot('21-joined-idle');
+    push({ banner: { kind: 'done', title: 'Finished in shop-api', text: 'All 42 tests pass.', at: Date.now() } });
+    await shot('21-joined-banner');
+    push({ banner: null });
+    smoke({ panel: 'media' });
+    await shot('21-joined-panel');
+    push({ place: { edge: 'bottom', floating: false } });
+    await shot('21-joined-bottom-panel');
+    push({ place: { edge: 'top', floating: true } });
+    smoke({});
+    await shot('21-joined-floating-idle');
+    push({ place: { edge: 'top', floating: false }, settings: { ...joinedOn, display: { ...joinedOn.display, joined: false } } });
     smoke({});
 
     const settingsWin = ctx.openSettings();

@@ -556,6 +556,23 @@ input[type="range"]:disabled::-webkit-slider-runnable-track { background: linear
 /* Face only: the idle pill is hidden and the face sits alone in the middle. */
 .stage.face-only .island { opacity: 0; pointer-events: none; }
 
+/* ---- Joined: the face is the left end of the island, in one piece ----------- */
+.stage.joined .blink { border-radius: 0 0 0 var(--r); z-index: 1; }
+.stage.joined .blink::after { display: none; }
+.stage.joined .island.mode-idle { border-radius: 0 0 var(--r) 0; }
+.stage.joined .island.mode-hud, .stage.joined .island.mode-menu { border-bottom-left-radius: 6px; }
+.stage.joined .island.mode-idle::before, .stage.joined .island.mode-hud::before, .stage.joined .island.mode-menu::before { display: none; }
+/* Taller than the face: a fillet where the face's lower edge meets the island's side. */
+.stage.joined .island:not(.mode-idle)::before { top: 34px; }
+.stage.joined.edge-bottom .blink { border-radius: var(--r) 0 0 0; }
+.stage.joined.edge-bottom .island.mode-idle { border-radius: 0 var(--r) 0 0; }
+.stage.joined.edge-bottom .island.mode-hud, .stage.joined.edge-bottom .island.mode-menu { border-radius: 6px var(--r) 0 0; }
+.stage.joined.edge-bottom .island:not(.mode-idle)::before { top: auto; bottom: 34px; }
+.stage.joined.floating .blink { border-radius: var(--r) 0 0 var(--r); }
+.stage.joined.floating .island.mode-idle { border-radius: 0 var(--r) var(--r) 0; }
+.stage.joined.floating .island:not(.mode-idle) { border-radius: 0 var(--r) var(--r) var(--r); }
+.stage.joined.floating.edge-bottom .island:not(.mode-idle) { border-radius: var(--r) var(--r) var(--r) 0; }
+
 /* Clipboard search, filters and pins */
 .clip-search { flex: 1; min-width: 0; height: 26px; margin-right: 10px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--tile-2); color: var(--text); font: inherit; font-size: 12px; outline: none; }
 .clip-search:focus { border-color: var(--mint); }

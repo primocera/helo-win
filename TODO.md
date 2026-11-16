@@ -18,6 +18,17 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] **Try on a live Claude Code session:** type an answer to a question, send feedback on a plan, and see "needs your answer" come back after another banner. The list is under "Not yet tried" in `NEXT_SESSION.md`.
 - [ ] **Two choices I made for you; say if you want them changed.** Deleting the licence file still restarts the trial. A licensed PC that stays offline keeps working (Halo stops after two weeks offline).
 - [ ] **Dictation:** build hold-to-talk, or leave it to Windows' own (Win+H)? I left it out.
+- [ ] **Restart the app to see the fourth session's work.** A development copy has been running since 2026-11-15 evening; I did not close it. Quit it from the tray, then `npm start` in `app/`, or install `app/dist/Helo-Setup-0.1.0.exe`.
+- [ ] **Try the fourth session's features once:** the sound (Settings, AI agents, Play), right-click the island, a `helo://` link, shuffle and repeat with Spotify, a call (duration, Open, Mute microphone), Codex rings after a Codex run, a .docx to PDF. The list is under "Not yet tried" in `NEXT_SESSION.md`. This PC has no microphone or camera plugged in, so the call parts are untried.
+- [ ] **Choices I made for you in the fourth session; say if you want them changed.**
+  - The sound is on, at volume 60, and also plays in fullscreen (a switch turns that off).
+  - `helo://` links are on. A link can show a banner, run the timer, keep awake, offer a file to the shelf (added only after a click) or open a tab.
+  - "Hide" in the right-click menu lasts until "Show the island" in the tray menu, or until the app starts again. A card from an agent still shows.
+  - "Mute microphone" mutes it for every app, because Windows has no supported per-app mute.
+  - The song's title shows in the closed island while music plays (a switch turns that off).
+  - Documents convert to HTML and PDF only. Nothing is written as Word.
+  - Two new dependencies: `marked` (Markdown) and `mammoth` (Word files).
+- [ ] **Camera check before a meeting:** build it? It would turn the camera on by itself a minute before a meeting, so I would ship it switched off. Not built; there is also no camera on this PC to try it with.
 - [ ] **Install on a clean Windows account** and run the release checklist (R6).
 - [ ] **Film, testimonials** for the site.
 
@@ -49,7 +60,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Licence file protected with `safeStorage`; timeouts on licence calls (S10, S11)
 - [ ] Packaged build fails when store IDs are unset (R1)
 - [ ] Auto-update or a new-version check (R3)
-- [x] Rebuild the installer (`app/dist/Helo-Setup-0.1.0.exe`, built 2026-11-16, unsigned)
+- [x] Rebuild the installer (`app/dist/Helo-Setup-0.1.0.exe`, rebuilt at the end of the fourth session on 2026-11-16, unsigned)
 - [ ] A visible status line in Claude Code when the app is not running (B2, second half)
 - [ ] Move clipboard encryption to `safeStorage`'s async calls (Electron 45 marks the ones used as deprecated; they still work)
 - [ ] Precompile the Windows helper's C# (A2)
@@ -76,6 +87,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] Timer: set the length by dragging, up to three hours
 - [x] Music: shuffle and repeat (in apps that let Windows change them), and the title or lyric line beside the closed island
 - [ ] Show the island on more than one display
+- [x] Blink can be joined to the island as one piece (Settings, Features, Blink; off by default)
 - [ ] Look: more than two accent colours (Halo has glass, tint, corners, shadow)
 
 ## Site

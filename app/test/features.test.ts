@@ -28,7 +28,7 @@ test('settings: garbage falls back to defaults field by field', () => {
   expect(s.features.agents).toBe(true);
   expect('bogus' in s.features).toBe(false);
   expect(s.timer.focusMin).toBe(180);
-  expect(s.display).toEqual({ monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true });
+  expect(s.display).toEqual({ monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true, joined: false });
 });
 
 test('settings: partial updates merge and are validated', () => {
@@ -36,7 +36,7 @@ test('settings: partial updates merge and are validated', () => {
   expect(s.features.lyrics).toBe(true);
   expect(s.features.media).toBe(true);
   expect(s.clipboard.maxItems).toBe(5);
-  expect(s.display).toEqual({ monitor: 7, edge: 'bottom', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true });
+  expect(s.display).toEqual({ monitor: 7, edge: 'bottom', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true, joined: false });
 });
 
 test('settings: calendar URL must be http(s); webcal is rewritten', () => {

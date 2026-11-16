@@ -218,7 +218,7 @@ export const changelog: { version: string; date: string | null; summary: string;
       {
         title: "The island",
         items: [
-          `${product.mascot}, a face that follows your pointer and shows what your agents are doing.`,
+          `${product.mascot}, a face that follows your pointer and shows what your agents are doing. It sits beside the island, or joined to it as one piece.`,
           "Right-click the island for Settings, Hide and Quit, or to have it step aside for a minute.",
           "Music controls with artwork, shuffle and repeat, the song's title beside the closed island, and synced lyrics if you turn them on.",
           "Notifications from other apps, with a switch for each app. Click one to open the app.",

@@ -300,7 +300,11 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
     <>
       <h1>Features</h1>
       <Group title="Island">
-        <FeatureRow {...p} k="mascot" label={MASCOT_NAME} hint="A small face beside the island that follows your pointer and shows what your agents are doing." />
+        <FeatureRow {...p} k="mascot" label={MASCOT_NAME} hint="A small face beside the island that follows your pointer and shows what your agents are doing.">
+          <Row label="Join it to the island" hint={`On, ${MASCOT_NAME} is the left end of the island, in one piece. Off, it sits beside the island with a gap.`}>
+            <Switch label={`Join ${MASCOT_NAME} to the island`} on={s.display.joined} onChange={(v) => update({ display: { joined: v } })} />
+          </Row>
+        </FeatureRow>
         <FeatureRow {...p} k="hud" label="Volume HUD" hint="Show volume changes in the island (and brightness on laptops that report it)." />
       </Group>
       <Group title="Media">

@@ -310,6 +310,8 @@ export interface Settings {
     accent: 'mint' | 'rose';
     /** The song's title (or the lyric line being sung) shows in the closed island while music plays. */
     title: boolean;
+    /** The face is the left end of the island, one shape, instead of sitting beside it with a gap. */
+    joined: boolean;
   };
   /** `expireHours`: unpinned copies are forgotten after this long (0 = never). `paused`: nothing new is saved. */
   clipboard: { maxItems: number; images: boolean; expireHours: number; paused: boolean };
