@@ -40,6 +40,7 @@ import { SessionWindows, parseForeground } from './windows';
 import { shouldChime } from './sound';
 import { parseLink, findLink, shownPath, LinkLimiter, LINK_SCHEME } from './links';
 import { formatDuration } from '../shared/time';
+import { nextRepeat } from '../shared/playback';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
 import type {
   AgentName, Banner, Behavior, ConnectionState, ConvertFormat, FinishedItem, IslandState, PermissionView, Settings, SettingsInfo,
@@ -1556,8 +1557,16 @@ function registerIpc() {
   on('media', isIsland, (_e, msg) => {
     const m = msg as { action?: unknown; positionMs?: unknown };
     const action = str(m?.action);
-    if (!['toggle', 'next', 'previous', 'seek'].includes(action) || !helper) return;
-    const value = typeof m.positionMs === 'number' && Number.isFinite(m.positionMs) ? Math.max(0, m.positionMs) : undefined;
+    if (!['toggle', 'next', 'previous', 'seek', 'shuffle', 'repeat'].includes(action) || !helper) return;
+    let value: number | boolean | string | undefined = typeof m.positionMs === 'number' && Number.isFinite(m.positionMs) ? Math.max(0, m.positionMs) : undefined;
+    // The page only says "shuffle" or "repeat"; what it changes to is worked out here.
+    if (action === 'shuffle') {
+      if (!state.media?.canShuffle) return;
+      value = !state.media.shuffle;
+    } else if (action === 'repeat') {
+      if (!state.media?.canRepeat) return;
+      value = nextRepeat(state.media.repeat);
+    }
     helper.request('media', { action, value }).catch((err) => log(`media ${action}: ${err.message}`));
   });
   on('timer', isIsland, (_e, action) => {

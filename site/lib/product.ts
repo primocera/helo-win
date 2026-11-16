@@ -44,7 +44,7 @@ export const headline: Feature[] = [
   },
   {
     title: "Your music, one glance away",
-    text: "Title, artwork and play controls for whatever Windows is playing, from Spotify to a browser tab.",
+    text: "Title, artwork and play controls for whatever Windows is playing, from Spotify to a browser tab. The song's title sits beside the closed island while it plays.",
     shipped: true,
   },
 ];
@@ -140,7 +140,7 @@ export const specs: { name: string; lines: string[] }[] = [
   {
     name: "Music",
     // winhelper.ps1 reads Windows' media sessions; lyrics.ts
-    lines: ["Any app that shows in Windows' media controls", "Synced lyrics from lrclib.net, off until you turn them on"],
+    lines: ["Any app that shows in Windows' media controls", "Shuffle and repeat, in apps that let Windows change them", "Synced lyrics from lrclib.net, off until you turn them on"],
   },
   {
     name: "Monitors",
@@ -217,7 +217,7 @@ export const changelog: { version: string; date: string | null; summary: string;
         items: [
           `${product.mascot}, a face that follows your pointer and shows what your agents are doing.`,
           "Right-click the island for Settings, Hide and Quit, or to have it step aside for a minute.",
-          "Music controls with artwork, and synced lyrics if you turn them on.",
+          "Music controls with artwork, shuffle and repeat, the song's title beside the closed island, and synced lyrics if you turn them on.",
           "Notifications from other apps, with a switch for each app. Click one to open the app.",
           "Focus timer with a long break, clipboard history, notes, file shelf and image converter.",
           "Calendar from an iCal address, with a Join button for Zoom, Meet, Teams and Webex.",

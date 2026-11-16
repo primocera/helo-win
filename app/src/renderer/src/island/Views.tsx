@@ -34,7 +34,8 @@ export function Bars({ playing }: { playing: boolean }) {
   );
 }
 
-export function IdleView({ state, now }: { state: IslandState; now: number }) {
+/** `song`: the title or lyric line to show beside the bars, or ''. */
+export function IdleView({ state, now, song }: { state: IslandState; now: number; song: string }) {
   const playing = state.media?.status === 'Playing';
   const t = state.timer;
   const timerOn = state.settings.features.timer && t.running && t.endsAt != null;
@@ -50,6 +51,8 @@ export function IdleView({ state, now }: { state: IslandState; now: number }) {
             <Icon name="timer" size={12} />
             {formatShort(left)}
           </span>
+        ) : song ? (
+          <span className="idle-song">{song}</span>
         ) : trial && !playing ? (
           <span className="idle-trial">{trial}</span>
         ) : null}

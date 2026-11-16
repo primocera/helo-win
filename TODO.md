@@ -74,7 +74,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] More languages (Halo has eight)
 - [x] Right-click menu on the island (Settings, Step aside 1 min, Hide, Quit); the same in the tray menu, with "Show the island"
 - [ ] Timer: set the length by dragging, up to three hours
-- [ ] Music: shuffle and repeat, and the title or lyric line beside the closed island
+- [x] Music: shuffle and repeat (in apps that let Windows change them), and the title or lyric line beside the closed island
 - [ ] Show the island on more than one display
 - [ ] Look: more than two accent colours (Halo has glass, tint, corners, shadow)
 

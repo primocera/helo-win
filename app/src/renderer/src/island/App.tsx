@@ -4,6 +4,7 @@ import { IdleView, BannerView, CardView, HudView, MenuView } from './Views';
 import { Panel, visibleTabs } from './Panel';
 import { BlinkFace, FACE_LABELS } from './Blink';
 import { playChime } from './sound';
+import { idleSong } from '../../../shared/playback';
 import { faceFor, strongestMood, watchMood } from '../../../shared/face';
 import type { Behavior, ConvertFormat, Face, IslandState, PanelTab, SmokeView } from '../../../shared/types';
 
@@ -11,6 +12,8 @@ type Mode = 'idle' | 'banner' | 'card' | 'hud' | 'panel' | 'menu';
 
 const WIDTH: Record<Mode, number> = { idle: 214, banner: 440, card: 488, hud: 300, panel: 648, menu: 396 };
 const FIXED_HEIGHT: Partial<Record<Mode, number>> = { idle: 34, banner: 62, hud: 40, menu: 44 };
+/** The closed island with a song title in it. */
+const SONG_WIDTH = 320;
 const OPEN_DELAY = 220;
 // While idle and locked in place the island lets clicks through to what is under it
 // (browser tabs, title bars). Resting the pointer on it this long opens the panel instead.
@@ -264,7 +267,9 @@ export function App() {
   };
 
   const decide = (id: string, b: Behavior) => window.helo.decide(id, b);
-  const width = mode === 'panel' && activeTab === 'map' ? MAP_WIDTH : WIDTH[mode];
+  // While music plays the closed island is wider, to fit the song's title.
+  const song = mode === 'idle' ? idleSong(state, now) : '';
+  const width = mode === 'panel' && activeTab === 'map' ? MAP_WIDTH : song ? SONG_WIDTH : WIDTH[mode];
   const height = FIXED_HEIGHT[mode] ?? Math.max(60, contentHeight);
   const bottom = state.place.edge === 'bottom';
   const isHover = hovered || Boolean(smoke?.hover);
@@ -316,7 +321,7 @@ export function App() {
             onDrop={onDrop}
           >
             <div className="island-content" ref={contentRef} key={mode}>
-              {mode === 'idle' && <IdleView state={state} now={now} />}
+              {mode === 'idle' && <IdleView state={state} now={now} song={song} />}
               {mode === 'banner' && state.banner && <BannerView banner={state.banner} now={now} />}
               {mode === 'card' && <CardView request={state.requests[0]} more={state.requests.length - 1} onDecide={decide} />}
               {mode === 'hud' && state.hud && <HudView hud={state.hud} />}

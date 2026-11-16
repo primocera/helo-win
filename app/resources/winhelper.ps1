@@ -526,6 +526,10 @@ function Poll-Media([bool]$force) {
       canNext = [bool]$c.IsNextEnabled
       canPrevious = [bool]$c.IsPreviousEnabled
       canSeek = [bool]$c.IsPlaybackPositionEnabled
+      canShuffle = [bool]$c.IsShuffleEnabled
+      canRepeat = [bool]$c.IsRepeatEnabled
+      shuffle = ($info.IsShuffleActive -eq $true)
+      repeat = [string]$info.AutoRepeatMode
       positionMs = [math]::Round($tl.Position.TotalMilliseconds)
       startMs = [math]::Round($tl.StartTime.TotalMilliseconds)
       endMs = [math]::Round($tl.EndTime.TotalMilliseconds)
@@ -550,6 +554,13 @@ function Invoke-Media($action, $value) {
     'next' { return Await ($session.TrySkipNextAsync()) ([bool]) }
     'previous' { return Await ($session.TrySkipPreviousAsync()) ([bool]) }
     'seek' { return Await ($session.TryChangePlaybackPositionAsync([long]([double]$value * 10000))) ([bool]) }
+    'shuffle' { return Await ($session.TryChangeShuffleActiveAsync([bool]$value)) ([bool]) }
+    'repeat' {
+      if (@('None', 'Track', 'List') -notcontains [string]$value) { return $false }
+      $null = [Windows.Media.MediaPlaybackAutoRepeatMode, Windows.Media, ContentType = WindowsRuntime]
+      $mode = [Enum]::Parse([Windows.Media.MediaPlaybackAutoRepeatMode], [string]$value)
+      return Await ($session.TryChangeAutoRepeatModeAsync($mode)) ([bool])
+    }
   }
   return $false
 }

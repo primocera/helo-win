@@ -171,6 +171,11 @@ function NowPlaying({ state, now }: { state: IslandState; now: number }) {
         </div>
       )}
       <div className="controls">
+        {m.canShuffle && (
+          <button type="button" className={`ctl mode ${m.shuffle ? 'on' : ''}`} aria-pressed={m.shuffle} onClick={() => window.helo.media('shuffle')} title={m.shuffle ? 'Shuffle is on' : 'Shuffle'}>
+            <Icon name="shuffle" size={15} />
+          </button>
+        )}
         <button type="button" className="ctl" disabled={!m.canPrevious} onClick={() => window.helo.media('previous')} title="Previous">
           <Icon name="previous" size={16} />
         </button>
@@ -180,6 +185,17 @@ function NowPlaying({ state, now }: { state: IslandState; now: number }) {
         <button type="button" className="ctl" disabled={!m.canNext} onClick={() => window.helo.media('next')} title="Next">
           <Icon name="next" size={16} />
         </button>
+        {m.canRepeat && (
+          <button
+            type="button"
+            className={`ctl mode ${m.repeat !== 'None' ? 'on' : ''}`}
+            aria-pressed={m.repeat !== 'None'}
+            onClick={() => window.helo.media('repeat')}
+            title={m.repeat === 'Track' ? 'Repeating this track' : m.repeat === 'List' ? 'Repeating the list' : 'Repeat'}
+          >
+            <Icon name={m.repeat === 'Track' ? 'repeatOne' : 'repeat'} size={15} />
+          </button>
+        )}
       </div>
     </div>
   );

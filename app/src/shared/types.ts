@@ -120,6 +120,9 @@ export interface ConnectionState {
   note: string;
 }
 
+/** Repeat nothing, the whole list, or the one track. The names are Windows' own. */
+export type RepeatMode = 'None' | 'List' | 'Track';
+
 export interface MediaState {
   app: string;
   title: string;
@@ -131,6 +134,11 @@ export interface MediaState {
   canNext: boolean;
   canPrevious: boolean;
   canSeek: boolean;
+  /** The app lets shuffle and repeat be changed from outside (Spotify does; most browsers do not). */
+  canShuffle: boolean;
+  canRepeat: boolean;
+  shuffle: boolean;
+  repeat: RepeatMode;
   positionMs: number;
   startMs: number;
   endMs: number;
@@ -293,6 +301,8 @@ export interface Settings {
     locked: boolean;
     /** The colour of the bars, the timer, Blink's blush and other highlights. */
     accent: 'mint' | 'rose';
+    /** The song's title (or the lyric line being sung) shows in the closed island while music plays. */
+    title: boolean;
   };
   /** `expireHours`: unpinned copies are forgotten after this long (0 = never). `paused`: nothing new is saved. */
   clipboard: { maxItems: number; images: boolean; expireHours: number; paused: boolean };
@@ -465,7 +475,7 @@ export interface HeloApi {
   typing(on: boolean): void;
   /** Leaves a question or plan for the terminal. */
   skip(id: string): void;
-  media(action: 'toggle' | 'next' | 'previous' | 'seek', positionMs?: number): void;
+  media(action: 'toggle' | 'next' | 'previous' | 'seek' | 'shuffle' | 'repeat', positionMs?: number): void;
   timer(action: 'start' | 'pause' | 'reset' | 'skip'): void;
   clipCopy(id: string): void;
   clipRemove(id: string): void;

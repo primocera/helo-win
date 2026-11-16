@@ -83,7 +83,7 @@ export async function runSmoke(ctx: SmokeCtx) {
     push({
       media: {
         app: 'Spotify.exe', title: 'Night Drive', artist: 'The Sample Band', album: 'Demo Tapes', status: 'Playing',
-        canPlay: true, canPause: true, canNext: true, canPrevious: true, canSeek: true,
+        canPlay: true, canPause: true, canNext: true, canPrevious: true, canSeek: true, canShuffle: true, canRepeat: true, shuffle: true, repeat: 'None',
         positionMs: 72_000, startMs: 0, endMs: 214_000, updatedAt: now, art: sampleArt(),
       },
       lyrics: {

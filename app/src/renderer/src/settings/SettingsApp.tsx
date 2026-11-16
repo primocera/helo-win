@@ -304,7 +304,11 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
         <FeatureRow {...p} k="hud" label="Volume HUD" hint="Show volume changes in the island (and brightness on laptops that report it)." />
       </Group>
       <Group title="Media">
-        <FeatureRow {...p} k="media" label="Now Playing" hint="Title, artwork and controls for whatever Windows is playing." />
+        <FeatureRow {...p} k="media" label="Now Playing" hint="Title, artwork and controls for whatever Windows is playing.">
+          <Row label="Show the song in the closed island" hint="The title while music plays, or the line being sung when synced lyrics are on.">
+            <Switch label="Song in the closed island" on={s.display.title} onChange={(v) => update({ display: { title: v } })} />
+          </Row>
+        </FeatureRow>
         <FeatureRow {...p} k="lyrics" label="Synced lyrics" hint="Looks up lyrics on lrclib.net. This sends the song title and artist to that site." />
       </Group>
       <Group title="Productivity">
