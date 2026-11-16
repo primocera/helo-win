@@ -548,8 +548,64 @@ function Get-Brightness {
   }
 }
 
+# ---- WinRT: notifications from other apps ---------------------------------------
+# Windows keeps the list (the same one Action Center shows). This reads it once a second and
+# reports the ones that are new. The first read only notes what is already there.
+$notifListener = $null
+$notifSeen = $null
+$notifStatus = ''
+$notifAsked = $false
+$notifFailures = 0
+
+function Poll-Notifications {
+  if ($null -eq $asTask -or $script:notifFailures -ge 5) { return }
+  try {
+    if ($null -eq $script:notifListener) {
+      $null = [Windows.UI.Notifications.Management.UserNotificationListener, Windows.UI.Notifications, ContentType = WindowsRuntime]
+      $null = [Windows.UI.Notifications.NotificationKinds, Windows.UI.Notifications, ContentType = WindowsRuntime]
+      $null = [Windows.UI.Notifications.KnownNotificationBindings, Windows.UI.Notifications, ContentType = WindowsRuntime]
+      $script:notifListener = [Windows.UI.Notifications.Management.UserNotificationListener]::Current
+    }
+    $status = "$($script:notifListener.GetAccessStatus())"
+    if ($status -eq 'Unspecified' -and -not $script:notifAsked) {
+      # Windows may ask the user once. Wait for the answer, but not for ever.
+      $script:notifAsked = $true
+      try {
+        $status = "$(Await ($script:notifListener.RequestAccessAsync()) ([Windows.UI.Notifications.Management.UserNotificationListenerAccessStatus]) 30000)"
+      } catch { }
+    }
+    if ($status -ne $script:notifStatus) {
+      $script:notifStatus = $status
+      Send @{ type = 'notifications-access'; status = $status }
+    }
+    if ($status -ne 'Allowed') { return }
+    $listType = [System.Collections.Generic.IReadOnlyList[Windows.UI.Notifications.UserNotification]]
+    $list = Await ($script:notifListener.GetNotificationsAsync([Windows.UI.Notifications.NotificationKinds]::Toast)) $listType
+    $first = $null -eq $script:notifSeen
+    $now = @{}
+    foreach ($item in $list) {
+      $id = [string]$item.Id
+      $now[$id] = $true
+      if ($first -or $script:notifSeen.ContainsKey($id)) { continue }
+      $app = ''
+      try { $app = [string]$item.AppInfo.DisplayInfo.DisplayName } catch { }
+      $lines = @()
+      try {
+        $binding = $item.Notification.Visual.GetBinding([Windows.UI.Notifications.KnownNotificationBindings]::ToastGeneric)
+        if ($binding) { foreach ($t in $binding.GetTextElements()) { $lines += [string]$t.Text } }
+      } catch { }
+      Send @{ type = 'notification'; id = $id; app = $app; lines = @($lines) }
+    }
+    $script:notifSeen = $now
+    $script:notifFailures = 0
+  } catch {
+    $script:notifFailures++
+    if ($script:notifFailures -eq 5) { Send @{ type = 'error'; where = 'notifications'; message = $_.Exception.Message } }
+  }
+}
+
 # ---- Main loop ----------------------------------------------------------------
-$features = @{ media = $false; volume = $false; privacy = $false; power = $false; clipboard = $false; brightness = $false }
+$features = @{ media = $false; volume = $false; privacy = $false; power = $false; clipboard = $false; brightness = $false; notifications = $false }
 $lastVolume = ''
 $lastMic = $null
 $lastCam = $null
@@ -621,6 +677,7 @@ while ($true) {
       }
     }
     if ($features.media -and ($tick % 5 -eq 0)) { Poll-Media $false }
+    if ($features.notifications -and ($tick % 10 -eq 5)) { Poll-Notifications }
     if ($features.privacy -and ($tick % 10 -eq 0)) {
       $mic = [HeloHelper.Privacy]::InUse('microphone')
       $cam = [HeloHelper.Privacy]::InUse('webcam')

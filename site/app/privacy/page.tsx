@@ -41,6 +41,10 @@ export default function PrivacyPage() {
           {n} on your own machine (address 127.0.0.1). Other computers cannot reach it, and {n} sends none of it on.
         </li>
         <li>The work map shows the names of files and tools. It does not keep file contents.</li>
+        <li>
+          Notifications from other apps. {n} reads them from Windows to show them in the island. It shows each one
+          once and does not save it. It remembers only the names of the apps, for the per-app switches.
+        </li>
       </ul>
 
       <h2>What {n} sends</h2>

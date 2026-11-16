@@ -135,6 +135,7 @@ button { font: inherit; color: inherit; }
 .kind-download { background: #6fa8ff; }
 .kind-steam { background: #c7d5e0; }
 .kind-app { background: var(--mint); }
+.kind-notify { background: #b9a6ff; }
 .banner.clickable { cursor: pointer; }
 .banner.clickable:hover .banner-title { text-decoration: underline; }
 .idle-watch { color: var(--mint); flex: none; }

@@ -11,7 +11,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] **Terms: seller name, refund rule, governing law.** The page is drafted once these are known.
 - [ ] **Where the installer is hosted** (the site has no download; the trial needs one).
 - [ ] **Code-signing certificate** (R2). Needed before auto-update.
-- [ ] **Try on a live session:** answer a question, approve a plan, reject a plan, the work map.
+- [x] **Try on a live session:** you tested the app on 2026-11-16 and reported that the map and everything else works.
 - [ ] **Try Gemini CLI and Cursor once** (built from their docs; neither is installed on this PC).
 - [ ] **Install on a clean Windows account** and run the release checklist (R6).
 - [ ] **Film, testimonials** for the site.
@@ -57,7 +57,9 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] Camera check before a call
 - [ ] Document conversion on the shelf (PDF, Markdown, Word)
 - [ ] `helo://` links for scripts
-- [ ] Notifications from other apps (needs an MSIX-packaged build)
+- [x] Notifications from other apps, with a switch per app (works without a Store package; checked with a real toast)
+- [ ] Notifications: click the banner to open the app that sent it
+- [ ] Notifications: try on Windows 11 and on a clean account (does Windows ask for permission there?)
 - [ ] Hold-to-talk dictation
 - [ ] More languages
 
@@ -71,4 +73,4 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] Tech specs section
 - [ ] Changelog page
 - [ ] More FAQ questions (fullscreen, which agents, do I need Claude Code)
-- [ ] Deploy the updated copy (Gemini CLI and Cursor are mentioned only locally)
+- [x] Deploy the updated copy (pushed to main on 2026-11-16)

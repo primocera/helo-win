@@ -1,6 +1,7 @@
 // User settings: defaults, validation of anything read from disk or sent by a
 // renderer, and partial updates.
 import type { FeatureFlags, Settings } from '../shared/types';
+import { cleanApps } from './notifications';
 
 export const DEFAULT_FEATURES: FeatureFlags = {
   agents: true,
@@ -23,10 +24,12 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   downloads: true,
   steam: true,
   watchApp: true,
+  notifications: true,
 };
 
 export const DEFAULT_SETTINGS: Settings = {
   features: DEFAULT_FEATURES,
+  notifications: { apps: {} },
   display: { monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint' },
   clipboard: { maxItems: 50, images: true },
   timer: { focusMin: 25, breakMin: 5 },
@@ -85,8 +88,10 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
   const cal = isObj(r.calendar) ? r.calendar : {};
   const fin = isObj(r.finished) ? r.finished : {};
   const sh = isObj(r.shelf) ? r.shelf : {};
+  const notif = isObj(r.notifications) ? r.notifications : {};
   return {
     features,
+    notifications: { apps: cleanApps(notif.apps, base.notifications.apps) },
     display: { monitor, edge, compact, hideInFullscreen: bool(d.hideInFullscreen, base.display.hideInFullscreen), open: d.open === 'click' || d.open === 'hover' ? d.open : base.display.open, position: pos, locked: bool(d.locked, base.display.locked), accent: d.accent === 'mint' || d.accent === 'rose' ? d.accent : base.display.accent },
     clipboard: { maxItems: int(c.maxItems, 5, 200, base.clipboard.maxItems), images: bool(c.images, base.clipboard.images) },
     timer: { focusMin: int(t.focusMin, 1, 180, base.timer.focusMin), breakMin: int(t.breakMin, 1, 60, base.timer.breakMin) },

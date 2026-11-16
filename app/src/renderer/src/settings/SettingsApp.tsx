@@ -285,6 +285,13 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
         <FeatureRow {...p} k="battery" label="Battery" hint="Plugged in, unplugged, full and low battery alerts, plus the battery level of connected Bluetooth devices that report one.">
           <Row label="Low battery at"><NumberField label="Low battery percent" value={s.battery.lowPercent} min={5} max={50} suffix="%" onChange={(n) => update({ battery: { lowPercent: n } })} /></Row>
         </FeatureRow>
+        <FeatureRow {...p} k="notifications" label="Notifications from other apps" hint="Shows other apps' Windows notifications as a banner in the island. They are shown once and not saved. An app appears below after its first notification.">
+          {Object.keys(s.notifications.apps).sort((a, b) => a.localeCompare(b)).map((name) => (
+            <Row key={name} label={name}>
+              <Switch label={`Notifications from ${name}`} on={s.notifications.apps[name]} onChange={(v) => update({ notifications: { apps: { ...s.notifications.apps, [name]: v } } })} />
+            </Row>
+          ))}
+        </FeatureRow>
         <FeatureRow {...p} k="privacy" label="Microphone & camera indicator" hint="Shows when an app starts using the microphone or camera." />
         <FeatureRow {...p} k="displays" label="Monitor controls" hint="Brightness, contrast and input switching for external monitors that support DDC/CI." />
       </Group>

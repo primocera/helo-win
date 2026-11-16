@@ -14,8 +14,8 @@ export const product = {
   siteUrl: "https://helo-win.vercel.app",
   // How many features have their own on/off switch in Settings: the keys of DEFAULT_FEATURES in
   // app/src/main/settings.ts (agents, map, usage, mascot, media, lyrics, timer, clipboard, notes, shelf, keepAwake,
-  // battery, privacy, hud, displays, calendar, converter, downloads, steam, watchApp). Recount when that list changes.
-  featureSwitches: 20,
+  // battery, privacy, hud, displays, calendar, converter, downloads, steam, watchApp, notifications). Recount when that list changes.
+  featureSwitches: 21,
 };
 
 // The inputs the island offers on a monitor that reports its input over DDC/CI (DDC_INPUTS in app/src/main/winhelper.ts).
@@ -48,6 +48,7 @@ export const headline: Feature[] = [
 ];
 
 export const utilities: Feature[] = [
+  { title: "Notifications", text: "Other apps' Windows notifications show in the island, with a switch for each app.", shipped: true },
   { title: "Focus timer", text: "Work and break sessions that count down in the island.", shipped: true },
   { title: "Clipboard history", text: "Text and images you copied, one click to copy again.", shipped: true },
   { title: "Notes", text: "A scratchpad that saves as you type.", shipped: true },
@@ -85,6 +86,6 @@ export const faq: { q: string; a: string }[] = [
   },
   {
     q: "What data leaves my PC?",
-    a: `There is no account. Your license key is checked with the store when you activate it, and again when ${product.name} starts if the last check is a week old. If you turn on synced lyrics (they are off at first), the song's title and artist, and its album and length when known, go to lrclib.net. If you add a calendar, ${product.name} fetches the address you gave it, every 15 minutes. Notes, clipboard history, files on the shelf and settings stay on your PC.`,
+    a: `There is no account. Your license key is checked with the store when you activate it, and again when ${product.name} starts if the last check is a week old. If you turn on synced lyrics (they are off at first), the song's title and artist, and its album and length when known, go to lrclib.net. If you add a calendar, ${product.name} fetches the address you gave it, every 15 minutes. Notes, clipboard history, files on the shelf and settings stay on your PC. Other apps' notifications are shown and not saved.`,
   },
 ];

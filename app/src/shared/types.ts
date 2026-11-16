@@ -52,7 +52,7 @@ export interface PermissionView {
   receivedAt: number;
 }
 
-export type BannerKind = 'done' | 'input' | 'info' | 'warn' | 'timer' | 'battery' | 'calendar' | 'privacy' | 'download' | 'steam' | 'app';
+export type BannerKind = 'done' | 'input' | 'info' | 'warn' | 'timer' | 'battery' | 'calendar' | 'privacy' | 'download' | 'steam' | 'app' | 'notify';
 
 export interface Banner {
   kind: BannerKind;
@@ -255,12 +255,16 @@ export interface FeatureFlags {
   downloads: boolean;
   steam: boolean;
   watchApp: boolean;
+  /** Banners for other apps' Windows notifications. */
+  notifications: boolean;
 }
 
 export type Edge = 'top' | 'bottom';
 
 export interface Settings {
   features: FeatureFlags;
+  /** Apps whose notifications have been seen, and whether each is shown (app name -> on). */
+  notifications: { apps: Record<string, boolean> };
   /** compact: when the idle island shrinks to just the face. */
   display: {
     monitor: 'primary' | number;

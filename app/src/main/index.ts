@@ -32,6 +32,7 @@ import { BusyIdleDetector } from './finished';
 import { listStartupApps, setStartupApp } from './startup-apps';
 import { faceOnly } from '../shared/face';
 import { ChangeTracker, changeText } from './changes';
+import { notificationFromRaw, notificationBanner, rememberApp } from './notifications';
 import { formatDuration } from '../shared/time';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
 import type {
@@ -469,9 +470,9 @@ function applySettings(prev: Settings | null) {
 
 function syncHelperFeatures() {
   const f = settings.features;
-  const wantHelper = f.media || f.hud || f.privacy || f.battery || f.clipboard || f.displays;
+  const wantHelper = f.media || f.hud || f.privacy || f.battery || f.clipboard || f.displays || f.notifications;
   if (!helper) return;
-  helper.setFeatures({ media: f.media, volume: f.hud, privacy: f.privacy, power: f.battery, clipboard: f.clipboard, brightness: f.hud });
+  helper.setFeatures({ media: f.media, volume: f.hud, privacy: f.privacy, power: f.battery, clipboard: f.clipboard, brightness: f.hud, notifications: f.notifications });
   if (wantHelper && helper.status === 'off') helper.start();
   if (!wantHelper && helper.status !== 'off') helper.stop();
   if (!f.media) push({ media: null, lyrics: null });
@@ -849,6 +850,27 @@ function onHelperMessage(msg: HelperMessage) {
       const banner = privacyBanner(state.privacy, next);
       push({ privacy: next });
       if (banner && settings.features.privacy) showBanner(banner, 5000);
+      break;
+    }
+    case 'notification': {
+      if (!settings.features.notifications || license.status().state === 'expired') break;
+      const n = notificationFromRaw(msg);
+      if (!n) break;
+      const apps = rememberApp(settings.notifications.apps, n.app);
+      if (apps !== settings.notifications.apps) {
+        settings = updateSettings(settings, { notifications: { apps } });
+        writeJson(userFile('settings.json'), settings);
+        push({ settings });
+      }
+      // A card or a "needs your answer" banner is more urgent than another app's message.
+      if (pending.size > 0 || state.banner?.kind === 'input') break;
+      showBanner(notificationBanner(n, settings.notifications.apps, [config.appName, 'Electron']), 6000);
+      break;
+    }
+    case 'notifications-access': {
+      if (msg.status === 'Denied' && settings.features.notifications) {
+        showBanner({ kind: 'warn', title: 'Notifications are blocked', text: 'Allow them in Windows Settings, Privacy, Notifications.' }, 8000);
+      }
       break;
     }
     case 'power': {

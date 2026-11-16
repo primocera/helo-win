@@ -41,6 +41,7 @@ files (they never touch `~/.claude` or `~/.codex`):
 | File shelf | Drop files on the island, drag them out into any app, convert images (PNG/JPG/WebP); new screenshots are added by themselves | Keeps paths, not copies; `fs.watch` on Pictures\Screenshots (Win+PrtScn and Snipping Tool autosave; Win+Shift+S only copies, so it lands in clipboard history instead) |
 | Finished alerts | Browser downloads finished; Steam game downloaded/updated; an app you pick closed or went quiet (an estimate) | `fs.watch` on Downloads and Steam's `appmanifest_*.acf`; CPU of the process tree for the app watch |
 | System | Keep awake, volume HUD and slider, battery alerts, Bluetooth device battery levels, microphone/camera in use, external monitor brightness, contrast and input switching | Electron power save blocker; Core Audio, GetSystemPowerStatus, the privacy consent store and DDC/CI (VCP 0x10, 0x12, 0x60) through the helper; Bluetooth levels from the device property Windows itself shows, read by a short PowerShell run every 5 minutes |
+| Notifications | Other apps' Windows notifications as a banner, with a switch per app (an app is listed after its first notification); nothing is saved; skipped while an agent card or a "needs your answer" banner is up | `UserNotificationListener` (WinRT) through the helper, read once a second. On the development PC (Windows 10 22H2) access is already allowed for an unpackaged app; where Windows says "Unspecified" the helper asks once |
 | Calendar | Next events from a private iCal (.ics) address, reminder 5 minutes before | ical.js (handles repeats and time zones) |
 | Blink | Face beside the island: calm, happy (hover), thinking (agent working or app watch), needs you, done, napping, something broke; eyes follow the pointer | SVG paths that morph between moods |
 | Settings | Turn each feature on/off, start with Windows (installed app), which display, top or bottom edge, license | |
@@ -64,7 +65,7 @@ files (they never touch `~/.claude` or `~/.codex`):
 
 ### Not included
 
-OpenCode (its plugin docs do not say whether a plugin may wait for the user's answer), hold-to-talk dictation, mirroring other apps' Windows notifications (needs an MSIX-packaged app with the notification-listener capability), and typing a free-text answer or plan feedback on the island (those go to the terminal). Not testable on the development PC: laptop screen brightness (desktop PC), Bluetooth battery levels (no connected device reports one), and actually switching a monitor's input (reading it is tested; switching was not tried because it can blank the screen).
+OpenCode (its plugin docs do not say whether a plugin may wait for the user's answer), hold-to-talk dictation, and typing a free-text answer or plan feedback on the island (those go to the terminal). Not testable on the development PC: laptop screen brightness (desktop PC), Bluetooth battery levels (no connected device reports one), and actually switching a monitor's input (reading it is tested; switching was not tried because it can blank the screen).
 
 ## game/ — Plaza (foundations for an original 2D hangout game)
 

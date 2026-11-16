@@ -31,6 +31,7 @@ export interface HelperFeatures {
   power: boolean;
   clipboard: boolean;
   brightness: boolean;
+  notifications: boolean;
 }
 
 export type HelperMessage = Record<string, unknown> & { type: string };
@@ -51,7 +52,7 @@ export class WinHelper extends EventEmitter {
   private proc: ChildProcessWithoutNullStreams | null = null;
   private nextId = 1;
   private pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: NodeJS.Timeout }>();
-  private features: HelperFeatures = { media: false, volume: false, privacy: false, power: false, clipboard: false, brightness: false };
+  private features: HelperFeatures = { media: false, volume: false, privacy: false, power: false, clipboard: false, brightness: false, notifications: false };
   private restarts = 0;
   private stopped = false;
   private restartTimer: NodeJS.Timeout | null = null;

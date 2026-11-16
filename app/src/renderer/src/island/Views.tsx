@@ -79,6 +79,7 @@ const BANNER_ICON: Record<BannerKind, string> = {
   download: 'download',
   steam: 'gamepad',
   app: 'bell',
+  notify: 'bell',
 };
 
 export function BannerView({ banner, now }: { banner: Banner; now: number }) {

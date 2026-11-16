@@ -268,7 +268,7 @@ test('helper: request/reply and events over stdio with a fake helper process', a
   `);
   const helper = new WinHelper({ script: fake, command: process.execPath, args: [fake] });
   const volume = new Promise((resolve) => helper.on('message', (m) => m.type === 'volume' && resolve(m)));
-  helper.setFeatures({ media: false, volume: true, privacy: false, power: false, clipboard: false, brightness: false });
+  helper.setFeatures({ media: false, volume: true, privacy: false, power: false, clipboard: false, brightness: false, notifications: false });
   helper.start();
   expect(await volume).toEqual({ type: 'volume', level: 42, muted: false });
   expect(await helper.request('ping')).toBe('pong');
