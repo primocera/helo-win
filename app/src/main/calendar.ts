@@ -6,6 +6,53 @@ import type { CalendarEvent } from '../shared/types';
 
 const MAX_ICS_BYTES = 5 * 1024 * 1024;
 
+// Hosts whose links get a Join button. Anything else in an event stays plain text.
+const MEETING_HOSTS = [
+  /(^|\.)zoom\.us$/, /(^|\.)zoomgov\.com$/,
+  /^meet\.google\.com$/,
+  /^teams\.microsoft\.com$/, /^teams\.live\.com$/,
+  /(^|\.)webex\.com$/,
+];
+
+/** True for an https link to Zoom, Google Meet, Microsoft Teams or Webex. */
+export function isMeetingLink(link: string): boolean {
+  try {
+    const u = new URL(link);
+    return u.protocol === 'https:' && !u.username && !u.password && link.length <= 1000 && MEETING_HOSTS.some((h) => h.test(u.hostname.toLowerCase()));
+  } catch {
+    return false;
+  }
+}
+
+/** The first meeting link found in the given texts (an event's link fields, location and description). */
+export function meetingLink(...texts: unknown[]): string | undefined {
+  for (const text of texts) {
+    if (typeof text !== 'string' || !text) continue;
+    for (const match of text.matchAll(/https:\/\/[^\s<>"'\\]+/gi)) {
+      // Descriptions wrap links in brackets and end sentences after them.
+      const link = match[0].replace(/[)\].,;>]+$/, '');
+      if (isMeetingLink(link)) return link;
+    }
+  }
+  return undefined;
+}
+
+/** A property of an event that may not be there, as text. */
+function prop(component: ICAL.Component, name: string): string {
+  try {
+    const v = component.getFirstPropertyValue(name);
+    return typeof v === 'string' ? v : '';
+  } catch {
+    return '';
+  }
+}
+
+/** The meeting link of one event: the calendar's own conference fields first, then the texts. */
+function joinOf(item: ICAL.Event): string | undefined {
+  const c = item.component;
+  return meetingLink(prop(c, 'x-google-conference'), prop(c, 'x-microsoft-skypeteamsmeetingurl'), prop(c, 'url'), item.location, item.description);
+}
+
 /** Events that end after `now` and start before `now + horizonMs`, soonest first. */
 export function upcomingEvents(icsText: string, now: number, horizonMs = 7 * 86_400_000, limit = 10): CalendarEvent[] {
   const root = new ICAL.Component(ICAL.parse(icsText));
@@ -34,11 +81,12 @@ export function upcomingEvents(icsText: string, now: number, horizonMs = 7 * 86_
     for (const ex of exceptions.get(event.uid) || []) event.relateException(ex);
     const status = String(v.getFirstPropertyValue('status') || '').toUpperCase();
     if (status === 'CANCELLED') continue;
-    const push = (start: ICAL.Time, end: ICAL.Time, title: string, location: string) => {
+    const push = (start: ICAL.Time, end: ICAL.Time, title: string, location: string, item: ICAL.Event = event) => {
       const s = start.toJSDate().getTime();
       const e = end.toJSDate().getTime();
       if (e > now && s < until) {
-        out.push({ title: (title || 'Busy').slice(0, 200), start: s, end: e, allDay: start.isDate, location: (location || '').slice(0, 200) });
+        const join = joinOf(item);
+        out.push({ title: (title || 'Busy').slice(0, 200), start: s, end: e, allDay: start.isDate, location: (location || '').slice(0, 200), ...(join ? { join } : {}) });
       }
     };
     if (event.isRecurring()) {
@@ -48,7 +96,7 @@ export function upcomingEvents(icsText: string, now: number, horizonMs = 7 * 86_
       while ((next = it.next()) && guard++ < 5000) {
         if (next.toJSDate().getTime() >= until) break;
         const d = event.getOccurrenceDetails(next);
-        push(d.startDate, d.endDate, d.item.summary, d.item.location);
+        push(d.startDate, d.endDate, d.item.summary, d.item.location, d.item);
       }
     } else if (event.startDate) {
       push(event.startDate, event.endDate || event.startDate, event.summary, event.location);

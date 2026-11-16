@@ -20,7 +20,8 @@ import { AgentTracker, parseUsage, parseModel, freshUsage, statusLineText } from
 import * as timerFns from './timer';
 import { ClipboardHistory, type ClipCodec } from './clipboard-history';
 import { Shelf, convertedName, CONVERTIBLE } from './shelf';
-import { powerFromRaw, batteryBanner, privacyFromRaw, privacyBanner, mediaFromRaw, mediaTrackKey } from './system';
+import { powerFromRaw, batteryBanner, privacyFromRaw, privacyBanner, mediaFromRaw, mediaTrackKey, diskWarning, diskBanner, type DiskWarnState } from './system';
+import { isMeetingLink } from './calendar';
 import { fetchLyrics } from './lyrics';
 import { fetchCalendar } from './calendar';
 import { WinHelper, parseDdcList, parseDdcValues, DDC_INPUTS, type HelperMessage } from './winhelper';
@@ -453,7 +454,7 @@ function applySettings(prev: Settings | null) {
   history?.setMax(settings.clipboard.maxItems);
   if (history?.setExpiry(settings.clipboard.expireHours * 3_600_000)) push({ clipboard: history.list() });
   if (!prev || prev.timer.focusMin !== settings.timer.focusMin || prev.timer.breakMin !== settings.timer.breakMin) {
-    push({ timer: timerFns.configure(state.timer, settings.timer.focusMin, settings.timer.breakMin) });
+    push({ timer: timerFns.configure(state.timer, settings.timer.focusMin, settings.timer.breakMin, settings.timer.longBreakMin, settings.timer.longEvery) });
   }
   if (!settings.features.keepAwake && keepAwakeId != null) setKeepAwake(false);
   if (!settings.features.lyrics) push({ lyrics: null });
@@ -1058,16 +1059,47 @@ async function refreshCalendar(): Promise<void> {
   }
 }
 
+/** Opens an event's meeting link in the browser. Only links that passed the meeting-host check are opened. */
+function joinMeeting(link: string | undefined) {
+  if (link && isMeetingLink(link)) void shell.openExternal(link);
+}
+
 function calendarReminders(now: number) {
   if (!settings.features.calendar) return;
   for (const e of state.calendar.events) {
     if (e.allDay) continue;
     const id = `${e.title}@${e.start}`;
+    const join = e.join ? () => joinMeeting(e.join) : null;
     if (e.start - now <= 5 * 60_000 && e.start > now - 60_000 && !remindedEvents.has(id)) {
       remindedEvents.add(id);
       const mins = Math.max(0, Math.round((e.start - now) / 60_000));
-      showBanner({ kind: 'calendar', title: e.title, text: mins ? `Starts in ${mins} min${e.location ? ` · ${e.location}` : ''}` : 'Starting now' }, 10_000);
+      // Close to the start, this banner is also the "join now" one below.
+      if (mins <= 1) remindedEvents.add(`join:${id}`);
+      const where = join ? ' · Click to join' : e.location ? ` · ${e.location}` : '';
+      showBanner({ kind: 'calendar', title: e.title, text: mins ? `Starts in ${mins} min${where}` : `Starting now${join ? ' · Click to join' : ''}` }, 10_000, join);
+      continue;
     }
+    // A meeting with a link gets a second banner a minute before, to join from.
+    if (join && e.start - now <= 60_000 && e.start > now - 60_000 && !remindedEvents.has(`join:${id}`)) {
+      remindedEvents.add(`join:${id}`);
+      showBanner({ kind: 'calendar', title: e.title, text: 'Starts in a minute · Click to join' }, 20_000, join);
+    }
+  }
+}
+
+// The Windows drive running out of space breaks builds and updates without saying why.
+let diskState: DiskWarnState = { warned: false, at: 0 };
+async function checkDisk(now: number) {
+  if (!settings.features.disk || license.status().state === 'expired') return;
+  const drive = (process.env.SystemDrive || 'C:').slice(0, 2);
+  try {
+    const stats = await fs.promises.statfs(`${drive}\\`);
+    const free = stats.bavail * stats.bsize;
+    const result = diskWarning(diskState, free, settings.disk.lowGb, now);
+    diskState = result.state;
+    if (result.warn) showBanner(diskBanner(drive, free), 15_000, () => void shell.openExternal('ms-settings:storagesense'));
+  } catch (err) {
+    log(`disk check: ${(err as Error).message}`);
   }
 }
 
@@ -1089,7 +1121,7 @@ function timerTick(now: number) {
   push({ timer: next });
   if (finished && settings.features.timer) {
     showBanner(finished === 'focus'
-      ? { kind: 'timer', title: 'Focus session done', text: `Take a ${next.breakMin} minute break.` }
+      ? { kind: 'timer', title: 'Focus session done', text: next.longBreak ? `Take a long break: ${next.longBreakMin} minutes.` : `Take a ${next.breakMin} minute break.` }
       : { kind: 'timer', title: 'Break is over', text: `Back to focus for ${next.focusMin} minutes.` }, 10_000);
   }
 }
@@ -1410,6 +1442,12 @@ function registerIpc() {
     settings = updateSettings(settings, { clipboard: { paused: v === true } });
     writeJson(userFile('settings.json'), settings);
     push({ settings });
+  });
+  on('calendar:join', isIsland, (_e, msg) => {
+    // The page says which event; the link itself comes from the calendar data held here.
+    const m = msg as { start?: unknown; title?: unknown };
+    const event = state.calendar.events.find((e) => e.start === m?.start && e.title === m?.title);
+    joinMeeting(event?.join);
   });
   on('clip:pin', isIsland, (_e, id) => {
     history?.togglePin(str(id, 100));
@@ -1738,7 +1776,7 @@ app.whenReady().then(async () => {
   state.license = license.status();
   state.clipboard = history.list();
   state.notes = readJson<{ text?: string }>(userFile('notes.json'), {}).text ?? '';
-  state.timer = timerFns.configure(state.timer, settings.timer.focusMin, settings.timer.breakMin);
+  state.timer = timerFns.configure(state.timer, settings.timer.focusMin, settings.timer.breakMin, settings.timer.longBreakMin, settings.timer.longEvery);
   state.shelf = shelf.list();
   registerIpc();
 
@@ -1821,6 +1859,8 @@ app.whenReady().then(async () => {
     calendarReminders(now);
     if (ticks % 30 === 0 && tracker.tick()) pushAgents();
     if (ticks % 60 === 0 && history?.prune()) push({ clipboard: history.list() });
+    // Half a minute after start, then every ten minutes.
+    if (ticks % 600 === 30) void checkDisk(now);
     void pollForeground();
     if (ticks % 900 === 0) refreshCalendar().catch(() => {});
     if (ticks % 300 === 0) void refreshBluetooth();

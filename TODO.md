@@ -52,10 +52,10 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 
 ## App: features Halo has
 
-- [ ] Calendar: Join button for Zoom, Meet and Teams links; banner a minute before
+- [x] Calendar: Join button for Zoom, Meet and Teams links; banner a minute before
 - [x] Clipboard: search, filters, pins (already built; checked 2026-11-16)
-- [ ] Focus timer: long break
-- [ ] Disk-space warning
+- [x] Focus timer: long break
+- [x] Disk-space warning
 - [ ] Camera check before a call
 - [ ] Document conversion on the shelf (PDF, Markdown, Word)
 - [ ] `helo://` links for scripts

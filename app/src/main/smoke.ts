@@ -96,7 +96,7 @@ export async function runSmoke(ctx: SmokeCtx) {
       },
       calendar: {
         events: [
-          { title: 'Design review', start: now + 25 * 60_000, end: now + 85 * 60_000, allDay: false, location: 'Room 4' },
+          { title: 'Design review', start: now + 12 * 60_000, end: now + 72 * 60_000, allDay: false, location: 'Room 4', join: 'https://meet.google.com/abc-defg-hij' },
           { title: 'Dentist', start: now + 26 * 3_600_000, end: now + 27 * 3_600_000, allDay: false, location: '' },
         ],
         error: '', fetchedAt: now,
@@ -128,7 +128,7 @@ export async function runSmoke(ctx: SmokeCtx) {
         { id: 's2', name: 'invoice-2026-11.pdf', path: 'C:\\Users\\me\\Downloads\\invoice-2026-11.pdf', size: 88_120, isDirectory: false, icon: null, missing: false },
         { id: 's3', name: 'project-assets', path: 'C:\\Users\\me\\project-assets', size: 0, isDirectory: true, icon: null, missing: false },
       ],
-      timer: { phase: 'focus', running: true, endsAt: now + 18 * 60_000 + 42_000, remainingMs: 18 * 60_000, focusMin: 25, breakMin: 5, completedFocus: 2 },
+      timer: { phase: 'focus', running: true, endsAt: now + 18 * 60_000 + 42_000, remainingMs: 18 * 60_000, focusMin: 25, breakMin: 5, longBreakMin: 15, longEvery: 4, longBreak: false, completedFocus: 2 },
       volume: { level: 64, muted: false },
       power: { hasBattery: true, percent: 82, pluggedIn: true, charging: true },
       privacy: { microphone: [], camera: [] },

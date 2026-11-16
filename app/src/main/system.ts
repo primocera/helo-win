@@ -124,3 +124,31 @@ export function mediaAppName(app: string): string {
 export function mediaTrackKey(m: Pick<MediaState, 'title' | 'artist' | 'album'> | null): string {
   return m ? `${m.artist}\u0000${m.title}\u0000${m.album}` : '';
 }
+
+// ---------------------------------------------------------------------------
+// Disk space
+
+const GB = 1024 ** 3;
+
+export interface DiskWarnState {
+  /** A warning for the current shortage has been shown. */
+  warned: boolean;
+  at: number;
+}
+
+/**
+ * Whether to warn now. Once per shortage: again only after the drive was back above the limit
+ * (by 1 GB, so a drive hovering at the limit does not nag), or after a day of still being low.
+ */
+export function diskWarning(prev: DiskWarnState, freeBytes: number, lowGb: number, now: number): { warn: boolean; state: DiskWarnState } {
+  if (!Number.isFinite(freeBytes) || freeBytes < 0) return { warn: false, state: prev };
+  if (freeBytes >= (lowGb + 1) * GB) return { warn: false, state: { warned: false, at: prev.at } };
+  if (freeBytes >= lowGb * GB) return { warn: false, state: prev };
+  if (prev.warned && now - prev.at < 24 * 3_600_000) return { warn: false, state: prev };
+  return { warn: true, state: { warned: true, at: now } };
+}
+
+export function diskBanner(drive: string, freeBytes: number): Banner {
+  const gb = freeBytes / GB;
+  return { kind: 'warn', title: 'Disk space is low', text: `${drive} has ${gb < 10 ? gb.toFixed(1) : Math.round(gb)} GB free. Click to see what is using it.` };
+}

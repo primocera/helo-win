@@ -283,6 +283,8 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
         <FeatureRow {...p} k="timer" label="Focus timer" hint="Focus and break sessions with a countdown in the island.">
           <Row label="Focus length"><NumberField label="Focus minutes" value={s.timer.focusMin} min={1} max={180} suffix="min" onChange={(n) => update({ timer: { focusMin: n } })} /></Row>
           <Row label="Break length"><NumberField label="Break minutes" value={s.timer.breakMin} min={1} max={60} suffix="min" onChange={(n) => update({ timer: { breakMin: n } })} /></Row>
+          <Row label="Long break length"><NumberField label="Long break minutes" value={s.timer.longBreakMin} min={1} max={120} suffix="min" onChange={(n) => update({ timer: { longBreakMin: n } })} /></Row>
+          <Row label="Long break after" hint="0 turns the long break off."><NumberField label="Focus sessions before a long break" value={s.timer.longEvery} min={0} max={12} suffix="sessions" onChange={(n) => update({ timer: { longEvery: n } })} /></Row>
         </FeatureRow>
         <FeatureRow {...p} k="clipboard" label="Clipboard history" hint="Keeps recent copies on this PC only, encrypted on disk. Password managers that mark their copies as private are skipped. A password copied from a web page is not marked, so pause before copying one, or remove it from the list.">
           <Row label="Pause" hint="Nothing new is saved while this is on.">
@@ -311,6 +313,9 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
         <FeatureRow {...p} k="battery" label="Battery" hint="Plugged in, unplugged, full and low battery alerts, plus the battery level of connected Bluetooth devices that report one.">
           <Row label="Low battery at"><NumberField label="Low battery percent" value={s.battery.lowPercent} min={5} max={50} suffix="%" onChange={(n) => update({ battery: { lowPercent: n } })} /></Row>
         </FeatureRow>
+        <FeatureRow {...p} k="disk" label="Low disk space" hint="Warns when the Windows drive is nearly full. Click the warning to see what is using the space.">
+          <Row label="Warn below"><NumberField label="Free gigabytes" value={s.disk.lowGb} min={1} max={500} suffix="GB" onChange={(n) => update({ disk: { lowGb: n } })} /></Row>
+        </FeatureRow>
         <FeatureRow {...p} k="notifications" label="Notifications from other apps" hint="Shows other apps' Windows notifications as a banner in the island. They are shown once and not saved. An app appears below after its first notification.">
           {Object.keys(s.notifications.apps).sort((a, b) => a.localeCompare(b)).map((name) => (
             <Row key={name} label={name}>
@@ -329,7 +334,7 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
         <FeatureRow {...p} k="watchApp" label="Watch an app" hint="From the island, pick an open app and get told when it closes, or when it has stopped being busy (an estimate)." />
       </Group>
       <Group title="Calendar">
-        <FeatureRow {...p} k="calendar" label="Next event" hint="Upcoming events from a calendar's private iCal (.ics) address.">
+        <FeatureRow {...p} k="calendar" label="Next event" hint="Upcoming events from a calendar's private iCal (.ics) address. Events with a Zoom, Meet, Teams or Webex link get a Join button and a banner a minute before.">
           <div className="ics">
             <input
               type="url"

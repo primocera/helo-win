@@ -4,12 +4,17 @@ import type { TimerPhase, TimerState } from '../shared/types';
 
 const MIN = 60_000;
 
-export function phaseLength(state: Pick<TimerState, 'focusMin' | 'breakMin'>, phase: TimerPhase): number {
-  return (phase === 'focus' ? state.focusMin : state.breakMin) * MIN;
+export function phaseLength(state: Pick<TimerState, 'focusMin' | 'breakMin' | 'longBreakMin' | 'longBreak'>, phase: TimerPhase): number {
+  return (phase === 'focus' ? state.focusMin : state.longBreak ? state.longBreakMin : state.breakMin) * MIN;
 }
 
-export function initialTimer(focusMin = 25, breakMin = 5): TimerState {
-  return { phase: 'focus', running: false, endsAt: null, remainingMs: focusMin * MIN, focusMin, breakMin, completedFocus: 0 };
+export function initialTimer(focusMin = 25, breakMin = 5, longBreakMin = 15, longEvery = 4): TimerState {
+  return { phase: 'focus', running: false, endsAt: null, remainingMs: focusMin * MIN, focusMin, breakMin, longBreakMin, longEvery, longBreak: false, completedFocus: 0 };
+}
+
+/** Whether the break after `completed` finished focus sessions is the long one. */
+export function isLongBreak(completed: number, longEvery: number): boolean {
+  return longEvery > 0 && completed > 0 && completed % longEvery === 0;
 }
 
 export function remaining(state: TimerState, now: number): number {
@@ -28,18 +33,19 @@ export function pause(state: TimerState, now: number): TimerState {
 }
 
 export function reset(state: TimerState): TimerState {
-  return { ...state, phase: 'focus', running: false, endsAt: null, remainingMs: phaseLength(state, 'focus') };
+  return { ...state, phase: 'focus', running: false, endsAt: null, longBreak: false, remainingMs: phaseLength(state, 'focus') };
 }
 
-/** Ends the current phase now and moves to the next one (not started). */
+/** Ends the current phase now and moves to the next one (not started). A skipped focus session earns a short break. */
 export function skip(state: TimerState): TimerState {
   const next: TimerPhase = state.phase === 'focus' ? 'break' : 'focus';
-  return { ...state, phase: next, running: false, endsAt: null, remainingMs: phaseLength(state, next) };
+  const moved = { ...state, phase: next, running: false, endsAt: null, longBreak: false };
+  return { ...moved, remainingMs: phaseLength(moved, next) };
 }
 
 /** New lengths from settings. A stopped timer picks them up right away. */
-export function configure(state: TimerState, focusMin: number, breakMin: number): TimerState {
-  const next = { ...state, focusMin, breakMin };
+export function configure(state: TimerState, focusMin: number, breakMin: number, longBreakMin = state.longBreakMin, longEvery = state.longEvery): TimerState {
+  const next = { ...state, focusMin, breakMin, longBreakMin, longEvery };
   if (!state.running) next.remainingMs = phaseLength(next, state.phase);
   return next;
 }
@@ -52,7 +58,10 @@ export function tick(state: TimerState, now: number): { state: TimerState; finis
   if (!state.running || state.endsAt == null || now < state.endsAt) return { state, finished: null };
   const finished = state.phase;
   const next: TimerPhase = finished === 'focus' ? 'break' : 'focus';
-  const length = phaseLength(state, next);
+  const completedFocus = state.completedFocus + (finished === 'focus' ? 1 : 0);
+  // Every few focus sessions the break is the long one.
+  const longBreak = next === 'break' && isLongBreak(completedFocus, state.longEvery);
+  const length = phaseLength({ ...state, longBreak }, next);
   return {
     finished,
     state: {
@@ -61,7 +70,8 @@ export function tick(state: TimerState, now: number): { state: TimerState; finis
       running: true,
       endsAt: now + length,
       remainingMs: length,
-      completedFocus: state.completedFocus + (finished === 'focus' ? 1 : 0),
+      longBreak,
+      completedFocus,
     },
   };
 }

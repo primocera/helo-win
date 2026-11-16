@@ -5,7 +5,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 ## Where things stand
 
 - **Everything is committed and pushed to `main`.** The site deploys from `main` to https://helo-win.vercel.app.
-- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (152 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
+- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (159 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
 - **The user tested the app on 2026-11-16** and reported that the work map and everything else works. That was before this session's changes were built, so the points under "Not yet tried" below are still open.
 - **The installer in `app/dist` is from 13 Nov** and has none of the work since. Rebuild with `npm run dist` in `app/`.
 
@@ -26,6 +26,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 - **A5: typing on a card.** Question cards have "Type an answer" and plan cards have "Feedback" (rejects the plan and passes the text to Claude). A card only takes the keyboard after the user clicks one of those; focus goes back to the window they were in on send, cancel or when the card goes (`setTyping` in `index.ts`, `TypeBox` in `Views.tsx`). Enter sends, Shift+Enter is a new line, Esc cancels. Tests in `test/typing.test.ts` cover the answers; the focus hand-over was not tried by hand and needs a live Claude Code question and plan.
 - **S12: clipboard safety.** Unpinned copies are forgotten after a set time (default 1 day; Settings, Features, Clipboard history), there is a Pause switch in Settings and in the clipboard tab, and the history is encrypted on disk with Windows data protection (`safeStorage`; `index.bin` and sealed image files; a plain history from an older version is encrypted at the next start). The polling fallback is gone: with the Windows helper down nothing is captured, because only the helper sees the private-copy flag. The encryption round trip was checked in Electron on this PC; the Pause button was not clicked by hand.
 - **S10 / S11: licence.** The licence file is encrypted with Windows data protection (`license.bin`; an old `license.json` is converted at the next start), written through a temp file, and dates in the future no longer extend the trial or skip the check with the store. Calls to the store give up after 10 seconds, and an error page or no connection gives a plain sentence. Decisions I took: deleting the file still restarts the trial, and a licensed PC that stays offline keeps working. Tests in `test/license.test.ts`.
+- **Smaller features.** Calendar: events with a Zoom, Meet, Teams or Webex link get a Join button (from 15 minutes before) and a clickable banner a minute before; only https links to those services are ever opened (`isMeetingLink` in `calendar.ts`). Focus timer: a long break after every N focus sessions (default 15 minutes after 4; Settings). Low disk space: a warning when the Windows drive drops below a limit (default 10 GB), once per shortage; clicking opens Windows' storage page. Clipboard search, filters and pins were already there. Tests in `test/extras.test.ts`. Not tried by hand: a real calendar feed with meeting links, the join banner, and the disk warning on screen.
 
 ## Not yet tried
 

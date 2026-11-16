@@ -156,6 +156,11 @@ export interface TimerState {
   remainingMs: number;
   focusMin: number;
   breakMin: number;
+  /** Length of the long break, and after how many focus sessions it comes (0 = never). */
+  longBreakMin: number;
+  longEvery: number;
+  /** The break that is running or up next is the long one. */
+  longBreak: boolean;
   completedFocus: number;
 }
 
@@ -225,6 +230,8 @@ export interface CalendarEvent {
   end: number;
   allDay: boolean;
   location: string;
+  /** The event's Zoom, Meet, Teams or Webex link, when it has one. Always https and one of those services. */
+  join?: string;
 }
 
 export interface CalendarState {
@@ -257,6 +264,8 @@ export interface FeatureFlags {
   watchApp: boolean;
   /** Banners for other apps' Windows notifications. */
   notifications: boolean;
+  /** A warning when the Windows drive is nearly full. */
+  disk: boolean;
 }
 
 export type Edge = 'top' | 'bottom';
@@ -281,8 +290,11 @@ export interface Settings {
   };
   /** `expireHours`: unpinned copies are forgotten after this long (0 = never). `paused`: nothing new is saved. */
   clipboard: { maxItems: number; images: boolean; expireHours: number; paused: boolean };
-  timer: { focusMin: number; breakMin: number };
+  /** `longEvery`: a long break after this many focus sessions (0 = never). */
+  timer: { focusMin: number; breakMin: number; longBreakMin: number; longEvery: number };
   battery: { lowPercent: number };
+  /** Warn when the Windows drive has less than this many GB free. */
+  disk: { lowGb: number };
   calendar: { icsUrl: string };
   finished: { addToShelf: boolean };
   shelf: { screenshots: boolean };
@@ -445,6 +457,8 @@ export interface HeloApi {
   clipPin(id: string): void;
   /** Stops or resumes saving new copies. */
   clipPause(on: boolean): void;
+  /** Opens the meeting link of a calendar event (`start` and `title` say which). */
+  joinEvent(start: number, title: string): void;
   saveNotes(text: string): void;
   shelfAdd(files: File[]): void;
   shelfRemove(id: string): void;

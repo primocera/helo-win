@@ -25,6 +25,7 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   steam: true,
   watchApp: true,
   notifications: true,
+  disk: true,
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -32,8 +33,9 @@ export const DEFAULT_SETTINGS: Settings = {
   notifications: { apps: {} },
   display: { monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint' },
   clipboard: { maxItems: 50, images: true, expireHours: 24, paused: false },
-  timer: { focusMin: 25, breakMin: 5 },
+  timer: { focusMin: 25, breakMin: 5, longBreakMin: 15, longEvery: 4 },
   battery: { lowPercent: 20 },
+  disk: { lowGb: 10 },
   calendar: { icsUrl: '' },
   finished: { addToShelf: true },
   shelf: { screenshots: true },
@@ -85,6 +87,7 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
   const c = isObj(r.clipboard) ? r.clipboard : {};
   const t = isObj(r.timer) ? r.timer : {};
   const b = isObj(r.battery) ? r.battery : {};
+  const dk = isObj(r.disk) ? r.disk : {};
   const cal = isObj(r.calendar) ? r.calendar : {};
   const fin = isObj(r.finished) ? r.finished : {};
   const sh = isObj(r.shelf) ? r.shelf : {};
@@ -94,8 +97,14 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
     notifications: { apps: cleanApps(notif.apps, base.notifications.apps) },
     display: { monitor, edge, compact, hideInFullscreen: bool(d.hideInFullscreen, base.display.hideInFullscreen), open: d.open === 'click' || d.open === 'hover' ? d.open : base.display.open, position: pos, locked: bool(d.locked, base.display.locked), accent: d.accent === 'mint' || d.accent === 'rose' ? d.accent : base.display.accent },
     clipboard: { maxItems: int(c.maxItems, 5, 200, base.clipboard.maxItems), images: bool(c.images, base.clipboard.images), expireHours: int(c.expireHours, 0, 720, base.clipboard.expireHours), paused: bool(c.paused, base.clipboard.paused) },
-    timer: { focusMin: int(t.focusMin, 1, 180, base.timer.focusMin), breakMin: int(t.breakMin, 1, 60, base.timer.breakMin) },
+    timer: {
+      focusMin: int(t.focusMin, 1, 180, base.timer.focusMin),
+      breakMin: int(t.breakMin, 1, 60, base.timer.breakMin),
+      longBreakMin: int(t.longBreakMin, 1, 120, base.timer.longBreakMin),
+      longEvery: int(t.longEvery, 0, 12, base.timer.longEvery),
+    },
     battery: { lowPercent: int(b.lowPercent, 5, 50, base.battery.lowPercent) },
+    disk: { lowGb: int(dk.lowGb, 1, 500, base.disk.lowGb) },
     calendar: { icsUrl: 'icsUrl' in cal ? cleanIcsUrl(cal.icsUrl) : base.calendar.icsUrl },
     finished: { addToShelf: bool(fin.addToShelf, base.finished.addToShelf) },
     shelf: { screenshots: bool(sh.screenshots, base.shelf.screenshots) },

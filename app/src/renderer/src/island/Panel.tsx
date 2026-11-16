@@ -236,6 +236,9 @@ function EventRow({ e, now, compact }: { e: CalendarEvent; now: number; compact?
           {e.location ? ` · ${e.location}` : ''}
         </span>
       </span>
+      {e.join && !e.allDay && e.start - now <= 15 * 60_000 && (
+        <button type="button" className="event-join" title="Open the meeting link" onClick={() => window.helo.joinEvent(e.start, e.title)}>Join</button>
+      )}
       <span className={`event-chip ${live ? 'now' : ''}`}>{eventWhen(e.start, e.end, e.allDay, now)}</span>
     </div>
   );
@@ -360,12 +363,12 @@ function Agents({ state, now }: { state: IslandState; now: number }) {
 function Timer({ state, now }: { state: IslandState; now: number }) {
   const t = state.timer;
   const left = t.running && t.endsAt != null ? Math.max(0, t.endsAt - now) : t.remainingMs;
-  const total = (t.phase === 'focus' ? t.focusMin : t.breakMin) * 60_000;
+  const total = (t.phase === 'focus' ? t.focusMin : t.longBreak ? t.longBreakMin : t.breakMin) * 60_000;
   const progress = total ? 1 - left / total : 0;
   return (
     <div className="card-row">
       <div className="tile grow timer">
-        <div className={`timer-phase ${t.phase}`}>{t.phase === 'focus' ? 'Focus' : 'Break'}</div>
+        <div className={`timer-phase ${t.phase}`}>{t.phase === 'focus' ? 'Focus' : t.longBreak ? 'Long break' : 'Break'}</div>
         <div className="timer-clock">{formatRemaining(left)}</div>
         <div className="timer-bar"><span style={{ width: `${progress * 100}%` }} className={t.phase} /></div>
         <div className="controls">
@@ -381,6 +384,7 @@ function Timer({ state, now }: { state: IslandState; now: number }) {
         <div className="stat">{t.completedFocus}</div>
         <div className="muted">focus session{t.completedFocus === 1 ? '' : 's'}</div>
         <div className="muted tiny">{t.focusMin} min focus · {t.breakMin} min break</div>
+        {t.longEvery > 0 && <div className="muted tiny">{t.longBreakMin} min long break every {t.longEvery}</div>}
       </div>
     </div>
   );
