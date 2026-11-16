@@ -32,6 +32,7 @@ import { BusyIdleDetector } from './finished';
 import { listStartupApps, setStartupApp } from './startup-apps';
 import { faceOnly } from '../shared/face';
 import { ChangeTracker, changeText } from './changes';
+import { BannerQueue } from './banners';
 import { notificationFromRaw, notificationBanner, rememberApp } from './notifications';
 import { formatDuration } from '../shared/time';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
@@ -109,7 +110,6 @@ let helper: WinHelper | null = null;
 let history: ClipboardHistory | null = null;
 let shelf: Shelf;
 let keepAwakeId: number | null = null;
-let bannerTimer: NodeJS.Timeout | null = null;
 let hudTimer: NodeJS.Timeout | null = null;
 let shortcutsOn = false;
 let panelOpen = false;
@@ -168,24 +168,20 @@ function push(patch: Partial<IslandState>) {
 // ---------------------------------------------------------------------------
 // Banners and agent requests
 
-let bannerAction: (() => void) | null = null;
+// A short banner covers a "needs your answer" banner; the waiting one comes back afterwards.
+const banners = new BannerQueue((banner) => push({ banner }));
 
-/** Session whose "waiting for you" banner is on screen (it stays until clicked or answered). */
-let waitingSession: string | null = null;
+/**
+ * Shows a banner for `ms`. 0 = it waits until it is clicked or answered, and `key` says whose
+ * it is (a session id). `action` runs if the user clicks it.
+ */
+function showBanner(next: Banner | null, ms = 6000, action: (() => void) | null = null, key = '') {
+  banners.show(next, { ms, action, key });
+}
 
-/** Shows a banner for `ms` (0 = until it is clicked or replaced). `action` runs if the user clicks it. */
-function showBanner(next: Banner | null, ms = 6000, action: (() => void) | null = null) {
-  if (!next) return;
-  if (bannerTimer) clearTimeout(bannerTimer);
-  bannerTimer = null;
-  bannerAction = action;
-  if (ms > 0) {
-    bannerTimer = setTimeout(() => {
-      bannerAction = null;
-      push({ banner: null });
-    }, ms);
-  }
-  push({ banner: { ...next, at: Date.now(), clickable: Boolean(action) } });
+/** The session id of a hook event, as the key of its waiting banner. */
+function waitKey(sessionId: unknown): string {
+  return typeof sessionId === 'string' ? sessionId : '';
 }
 
 function pushRequests() {
@@ -281,6 +277,8 @@ function onPermission(input: HookInput, signal: AbortSignal, agent: AgentName): 
   }
   tracker.record(input, agent);
   pushAgents();
+  // It is asking for a tool, so it is no longer waiting for an answer in the terminal.
+  banners.answered(waitKey(input.session_id));
   return new Promise((resolve) => {
     const id = crypto.randomUUID();
     const toolInput = input.tool_input && typeof input.tool_input === 'object' ? (input.tool_input as Record<string, unknown>) : {};
@@ -304,15 +302,10 @@ function onEvent(input: HookInput, agent: AgentName) {
   if (input.hook_event_name === 'Notification' && input.notification_type === 'permission_prompt') {
     for (const entry of pending.values()) if (entry.sessionId === input.session_id) return;
   }
-  if (input.hook_event_name === 'UserPromptSubmit' || input.hook_event_name === 'PermissionResolved') {
-    // The user answered in the terminal: the "waiting for you" banner has done its job.
-    if (state.banner?.kind === 'input' && (!waitingSession || waitingSession === input.session_id)) {
-      bannerAction = null;
-      push({ banner: null });
-    }
-    return;
-  }
   const banner = eventBanner(input, agent);
+  // The user answered in the terminal, or the session finished or failed: its "waiting for you"
+  // banner has done its job. (A plain notification says nothing about that, so it stays.)
+  if (banner?.kind !== 'input' && input.hook_event_name !== 'Notification') banners.answered(waitKey(input.session_id));
   if (banner && input.hook_event_name === 'Stop' && workedMs >= 5000) banner.title += ` · ${formatDuration(workedMs)}`;
   if (banner && input.hook_event_name === 'Stop' && agent === 'claude') {
     const lines = changeText(changes.get(input.session_id));
@@ -320,8 +313,7 @@ function onEvent(input: HookInput, agent: AgentName) {
   }
   if (banner?.kind === 'input') {
     // Stays on screen until the user clicks it (or answers in the terminal).
-    waitingSession = typeof input.session_id === 'string' ? input.session_id : null;
-    showBanner(banner, 0, () => {});
+    showBanner(banner, 0, () => {}, waitKey(input.session_id));
     return;
   }
   showBanner(banner);
@@ -863,7 +855,7 @@ function onHelperMessage(msg: HelperMessage) {
         push({ settings });
       }
       // A card or a "needs your answer" banner is more urgent than another app's message.
-      if (pending.size > 0 || state.banner?.kind === 'input') break;
+      if (pending.size > 0 || banners.hasWaiting()) break;
       showBanner(notificationBanner(n, settings.notifications.apps, [config.appName, 'Electron']), 6000);
       break;
     }
@@ -1413,12 +1405,7 @@ function registerIpc() {
       .catch((err) => log(`ddc-set input: ${err.message}`));
   });
   on('banner:click', isIsland, () => {
-    const action = bannerAction;
-    if (!action) return;
-    bannerAction = null;
-    if (bannerTimer) clearTimeout(bannerTimer);
-    push({ banner: null });
-    action();
+    banners.click();
   });
   handle('watch:windows', isIsland, async () => {
     if (!helper || helper.status !== 'running') return [];

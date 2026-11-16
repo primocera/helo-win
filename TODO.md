@@ -21,7 +21,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Shortcuts that AltGr cannot produce (S1)
 - [x] Cards show the whole command; Allow is blocked while part of it is cut off (S2)
 - [x] Clicks ignored for half a second after a card appears or changes (S3)
-- [ ] "Needs your answer" banner comes back after a short banner replaces it (B3)
+- [x] "Needs your answer" banner comes back after a short banner replaces it (B3)
 - [ ] Port fallback when 47615 is taken (S7)
 
 ## App: agents

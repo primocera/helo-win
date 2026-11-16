@@ -5,7 +5,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 ## Where things stand
 
 - **Everything is committed and pushed to `main`.** The site deploys from `main` to https://helo-win.vercel.app.
-- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (112 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
+- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (124 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
 - **The user tested the app on 2026-11-16** and reported that the work map and everything else works. That was before this session's changes were built, so the points under "Not yet tried" below are still open.
 - **The installer in `app/dist` is from 13 Nov** and has none of the work since. Rebuild with `npm run dist` in `app/`.
 
@@ -17,6 +17,10 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 - **Lines changed** ("+48 −12") on the finished banner and in the Agents tab, for Claude Code while the work map is on (`src/main/changes.ts`).
 - **Site:** privacy page, footer links, `robots.txt`, `sitemap.xml`, share image.
 
+## Built after that (same day, second session)
+
+- **B3: banner queue** (`src/main/banners.ts`, `test/banners.test.ts`). A short banner covers "needs your answer" and the waiting one comes back afterwards. One waiting banner per session; it goes when the session is answered, finishes, fails or asks for a tool.
+
 ## Not yet tried
 
 - Gemini CLI and Cursor against a live session. Neither is installed on this PC; they were built from the published hook docs and checked with unit tests and the real hook commands run through `cmd.exe` and PowerShell. Gemini CLI's docs say it was replaced by Antigravity CLI in June 2026; whether Antigravity reads the same file was not checked.
@@ -27,7 +31,6 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 
 ## Do next, in this order
 
-1. **B3: banner queue.** A short banner must not wipe "needs your answer"; it comes back afterwards. New `src/main/banners.ts` with tests.
 2. **S7: port fallback** when 47615 is taken, and rewrite the hooks to the new port.
 3. **T1: log file and "Copy diagnostics"** in Settings. Never write tokens, clipboard text or notification text.
 4. **B2 / R4: uninstall cleanup.** NSIS step that removes the hooks from all four agents' files; ask about the data folder.
