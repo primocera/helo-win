@@ -216,6 +216,7 @@ export const changelog: { version: string; date: string | null; summary: string;
         title: "The island",
         items: [
           `${product.mascot}, a face that follows your pointer and shows what your agents are doing.`,
+          "Right-click the island for Settings, Hide and Quit, or to have it step aside for a minute.",
           "Music controls with artwork, and synced lyrics if you turn them on.",
           "Notifications from other apps, with a switch for each app. Click one to open the app.",
           "Focus timer with a long break, clipboard history, notes, file shelf and image converter.",

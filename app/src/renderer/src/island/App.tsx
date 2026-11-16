@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type MouseEvent, type PointerEvent } from 'react';
 import { useIslandState, useNow } from './store';
-import { IdleView, BannerView, CardView, HudView } from './Views';
+import { IdleView, BannerView, CardView, HudView, MenuView } from './Views';
 import { Panel, visibleTabs } from './Panel';
 import { BlinkFace, FACE_LABELS } from './Blink';
 import { playChime } from './sound';
 import { faceFor, strongestMood, watchMood } from '../../../shared/face';
 import type { Behavior, ConvertFormat, Face, IslandState, PanelTab, SmokeView } from '../../../shared/types';
 
-type Mode = 'idle' | 'banner' | 'card' | 'hud' | 'panel';
+type Mode = 'idle' | 'banner' | 'card' | 'hud' | 'panel' | 'menu';
 
-const WIDTH: Record<Mode, number> = { idle: 214, banner: 440, card: 488, hud: 300, panel: 648 };
-const FIXED_HEIGHT: Partial<Record<Mode, number>> = { idle: 34, banner: 62, hud: 40 };
+const WIDTH: Record<Mode, number> = { idle: 214, banner: 440, card: 488, hud: 300, panel: 648, menu: 396 };
+const FIXED_HEIGHT: Partial<Record<Mode, number>> = { idle: 34, banner: 62, hud: 40, menu: 44 };
 const OPEN_DELAY = 220;
 // While idle and locked in place the island lets clicks through to what is under it
 // (browser tabs, title bars). Resting the pointer on it this long opens the panel instead.
@@ -49,6 +49,8 @@ export function App() {
   const state = useIslandState();
   const [hovered, setHovered] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  // The right-click menu: Settings, step aside, hide, quit.
+  const [menuOpen, setMenuOpen] = useState(false);
   const [tab, setTab] = useState<PanelTab>('media');
   const [smoke, setSmoke] = useState<(SmokeView & { backdrop?: boolean }) | null>(null);
   const [look, setLook] = useState({ x: 0, y: 0 });
@@ -88,6 +90,7 @@ export function App() {
   const closePanel = useCallback(() => {
     clearTimers();
     setPanelOpen(false);
+    setMenuOpen(false);
     setFileOver(false);
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   }, []);
@@ -118,6 +121,7 @@ export function App() {
   let mode: Mode = 'idle';
   if (state) {
     if (state.requests.length && state.settings.features.agents) mode = 'card';
+    else if ((menuOpen || smoke?.menu) && forcedPanel === null) mode = 'menu';
     else if (showPanel) mode = 'panel';
     else if (state.hud && state.settings.features.hud) mode = 'hud';
     else if (state.banner) mode = 'banner';
@@ -165,7 +169,7 @@ export function App() {
     if (!peeking) window.helo.hover(true);
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
     closeTimer.current = null;
-    if (!panelOpen && mode !== 'card' && !openTimer.current && !clickToOpen) {
+    if (!panelOpen && mode !== 'card' && mode !== 'menu' && !openTimer.current && !clickToOpen) {
       openTimer.current = window.setTimeout(() => {
         openTimer.current = null;
         // A missed mouseleave must not open the panel: check the pointer is really still here.
@@ -223,8 +227,20 @@ export function App() {
     closeTimer.current = window.setTimeout(() => {
       closeTimer.current = null;
       setPanelOpen(false);
+      setMenuOpen(false);
       setFileOver(false);
     }, CLOSE_DELAY);
+  };
+
+  // Right-click on the island or the face: the menu takes the panel's place.
+  const onContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+    if (mode === 'card' || smoke) return;
+    if (openTimer.current) window.clearTimeout(openTimer.current);
+    openTimer.current = null;
+    window.helo.hover(true);
+    setPanelOpen(false);
+    setMenuOpen(true);
   };
 
   const onDragEnter = (e: DragEvent) => {
@@ -279,6 +295,7 @@ export function App() {
               onMouseEnter={onEnter}
               onMouseLeave={onLeave}
               onClick={openOnClick}
+              onContextMenu={onContextMenu}
               {...dragHandlers}
               title={FACE_LABELS[face]}
             >
@@ -291,6 +308,7 @@ export function App() {
             onMouseEnter={onEnter}
             onMouseLeave={onLeave}
             onClick={openOnClick}
+            onContextMenu={onContextMenu}
             {...dragHandlers}
             onDragEnter={onDragEnter}
             onDragOver={onDragOver}
@@ -302,6 +320,7 @@ export function App() {
               {mode === 'banner' && state.banner && <BannerView banner={state.banner} now={now} />}
               {mode === 'card' && <CardView request={state.requests[0]} more={state.requests.length - 1} onDecide={decide} />}
               {mode === 'hud' && state.hud && <HudView hud={state.hud} />}
+              {mode === 'menu' && <MenuView onDone={() => setMenuOpen(false)} />}
               {mode === 'panel' && (
                 <div ref={panelRef}>
                   <Panel state={state} tab={activeTab} setTab={setTab} now={now} fileOver={fileOver} />

@@ -342,7 +342,7 @@ function Agents({ state, now }: { state: IslandState; now: number }) {
                     {s.removed ? <span className="minus">−{s.removed}</span> : null}
                   </span>
                 ) : null}
-                <span className="session-mood">{MOOD_TEXT[s.mood]} · {relativeTime(s.since, now)}</span>
+                <span className="session-mood">{MOOD_TEXT[s.mood]}{s.file ? '' : ` · ${relativeTime(s.since, now)}`}</span>
                 {s.jump && (
                   <button
                     type="button"

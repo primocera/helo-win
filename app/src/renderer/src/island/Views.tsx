@@ -351,6 +351,22 @@ function ToolCard({ request, more, onDecide }: { request: PermissionView; more: 
   );
 }
 
+/** The island's right-click menu. */
+export function MenuView({ onDone }: { onDone: () => void }) {
+  const run = (fn: () => void) => () => {
+    onDone();
+    fn();
+  };
+  return (
+    <div className="island-menu" role="menu">
+      <button type="button" role="menuitem" onClick={run(() => window.helo.openSettings())}>Settings</button>
+      <button type="button" role="menuitem" title="The island leaves for a minute, then comes back. A request from an agent still shows." onClick={run(() => window.helo.stepAside(false))}>Step aside 1 min</button>
+      <button type="button" role="menuitem" title="Hidden until you choose Show the island in the tray menu. A request from an agent still shows." onClick={run(() => window.helo.stepAside(true))}>Hide</button>
+      <button type="button" role="menuitem" className="quit" onClick={run(() => window.helo.quit())}>Quit</button>
+    </div>
+  );
+}
+
 export function HudView({ hud }: { hud: Hud }) {
   const icon = hud.kind === 'brightness' ? 'sun' : hud.muted || hud.level === 0 ? 'mute' : 'speaker';
   return (

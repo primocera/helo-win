@@ -431,6 +431,8 @@ export interface SmokeView {
   /** Show every mascot face side by side (screenshot only). */
   faces?: boolean;
   hover?: boolean;
+  /** Show the right-click menu. */
+  menu?: boolean;
 }
 
 /** The API the preload script exposes as `window.helo`. */
@@ -490,6 +492,9 @@ export interface HeloApi {
   refreshDisplays(): void;
   openSettings(section?: string): void;
   bannerClick(): void;
+  /** The island leaves the screen: for a minute, or (`forever`) until it is shown again from the tray. */
+  stepAside(forever: boolean): void;
+  quit(): void;
   /** Brings the window of this session (its `key`) to the front. */
   sessionJump(key: string): void;
   listWindows(): Promise<WatchTarget[]>;

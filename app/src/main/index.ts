@@ -919,6 +919,12 @@ function refreshTray() {
     { label: licenseLabel(), enabled: false },
     { type: 'separator' },
     { label: 'Settings…', click: () => openSettings() },
+    ...(Date.now() < asideUntil
+      ? [{ label: 'Show the island', click: () => stepAside(0) }]
+      : [
+        { label: 'Step aside for a minute', click: () => stepAside(ASIDE_MS) },
+        { label: 'Hide the island', click: () => stepAside(Infinity) },
+      ]),
     claude
       ? { label: 'Disconnect Claude Code', click: () => safeConnect('claude', false) }
       : { label: 'Connect Claude Code', enabled: !bridgeError, click: () => safeConnect('claude', true) },
@@ -1681,6 +1687,9 @@ function registerIpc() {
   on('banner:click', isIsland, () => {
     banners.click();
   });
+  // The island's right-click menu.
+  on('island:aside', isIsland, (_e, forever) => stepAside(forever === true ? Infinity : ASIDE_MS));
+  on('app:quit', isIsland, () => app.quit());
   // "Answer" or "Open" on a session in the Agents tab. Only a window remembered for that session is ever brought forward.
   on('session:jump', isIsland, (_e, key) => void jumpTo(str(key, 300)));
   handle('watch:windows', isIsland, async () => {
@@ -1804,10 +1813,28 @@ function applyFaceOnly() {
 /** A game or fullscreen video covers the island's screen: the island steps aside. */
 let fullscreenAhead = false;
 
+/** "Step aside": the island is off the screen until this time (Infinity: until it is shown again from the tray). */
+let asideUntil = 0;
+const ASIDE_MS = 60_000;
+
+/** `ms`: how long the island stays away. 0 brings it back. */
+function stepAside(ms: number) {
+  asideUntil = ms ? Date.now() + ms : 0;
+  if (ms && island && !island.isDestroyed()) {
+    // It must not come back still holding the pointer.
+    hoverOn = false;
+    island.setIgnoreMouseEvents(true, { forward: true });
+    island.webContents.send('island:collapse');
+  }
+  applyFullscreen();
+  refreshTray();
+}
+
 function applyFullscreen() {
   if (!island || island.isDestroyed() || !islandReady) return;
-  // A waiting Allow/Deny card is worth showing even over a game.
-  const hide = fullscreenAhead && settings.display.hideInFullscreen && pending.size === 0 && !panelOpen;
+  const aside = Date.now() < asideUntil;
+  // A waiting Allow/Deny card is worth showing even over a game, and even when asked to step aside.
+  const hide = pending.size === 0 && (aside || (fullscreenAhead && settings.display.hideInFullscreen && !panelOpen));
   if (hide && island.isVisible()) island.hide();
   else if (!hide && !island.isVisible()) island.showInactive();
 }
@@ -1887,7 +1914,11 @@ function usePort(port: number) {
 app.on('second-instance', (_e, argv) => {
   const link = findLink(argv);
   if (link) runLink(link);
-  else openSettings();
+  else {
+    // Started again by hand: a hidden island comes back too.
+    if (asideUntil) stepAside(0);
+    openSettings();
+  }
 });
 app.on('window-all-closed', () => { /* tray app: keep running */ });
 app.on('will-quit', () => globalShortcut.unregisterAll());
@@ -2011,6 +2042,8 @@ app.whenReady().then(async () => {
     ticks++;
     timerTick(now);
     calendarReminders(now);
+    // The minute it stepped aside for is over.
+    if (asideUntil && now >= asideUntil) stepAside(0);
     if (ticks % 30 === 0 && tracker.tick()) pushAgents();
     if (ticks % 60 === 0 && history?.prune()) push({ clipboard: history.list() });
     // Half a minute after start, then every ten minutes.

@@ -104,7 +104,8 @@ export async function runSmoke(ctx: SmokeCtx) {
       agents: {
         ...ctx.state.agents,
         sessions: [
-          { key: 'claude:a', agent: 'claude', project: 'shop-api', mood: 'working', since: now - 40_000 },
+          { key: 'gemini:c', agent: 'gemini', project: 'docs-site', mood: 'waiting', since: now - 20_000, jump: true },
+          { key: 'claude:a', agent: 'claude', project: 'shop-api', mood: 'working', since: now - 40_000, added: 48, removed: 12, file: 'checkout.ts', jump: true },
           { key: 'codex:b', agent: 'codex', project: 'landing-page', mood: 'done', since: now - 90_000 },
         ],
         mood: 'idle',
@@ -211,6 +212,8 @@ export async function runSmoke(ctx: SmokeCtx) {
     push({ requests: [], agents: { ...ctx.state.agents, mood: 'idle' }, hud: { kind: 'volume', level: 64, muted: false, at: Date.now() } });
     await shot('06-hud-volume');
     push({ hud: null });
+    smoke({ menu: true });
+    await shot('07-menu');
     push({ map: sampleMap() });
     const tabs: PanelTab[] = ['media', 'agents', 'map', 'timer', 'clipboard', 'notes', 'shelf', 'system', 'calendar', 'finished'];
     for (const tab of tabs) {
@@ -236,7 +239,7 @@ export async function runSmoke(ctx: SmokeCtx) {
 
     const settingsWin = ctx.openSettings();
     await new Promise<void>((r) => settingsWin.webContents.once('did-finish-load', () => r()));
-    for (const section of ['general', 'features', 'startup', 'agents', 'license']) {
+    for (const section of ['general', 'features', 'agents', 'license', 'startup']) {
       settingsWin.webContents.send('settings:section', section);
       await shot(`30-settings-${section}`, settingsWin, section === 'startup' ? 3000 : 700);
     }

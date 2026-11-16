@@ -72,7 +72,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] Notifications: try on Windows 11 and on a clean account (does Windows ask for permission there?)
 - [ ] Hold-to-talk dictation (see "Needs you")
 - [ ] More languages (Halo has eight)
-- [ ] Right-click menu on the island (Settings, Hide, Quit) and "step aside for a minute"
+- [x] Right-click menu on the island (Settings, Step aside 1 min, Hide, Quit); the same in the tray menu, with "Show the island"
 - [ ] Timer: set the length by dragging, up to three hours
 - [ ] Music: shuffle and repeat, and the title or lyric line beside the closed island
 - [ ] Show the island on more than one display

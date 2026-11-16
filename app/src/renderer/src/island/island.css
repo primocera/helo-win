@@ -55,6 +55,7 @@ button { font: inherit; color: inherit; }
 .island.mode-idle { --r: 14px; box-shadow: none; }
 .island.mode-hud { --r: 16px; }
 .island.mode-banner { --r: 22px; }
+.island.mode-menu { --r: 18px; }
 .island.mode-card { --r: 24px; }
 .island.mode-panel { --r: 26px; }
 
@@ -85,7 +86,13 @@ button { font: inherit; color: inherit; }
   border-radius: inherit;
   animation: content-in 0.26s ease both;
 }
-.mode-idle .island-content, .mode-hud .island-content, .mode-banner .island-content { height: 100%; }
+.mode-idle .island-content, .mode-hud .island-content, .mode-banner .island-content, .mode-menu .island-content { height: 100%; }
+
+/* Right-click menu */
+.island-menu { height: 100%; display: flex; align-items: center; gap: 4px; padding: 0 8px; }
+.island-menu button { flex: 1 1 auto; height: 28px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.island-menu button:hover { background: var(--tile-3); }
+.island-menu button.quit:hover { background: #5a2226; }
 @keyframes content-in {
   from { opacity: 0; filter: blur(3px); transform: scale(0.985); }
   to { opacity: 1; filter: none; transform: none; }
@@ -378,10 +385,10 @@ input[type="range"]:disabled::-webkit-slider-runnable-track { background: linear
 .ring-sub { font-size: 10px; color: var(--dim); white-space: nowrap; }
 .sessions { display: flex; flex-direction: column; gap: 4px; }
 .session { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 2px; }
-.session-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-name { flex: 0 1 auto; min-width: 70px; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-agent { flex: none; font-size: 10.5px; color: var(--dim); }
 .session-mood { margin-left: auto; flex: none; font-size: 11px; color: var(--muted); }
-.session-file { min-width: 0; flex: 0 1 auto; font-size: 11px; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-file { min-width: 0; flex: 0 8 auto; font-size: 11px; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-go { flex: none; height: 22px; padding: 0 10px; border: 0; border-radius: 7px; background: var(--tile-3); color: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
 .session-go:hover { filter: brightness(1.2); }
 .session-go.answer { background: var(--blue); }
