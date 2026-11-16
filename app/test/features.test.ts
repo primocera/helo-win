@@ -417,3 +417,99 @@ test('settings: screenshots-to-shelf defaults on and can be switched off', () =>
   expect(normalizeSettings({}).shelf.screenshots).toBe(true);
   expect(updateSettings(normalizeSettings({}), { shelf: { screenshots: false } }).shelf.screenshots).toBe(false);
 });
+
+// ---- clipboard safety (S12) ---------------------------------------------------------
+
+/** A stand-in for Windows data protection: reversible, and plainly not the original bytes. */
+const fakeCodec = {
+  seal: (data: Buffer) => Buffer.concat([Buffer.from('SEALED:'), Buffer.from(data.toString('base64'))]),
+  open: (data: Buffer) => {
+    if (!data.subarray(0, 7).equals(Buffer.from('SEALED:'))) throw new Error('not sealed');
+    return Buffer.from(data.subarray(7).toString(), 'base64');
+  },
+};
+
+test('clipboard: copies are forgotten after the set time, pinned ones are kept', () => {
+  const dir = tmp();
+  let now = 1_000_000;
+  const h = new ClipboardHistory(dir, 50, () => now, { expireMs: 60_000 });
+  h.addText('old');
+  h.addText('pinned old');
+  h.togglePin(h.list().find((c) => c.text === 'pinned old')!.id);
+  const png = Buffer.from('89504e470d0a1a0a0000', 'hex');
+  h.addImage(png, 'data:image/png;base64,AAAA', 'Image 1×1');
+  now += 50_000;
+  h.addText('newer');
+  expect(h.prune()).toBe(false);
+  now += 20_000;
+  expect(h.prune()).toBe(true);
+  expect(h.list().map((c) => c.text)).toEqual(['pinned old', 'newer']);
+  expect(fs.readdirSync(dir).filter((f) => f.endsWith('.png'))).toEqual([]);
+  expect(h.prune()).toBe(false);
+  // Copying something again counts as new.
+  now += 50_000;
+  h.addText('newer');
+  now += 30_000;
+  h.prune();
+  expect(h.list().map((c) => c.text)).toEqual(['pinned old', 'newer']);
+  // Old clips are also dropped when the app starts, and 0 means no limit.
+  now += 10 * 3_600_000;
+  expect(new ClipboardHistory(dir, 50, () => now, { expireMs: 60_000 }).list().map((c) => c.text)).toEqual(['pinned old']);
+  const forever = new ClipboardHistory(tmp(), 50, () => now);
+  forever.addText('kept');
+  now += 1e12;
+  expect(forever.prune()).toBe(false);
+  expect(forever.setExpiry(1000)).toBe(true);
+  expect(forever.list()).toEqual([]);
+});
+
+test('clipboard: with encryption nothing readable is written, and it reads back', () => {
+  const dir = tmp();
+  const h = new ClipboardHistory(dir, 50, Date.now, { codec: fakeCodec });
+  h.addText('my secret token');
+  const png = Buffer.from('89504e470d0a1a0a0000', 'hex');
+  h.addImage(png, 'data:image/png;base64,THUMB', 'Image 1×1');
+  expect(fs.existsSync(path.join(dir, 'index.json'))).toBe(false);
+  for (const f of fs.readdirSync(dir)) {
+    const raw = fs.readFileSync(path.join(dir, f));
+    expect(raw.includes('my secret token')).toBe(false);
+    expect(raw.includes('THUMB')).toBe(false);
+    expect(raw.subarray(0, 4).equals(png.subarray(0, 4))).toBe(false);
+  }
+  const again = new ClipboardHistory(dir, 50, Date.now, { codec: fakeCodec });
+  expect(again.list().map((c) => c.text)).toEqual(['Image 1×1', 'my secret token']);
+  expect(again.get(again.list()[0].id)).toEqual({ kind: 'image', png });
+  expect(again.get(again.list()[1].id)).toEqual({ kind: 'text', text: 'my secret token' });
+  // Without the key (another Windows account, a copied folder) nothing comes back.
+  expect(new ClipboardHistory(dir, 50).list()).toEqual([]);
+  const wrong = { seal: fakeCodec.seal, open: () => { throw new Error('wrong key'); } };
+  expect(new ClipboardHistory(dir, 50, Date.now, { codec: wrong }).list()).toEqual([]);
+});
+
+test('clipboard: a plain history from an older version is encrypted at the next start', () => {
+  const dir = tmp();
+  const old = new ClipboardHistory(dir, 50);
+  old.addText('from before');
+  const png = Buffer.from('89504e470d0a1a0a0000', 'hex');
+  old.addImage(png, 'data:image/png;base64,AAAA', 'Image 1×1');
+  old.togglePin(old.list().find((c) => c.kind === 'image')!.id);
+  expect(fs.readFileSync(path.join(dir, 'index.json'), 'utf8')).toContain('from before');
+
+  const h = new ClipboardHistory(dir, 50, Date.now, { codec: fakeCodec });
+  expect(h.list().map((c) => [c.text, c.pinned])).toEqual([['Image 1×1', true], ['from before', false]]);
+  expect(h.get(h.list()[0].id)).toEqual({ kind: 'image', png });
+  expect(fs.existsSync(path.join(dir, 'index.json'))).toBe(false);
+  for (const f of fs.readdirSync(dir)) expect(fs.readFileSync(path.join(dir, f)).subarray(0, 7).toString()).toBe('SEALED:');
+  // And once more, to be sure a second start does not seal twice.
+  const third = new ClipboardHistory(dir, 50, Date.now, { codec: fakeCodec });
+  expect(third.get(third.list()[0].id)).toEqual({ kind: 'image', png });
+});
+
+test('settings: clipboard expiry and pause', () => {
+  expect(DEFAULT_SETTINGS.clipboard.expireHours).toBe(24);
+  expect(DEFAULT_SETTINGS.clipboard.paused).toBe(false);
+  const s = updateSettings(DEFAULT_SETTINGS, { clipboard: { expireHours: 0, paused: true } });
+  expect(s.clipboard).toMatchObject({ expireHours: 0, paused: true, maxItems: 50 });
+  expect(normalizeSettings({ clipboard: { expireHours: 99999, paused: 'yes' } }).clipboard).toMatchObject({ expireHours: 720, paused: false });
+  expect(normalizeSettings({ clipboard: { maxItems: 10 } }).clipboard).toMatchObject({ expireHours: 24, paused: false, maxItems: 10 });
+});

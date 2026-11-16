@@ -5,7 +5,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 ## Where things stand
 
 - **Everything is committed and pushed to `main`.** The site deploys from `main` to https://helo-win.vercel.app.
-- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (140 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
+- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (144 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
 - **The user tested the app on 2026-11-16** and reported that the work map and everything else works. That was before this session's changes were built, so the points under "Not yet tried" below are still open.
 - **The installer in `app/dist` is from 13 Nov** and has none of the work since. Rebuild with `npm run dist` in `app/`.
 
@@ -24,6 +24,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 - **T1: log file and Copy diagnostics.** `src/main/logfile.ts` writes `helo.log` in the data folder (two files of 200 KB at most) and hides tokens, long random strings and the home folder path. Clipboard text and notification text are never passed to it. Settings, General, Help has "Copy diagnostics" and "Show log file". Uncaught errors, helper status and window crashes are logged. Tests in `test/logfile.test.ts`. The two buttons were not clicked by hand.
 - **B2 / R4: uninstall cleanup.** The uninstaller runs the app with `--disconnect-all` (`removeAll` in `hooks-install.ts`: hooks and status line out of all four agents' files, Helo's backup copies deleted, start-with-Windows entry removed), then asks whether to delete the data folder; the default and a silent uninstall keep it (`app/resources/uninstall.nsh`). The app half was run against a throwaway home folder (`HELO_AGENT_HOME`, development builds only). The NSIS half is only proven once the installer is built and an uninstall is run by hand. Not done: a visible status line when the app is not running.
 - **A5: typing on a card.** Question cards have "Type an answer" and plan cards have "Feedback" (rejects the plan and passes the text to Claude). A card only takes the keyboard after the user clicks one of those; focus goes back to the window they were in on send, cancel or when the card goes (`setTyping` in `index.ts`, `TypeBox` in `Views.tsx`). Enter sends, Shift+Enter is a new line, Esc cancels. Tests in `test/typing.test.ts` cover the answers; the focus hand-over was not tried by hand and needs a live Claude Code question and plan.
+- **S12: clipboard safety.** Unpinned copies are forgotten after a set time (default 1 day; Settings, Features, Clipboard history), there is a Pause switch in Settings and in the clipboard tab, and the history is encrypted on disk with Windows data protection (`safeStorage`; `index.bin` and sealed image files; a plain history from an older version is encrypted at the next start). The polling fallback is gone: with the Windows helper down nothing is captured, because only the helper sees the private-copy flag. The encryption round trip was checked in Electron on this PC; the Pause button was not clicked by hand.
 
 ## Not yet tried
 

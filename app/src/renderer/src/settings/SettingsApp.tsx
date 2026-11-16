@@ -284,7 +284,18 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
           <Row label="Focus length"><NumberField label="Focus minutes" value={s.timer.focusMin} min={1} max={180} suffix="min" onChange={(n) => update({ timer: { focusMin: n } })} /></Row>
           <Row label="Break length"><NumberField label="Break minutes" value={s.timer.breakMin} min={1} max={60} suffix="min" onChange={(n) => update({ timer: { breakMin: n } })} /></Row>
         </FeatureRow>
-        <FeatureRow {...p} k="clipboard" label="Clipboard history" hint="Keeps recent copies on this PC only. Password managers that mark their copies as private are skipped.">
+        <FeatureRow {...p} k="clipboard" label="Clipboard history" hint="Keeps recent copies on this PC only, encrypted on disk. Password managers that mark their copies as private are skipped. A password copied from a web page is not marked, so pause before copying one, or remove it from the list.">
+          <Row label="Pause" hint="Nothing new is saved while this is on.">
+            <Switch label="Pause clipboard history" on={s.clipboard.paused} onChange={(v) => update({ clipboard: { paused: v } })} />
+          </Row>
+          <Row label="Forget copies after" hint="Pinned copies are kept.">
+            <select value={String(s.clipboard.expireHours)} onChange={(e) => update({ clipboard: { expireHours: Number(e.target.value) } })}>
+              {[[1, '1 hour'], [8, '8 hours'], [24, '1 day'], [168, '1 week'], [0, 'Never']].map(([hours, label]) => (
+                <option key={hours} value={String(hours)}>{label}</option>
+              ))}
+              {![1, 8, 24, 168, 0].includes(s.clipboard.expireHours) && <option value={String(s.clipboard.expireHours)}>{s.clipboard.expireHours} hours</option>}
+            </select>
+          </Row>
           <Row label="Keep up to"><NumberField label="Clipboard items" value={s.clipboard.maxItems} min={5} max={200} suffix="items" onChange={(n) => update({ clipboard: { maxItems: n } })} /></Row>
           <Row label="Include images"><Switch label="Include images" on={s.clipboard.images} onChange={(v) => update({ clipboard: { images: v } })} /></Row>
           <Row label="Clear history" hint="Deletes all saved clips."><button type="button" className="button" onClick={() => window.helo.clipClear()}>Clear</button></Row>

@@ -13,6 +13,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] **Code-signing certificate** (R2). Needed before auto-update.
 - [x] **Try on a live session:** you tested the app on 2026-11-16 and reported that the map and everything else works.
 - [ ] **Try Gemini CLI and Cursor once** (built from their docs; neither is installed on this PC).
+- [ ] **Install OpenCode on this PC** (`npm i -g opencode-ai`), or say I may. The OpenCode connection needs it to see the real permission payloads; I skipped it for now.
 - [ ] **Install on a clean Windows account** and run the release checklist (R6).
 - [ ] **Film, testimonials** for the site.
 
@@ -39,11 +40,12 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 
 - [x] Log file and "Copy diagnostics" in Settings (T1)
 - [x] Uninstall removes the hooks and asks about the data folder (B2, R4)
-- [ ] Clipboard history: expiry, pause switch, encrypted on disk (S12)
+- [x] Clipboard history: expiry, pause switch, encrypted on disk (S12)
 - [ ] Licence file protected with `safeStorage`; timeouts on licence calls (S10, S11)
 - [ ] Packaged build fails when store IDs are unset (R1)
 - [ ] Auto-update or a new-version check (R3)
 - [ ] Rebuild the installer (the one in `app/dist` is from 13 Nov)
+- [ ] Move clipboard encryption to `safeStorage`'s async calls (Electron 45 marks the ones used as deprecated; they still work)
 - [ ] Precompile the Windows helper's C# (A2)
 - [ ] Browser extension: publish to the stores, or drop web chats from the first release (R5)
 - [ ] CI: type check, tests, build (P2)
@@ -51,7 +53,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 ## App: features Halo has
 
 - [ ] Calendar: Join button for Zoom, Meet and Teams links; banner a minute before
-- [ ] Clipboard: search, filters, pins
+- [x] Clipboard: search, filters, pins (already built; checked 2026-11-16)
 - [ ] Focus timer: long break
 - [ ] Disk-space warning
 - [ ] Camera check before a call

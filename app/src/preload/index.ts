@@ -31,6 +31,7 @@ const api: HeloApi = {
   clipRemove: (id) => ipcRenderer.send('clip:remove', String(id)),
   clipClear: () => ipcRenderer.send('clip:clear'),
   clipPin: (id) => ipcRenderer.send('clip:pin', String(id)),
+  clipPause: (on) => ipcRenderer.send('clip:pause', Boolean(on)),
   saveNotes: (text) => ipcRenderer.send('notes:save', String(text)),
   // Dropped File objects only carry their real path through webUtils, in the preload.
   shelfAdd: (files) => ipcRenderer.send('shelf:add', Array.from(files, (f) => webUtils.getPathForFile(f)).filter(Boolean)),

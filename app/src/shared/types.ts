@@ -279,7 +279,8 @@ export interface Settings {
     /** The colour of the bars, the timer, Blink's blush and other highlights. */
     accent: 'mint' | 'rose';
   };
-  clipboard: { maxItems: number; images: boolean };
+  /** `expireHours`: unpinned copies are forgotten after this long (0 = never). `paused`: nothing new is saved. */
+  clipboard: { maxItems: number; images: boolean; expireHours: number; paused: boolean };
   timer: { focusMin: number; breakMin: number };
   battery: { lowPercent: number };
   calendar: { icsUrl: string };
@@ -442,6 +443,8 @@ export interface HeloApi {
   clipRemove(id: string): void;
   clipClear(): void;
   clipPin(id: string): void;
+  /** Stops or resumes saving new copies. */
+  clipPause(on: boolean): void;
   saveNotes(text: string): void;
   shelfAdd(files: File[]): void;
   shelfRemove(id: string): void;

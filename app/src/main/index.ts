@@ -1,7 +1,7 @@
 // Main process: owns the island window, the settings window, the tray, the
 // local bridge for agent hooks, the Windows helper and all persisted data.
 import {
-  app, BrowserWindow, Tray, Menu, ipcMain, screen, shell, nativeImage, globalShortcut, clipboard,
+  app, BrowserWindow, Tray, Menu, ipcMain, screen, shell, nativeImage, globalShortcut, clipboard, safeStorage,
   powerSaveBlocker, ClipboardItem, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents,
 } from 'electron';
 import path from 'node:path';
@@ -18,7 +18,7 @@ import { normalizeSettings, updateSettings, DEFAULT_SETTINGS } from './settings'
 import { WorkMap, MAP_EVENTS } from './workmap';
 import { AgentTracker, parseUsage, parseModel, freshUsage, statusLineText } from './agents';
 import * as timerFns from './timer';
-import { ClipboardHistory } from './clipboard-history';
+import { ClipboardHistory, type ClipCodec } from './clipboard-history';
 import { Shelf, convertedName, CONVERTIBLE } from './shelf';
 import { powerFromRaw, batteryBanner, privacyFromRaw, privacyBanner, mediaFromRaw, mediaTrackKey } from './system';
 import { fetchLyrics } from './lyrics';
@@ -451,6 +451,7 @@ function applySettings(prev: Settings | null) {
   applyFullscreen();
   placeIsland();
   history?.setMax(settings.clipboard.maxItems);
+  if (history?.setExpiry(settings.clipboard.expireHours * 3_600_000)) push({ clipboard: history.list() });
   if (!prev || prev.timer.focusMin !== settings.timer.focusMin || prev.timer.breakMin !== settings.timer.breakMin) {
     push({ timer: timerFns.configure(state.timer, settings.timer.focusMin, settings.timer.breakMin) });
   }
@@ -966,16 +967,14 @@ function showHud(kind: 'volume' | 'brightness', level: number, muted: boolean) {
 // ---------------------------------------------------------------------------
 // Clipboard history
 
-let lastClipText = '';
 let capturing = false;
 
 async function captureClipboard() {
-  if (!history || capturing || license.status().state === 'expired') return;
+  if (!history || capturing || settings.clipboard.paused || license.status().state === 'expired') return;
   capturing = true;
   try {
     const text = await clipboard.readText();
     if (text) {
-      lastClipText = text;
       if (history.addText(text)) push({ clipboard: history.list() });
       return;
     }
@@ -998,11 +997,23 @@ async function captureClipboard() {
   }
 }
 
-/** Without the helper there is no change signal; poll text only. */
-async function pollClipboardFallback() {
-  if (!settings.features.clipboard || helper?.status === 'running') return;
-  const text = await clipboard.readText().catch(() => '');
-  if (text && text !== lastClipText) captureClipboard();
+// There is no polling fallback for when the Windows helper is down: only the helper can tell
+// that a password manager marked a copy as private, so without it nothing is captured at all.
+
+/**
+ * Encrypts the clipboard history on disk with Windows' per-user data protection. Null when
+ * Windows cannot provide it; the history is then stored as before.
+ */
+function clipCodec(): ClipCodec | null {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return null;
+  } catch {
+    return null;
+  }
+  return {
+    seal: (data) => safeStorage.encryptString(data.toString('base64')),
+    open: (data) => Buffer.from(safeStorage.decryptString(data), 'base64'),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1381,7 +1392,6 @@ function registerIpc() {
     const item = history?.get(str(id, 100));
     if (!item) return;
     if (item.kind === 'text') {
-      lastClipText = item.text;
       clipboard.writeText(item.text).catch(() => {});
     } else {
       clipboard.write([new ClipboardItem({ 'image/png': new Blob([new Uint8Array(item.png)], { type: 'image/png' }) })]).catch(() => {});
@@ -1395,6 +1405,11 @@ function registerIpc() {
   on('clip:clear', isOurs, () => {
     history?.clear();
     push({ clipboard: history?.list() ?? [] });
+  });
+  on('clip:pause', isOurs, (_e, v) => {
+    settings = updateSettings(settings, { clipboard: { paused: v === true } });
+    writeJson(userFile('settings.json'), settings);
+    push({ settings });
   });
   on('clip:pin', isIsland, (_e, id) => {
     history?.togglePin(str(id, 100));
@@ -1715,7 +1730,9 @@ app.whenReady().then(async () => {
   loadSettings();
   bridgeInfo = loadBridgeInfo();
   log(`start ${app.getVersion()}${app.isPackaged ? '' : ' dev'}, Windows ${os.release()}, Electron ${process.versions.electron}`);
-  history = new ClipboardHistory(userFile('clipboard'), settings.clipboard.maxItems);
+  const codec = clipCodec();
+  if (!codec) log('clipboard history is not encrypted: Windows data protection is not available');
+  history = new ClipboardHistory(userFile('clipboard'), settings.clipboard.maxItems, Date.now, { codec, expireMs: settings.clipboard.expireHours * 3_600_000 });
   shelf = new Shelf(userFile('shelf.json'));
   state.settings = settings;
   state.license = license.status();
@@ -1803,7 +1820,7 @@ app.whenReady().then(async () => {
     timerTick(now);
     calendarReminders(now);
     if (ticks % 30 === 0 && tracker.tick()) pushAgents();
-    if (ticks % 2 === 0) void pollClipboardFallback();
+    if (ticks % 60 === 0 && history?.prune()) push({ clipboard: history.list() });
     void pollForeground();
     if (ticks % 900 === 0) refreshCalendar().catch(() => {});
     if (ticks % 300 === 0) void refreshBluetooth();

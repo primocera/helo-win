@@ -400,15 +400,30 @@ function Clipboard({ state, now }: { state: IslandState; now: number }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | ClipItem['type']>('all');
   const items = state.clipboard;
-  if (!items.length) return <Empty icon="clipboard" title="Clipboard history is empty" text="Text and images you copy show up here." />;
+  const paused = state.settings.clipboard.paused;
+  const pause = (
+    <button type="button" className="link" title={paused ? 'Save new copies again' : 'Stop saving new copies, for example before copying a password'} onClick={() => window.helo.clipPause(!paused)}>
+      {paused ? 'Resume' : 'Pause'}
+    </button>
+  );
+  if (!items.length) {
+    return (
+      <div className="list-wrap">
+        <div className="list-head"><span className="muted">{paused ? 'Paused: new copies are not saved.' : ''}</span>{pause}</div>
+        <Empty icon="clipboard" title="Clipboard history is empty" text={paused ? 'Resume to save what you copy.' : 'Text and images you copy show up here.'} />
+      </div>
+    );
+  }
   const q = query.trim().toLowerCase();
   const shown = items.filter((c) => (filter === 'all' || c.type === filter) && (!q || c.text.toLowerCase().includes(q)));
   return (
     <div className="list-wrap">
       <div className="list-head">
         <input className="clip-search" type="text" value={query} placeholder="Search copies" spellCheck={false} maxLength={100} onChange={(e) => setQuery(e.target.value)} />
+        {pause}
         <button type="button" className="link" title="Pinned copies are kept" onClick={() => window.helo.clipClear()}>Clear all</button>
       </div>
+      {paused && <div className="muted small-gap">Paused: new copies are not saved.</div>}
       <div className="chips">
         {CLIP_FILTERS.filter((f) => f.id === 'all' || items.some((c) => c.type === f.id)).map((f) => (
           <button key={f.id} type="button" className={`chip ${filter === f.id ? 'active' : ''}`} onClick={() => setFilter(f.id)}>{f.label}</button>

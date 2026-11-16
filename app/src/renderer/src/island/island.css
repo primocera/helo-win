@@ -395,7 +395,7 @@ input[type="range"]:disabled::-webkit-slider-runnable-track { background: linear
 .timer-bar span.break { background: var(--amber); }
 
 /* Lists */
-.list-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 6px; }
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px 6px; }
 .list-head .tile-label { margin: 0; }
 .scroll-list { max-height: 200px; overflow-y: auto; padding-right: 2px; }
 .scroll-list::-webkit-scrollbar { width: 6px; }
