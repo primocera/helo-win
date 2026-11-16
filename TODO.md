@@ -36,7 +36,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] OpenCode connection (needs OpenCode installed here to test; its docs leave the payloads out)
 - [x] Type a free answer or plan feedback on the island (A5)
 - [x] Finished banner and Agents tab show lines changed
-- [ ] Click the finished banner to jump to the terminal
+- [x] Click the finished banner to jump to the terminal (also "needs your answer" and the card's "In terminal" button)
 - [ ] A sound when an agent needs you (permission, question, plan)
 - [ ] Agents tab shows the file a session is editing, and an Answer button on a session that waits
 - [ ] Codex usage rings
@@ -67,7 +67,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] Document conversion on the shelf (PDF, Markdown, Word)
 - [ ] `helo://` links for scripts
 - [x] Notifications from other apps, with a switch per app (works without a Store package; checked with a real toast)
-- [ ] Notifications: click the banner to open the app that sent it
+- [x] Notifications: click the banner to open the app that sent it
 - [ ] Notifications: hide Windows' own banner while the island shows it, if Windows allows it
 - [ ] Notifications: try on Windows 11 and on a clean account (does Windows ask for permission there?)
 - [ ] Hold-to-talk dictation (see "Needs you")

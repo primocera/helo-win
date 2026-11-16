@@ -61,6 +61,8 @@ export interface Banner {
   at?: number;
   /** Clicking the banner does something (reveal a download, open Steam). */
   clickable?: boolean;
+  /** Clicking goes to the window of the session it is about. */
+  jump?: boolean;
 }
 
 export type LicenseStatus =

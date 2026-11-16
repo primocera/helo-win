@@ -39,7 +39,7 @@ export const headline: Feature[] = [
   },
   {
     title: "Know the moment it's done",
-    text: "A banner when your agent finishes or needs an answer, for Claude Code, Codex CLI, Gemini CLI and Cursor. The same for browser downloads and Steam games, and for an app you ask it to watch.",
+    text: "A banner when your agent finishes or needs an answer, for Claude Code, Codex CLI, Gemini CLI and Cursor. Click it to go to the terminal or editor that session is in. The same for browser downloads and Steam games, and for an app you ask it to watch.",
     shipped: true,
   },
   {
@@ -50,7 +50,7 @@ export const headline: Feature[] = [
 ];
 
 export const utilities: Feature[] = [
-  { title: "Notifications", text: "Other apps' Windows notifications show in the island, with a switch for each app.", shipped: true },
+  { title: "Notifications", text: "Other apps' Windows notifications show in the island, with a switch for each app. Click one to open the app.", shipped: true },
   { title: "Focus timer", text: "Work and break sessions that count down in the island, with a long break every few rounds.", shipped: true },
   { title: "Clipboard history", text: "Text and images you copied, one click to copy again. Search it, pin what you reuse, pause it when you like.", shipped: true },
   { title: "Notes", text: "A scratchpad that saves as you type.", shipped: true },
@@ -194,6 +194,7 @@ export const changelog: { version: string; date: string | null; summary: string;
           "Edits show the lines they add and remove before you allow them.",
           "A banner when an agent finishes, with how long it took and how many lines changed. Also for Gemini CLI and Cursor.",
           "\"Needs your answer\" stays until you answer, even when another banner passes over it.",
+          "Click a banner to go to the terminal or editor the session is in.",
           "The work map: a live drawing of the files, commands and subagents a Claude Code session is using.",
           "Usage rings for Claude Code.",
         ],
@@ -203,7 +204,7 @@ export const changelog: { version: string; date: string | null; summary: string;
         items: [
           `${product.mascot}, a face that follows your pointer and shows what your agents are doing.`,
           "Music controls with artwork, and synced lyrics if you turn them on.",
-          "Notifications from other apps, with a switch for each app.",
+          "Notifications from other apps, with a switch for each app. Click one to open the app.",
           "Focus timer with a long break, clipboard history, notes, file shelf and image converter.",
           "Calendar from an iCal address, with a Join button for Zoom, Meet, Teams and Webex.",
           "Alerts for finished downloads, Steam games ready to play, battery, low disk space, microphone and camera.",

@@ -181,7 +181,27 @@ namespace HeloHelper {
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
     [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
 
+    [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+    [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+
     public static long ForegroundWindow() { return GetForegroundWindow().ToInt64(); }
+
+    // "handle|pid" of the window in front, for remembering which window a session lives in.
+    public static string ForegroundInfo() {
+      IntPtr w = GetForegroundWindow();
+      uint pid;
+      GetWindowThreadProcessId(w, out pid);
+      return w.ToInt64() + "|" + pid;
+    }
+
+    // The process id that owns a window, or 0 when the window is gone.
+    public static uint WindowPid(long handle) {
+      IntPtr w = new IntPtr(handle);
+      if (handle == 0 || !IsWindow(w)) return 0;
+      uint pid;
+      GetWindowThreadProcessId(w, out pid);
+      return pid;
+    }
 
     [StructLayout(LayoutKind.Sequential)] struct FsRect { public int L, T, R, B; }
     [StructLayout(LayoutKind.Sequential)] struct FsMonitorInfo { public int Size; public FsRect Monitor; public FsRect Work; public uint Flags; }
@@ -250,6 +270,7 @@ namespace HeloHelper {
     public static bool Activate(long handle) {
       IntPtr w = new IntPtr(handle);
       if (handle == 0 || !IsWindow(w) || !IsWindowVisible(w)) return false;
+      if (IsIconic(w)) ShowWindow(w, 9); // minimised: put it back first
       if (GetForegroundWindow() == w) return true;
       keybd_event(0x12, 0, 0, UIntPtr.Zero);
       keybd_event(0x12, 0, 2, UIntPtr.Zero);
@@ -594,7 +615,9 @@ function Poll-Notifications {
         $binding = $item.Notification.Visual.GetBinding([Windows.UI.Notifications.KnownNotificationBindings]::ToastGeneric)
         if ($binding) { foreach ($t in $binding.GetTextElements()) { $lines += [string]$t.Text } }
       } catch { }
-      Send @{ type = 'notification'; id = $id; app = $app; lines = @($lines) }
+      $aumid = ''
+      try { $aumid = [string]$item.AppInfo.AppUserModelId } catch { }
+      Send @{ type = 'notification'; id = $id; app = $app; aumid = $aumid; lines = @($lines) }
     }
     $script:notifSeen = $now
     $script:notifFailures = 0
@@ -602,6 +625,30 @@ function Poll-Notifications {
     $script:notifFailures++
     if ($script:notifFailures -eq 5) { Send @{ type = 'error'; where = 'notifications'; message = $_.Exception.Message } }
   }
+}
+
+# ---- Opening the app behind a notification ---------------------------------------
+# Only apps that Windows itself lists (the Start menu's app list) can be opened, by the id
+# Windows gave with the notification. An app with a window gets that window brought forward;
+# otherwise it is started the way the Start menu would, which for most apps shows the one
+# that is already running.
+function Open-App([string]$aumid) {
+  if (-not $aumid -or $aumid.Length -gt 300) { return $false }
+  $folder = (New-Object -ComObject Shell.Application).NameSpace('shell:AppsFolder')
+  if ($null -eq $folder) { return $false }
+  foreach ($item in $folder.Items()) {
+    if ([string]$item.Path -ne $aumid) { continue }
+    $target = ''
+    try { $target = [string]$item.ExtendedProperty('System.Link.TargetParsingPath') } catch { }
+    if ($target -and $target -match '\.exe$') {
+      $name = [System.IO.Path]::GetFileNameWithoutExtension($target)
+      $proc = Get-Process -Name $name -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero } | Select-Object -First 1
+      if ($proc -and [HeloHelper.Native]::Activate($proc.MainWindowHandle.ToInt64())) { return $true }
+    }
+    $item.InvokeVerb()
+    return $true
+  }
+  return $false
 }
 
 # ---- Main loop ----------------------------------------------------------------
@@ -643,7 +690,18 @@ while ($true) {
           $result = $name + '|' + [HeloHelper.Native]::ForegroundFullscreen()
         }
         'foreground-window' { $result = [HeloHelper.Native]::ForegroundWindow() }
-        'activate' { $result = [HeloHelper.Native]::Activate([long]$msg.handle) }
+        'foreground-info' {
+          # "handle|pid|process name" of the window in front.
+          $info = [HeloHelper.Native]::ForegroundInfo()
+          $fg = Get-Process -Id ([int]$info.Split('|')[1]) -ErrorAction SilentlyContinue
+          $result = $info + '|' + $(if ($fg) { $fg.ProcessName } else { '' })
+        }
+        'open-app' { $result = Open-App ([string]$msg.aumid) }
+        'activate' {
+          # With a pid, only when the window still belongs to that process (handles get reused).
+          if ($msg.pid -and [HeloHelper.Native]::WindowPid([long]$msg.handle) -ne [uint32]$msg.pid) { $result = $false }
+          else { $result = [HeloHelper.Native]::Activate([long]$msg.handle) }
+        }
         'pid-at' { $result = [HeloHelper.Native]::PidAt([int]$msg.x, [int]$msg.y) }
         'cursor-pos' { $result = [HeloHelper.Native]::CursorPos() }
         'move-cursor' { $result = [HeloHelper.Native]::MoveCursor([int]$msg.x, [int]$msg.y) }

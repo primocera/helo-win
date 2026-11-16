@@ -87,7 +87,7 @@ export function BannerView({ banner, now }: { banner: Banner; now: number }) {
     <div
       className={`banner ${banner.clickable ? 'clickable' : ''}`}
       onClick={banner.clickable ? () => window.helo.bannerClick() : undefined}
-      title={banner.clickable ? (banner.kind === 'input' ? 'Click to dismiss' : 'Click to open') : undefined}
+      title={banner.clickable ? (banner.jump ? 'Click to go to its window' : banner.kind === 'input' ? 'Click to dismiss' : 'Click to open') : undefined}
     >
       <span className={`app-icon kind-${banner.kind}`}>
         <Icon name={BANNER_ICON[banner.kind]} size={17} />

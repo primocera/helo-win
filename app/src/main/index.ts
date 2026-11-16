@@ -36,6 +36,7 @@ import { ChangeTracker, changeText } from './changes';
 import { BannerQueue } from './banners';
 import { LogFile, diagnosticsText, redact } from './logfile';
 import { notificationFromRaw, notificationBanner, rememberApp } from './notifications';
+import { SessionWindows, parseForeground } from './windows';
 import { formatDuration } from '../shared/time';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
 import type {
@@ -199,6 +200,41 @@ function waitKey(sessionId: unknown): string {
   return typeof sessionId === 'string' ? sessionId : '';
 }
 
+// Which window each session was last typed in, so its banners can bring that window forward.
+const sessionWindows = new SessionWindows();
+const sessionKey = (agent: string, sessionId: unknown) => `${agent}:${typeof sessionId === 'string' && sessionId ? sessionId : 'default'}`;
+
+/** A prompt was just sent: the window in front is where the session lives. */
+function rememberWindow(key: string) {
+  if (!helper || helper.status !== 'running') return;
+  helper.request<string>('foreground-info', {}, 1500)
+    .then((reply) => {
+      const win = parseForeground(reply);
+      if (win && win.pid !== process.pid && sessionWindows.remember(key, win)) pushAgents();
+    })
+    .catch(() => {});
+}
+
+/** Brings the session's window to the front. */
+async function jumpTo(key: string) {
+  const win = sessionWindows.get(key);
+  if (!win || !helper || helper.status !== 'running') return;
+  try {
+    const ok = await helper.request<boolean>('activate', { handle: win.handle, pid: win.pid }, 3000);
+    if (ok) return;
+    // The window was closed.
+    sessionWindows.forget(key);
+    pushAgents();
+  } catch (err) {
+    log(`jump to window: ${(err as Error).message}`);
+  }
+}
+
+/** What a click on a session's banner does: go to its window, when it is known. */
+function jumpAction(key: string): (() => void) | null {
+  return sessionWindows.get(key) ? () => void jumpTo(key) : null;
+}
+
 function pushRequests() {
   push({ requests: [...pending.values()].map((p) => p.view) });
   // The card that was being typed in is gone: give the keyboard back.
@@ -316,7 +352,9 @@ function onEvent(input: HookInput, agent: AgentName) {
   if ((MAP_EVENTS as readonly string[]).includes(String(input.hook_event_name))) return;
   if (!settings.features.agents) return;
   // How long this session had been working, read before the event changes its state.
-  const before = tracker.list().find((s) => s.key === `${agent}:${typeof input.session_id === 'string' && input.session_id ? input.session_id : 'default'}`);
+  const key = sessionKey(agent, input.session_id);
+  const before = tracker.list().find((s) => s.key === key);
+  if (input.hook_event_name === 'UserPromptSubmit') rememberWindow(key);
   const workedMs = before?.mood === 'working' ? Date.now() - before.since : 0;
   if (tracker.record(input, agent)) pushAgents();
   // Claude Code also sends a notification for each permission prompt; the card already covers it.
@@ -332,12 +370,15 @@ function onEvent(input: HookInput, agent: AgentName) {
     const lines = changeText(changes.get(input.session_id));
     if (lines) banner.title += ` · ${lines}`;
   }
+  const jump = jumpAction(key);
+  if (banner && jump) banner.jump = true;
   if (banner?.kind === 'input') {
+    if (jump) banner.text = banner.text.replace(/^Open the terminal/, 'Click to open the terminal');
     // Stays on screen until the user clicks it (or answers in the terminal).
-    showBanner(banner, 0, () => {}, waitKey(input.session_id));
+    showBanner(banner, 0, jump ?? (() => {}), waitKey(input.session_id));
     return;
   }
-  showBanner(banner);
+  showBanner(banner, 6000, jump);
 }
 
 // Browser chats (claude.ai, chatgpt.com) reported by the extension.
@@ -935,7 +976,10 @@ function onHelperMessage(msg: HelperMessage) {
       }
       // A card or a "needs your answer" banner is more urgent than another app's message.
       if (pending.size > 0 || banners.hasWaiting()) break;
-      showBanner(notificationBanner(n, settings.notifications.apps, [config.appName, 'Electron']), 6000);
+      // The id Windows gave with the notification. The helper opens it only if Windows lists that app.
+      const aumid = typeof msg.aumid === 'string' && msg.aumid.length <= 300 ? msg.aumid : '';
+      const open = aumid ? () => { helper?.request('open-app', { aumid }, 10_000).catch((err) => log(`open app: ${(err as Error).message}`)); } : null;
+      showBanner(notificationBanner(n, settings.notifications.apps, [config.appName, 'Electron']), 6000, open);
       break;
     }
     case 'notifications-access': {
@@ -1403,7 +1447,12 @@ function registerIpc() {
     if (m) settle(str(m.id), 'allow', m.picks, m.typed);
   });
   on('island:typing', isIsland, (_e, v) => void setTyping(v === true));
-  on('skip', isIsland, (_e, id) => settle(str(id, 100), null));
+  on('skip', isIsland, (_e, id) => {
+    // "In terminal": leave the card and go to the session's window, when it is known.
+    const entry = pending.get(str(id, 100));
+    settle(str(id, 100), null);
+    if (entry) void jumpTo(sessionKey(entry.view.agent, entry.sessionId));
+  });
   on('media', isIsland, (_e, msg) => {
     const m = msg as { action?: unknown; positionMs?: unknown };
     const action = str(m?.action);
