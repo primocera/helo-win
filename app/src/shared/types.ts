@@ -300,6 +300,8 @@ export interface Settings {
   calendar: { icsUrl: string };
   finished: { addToShelf: boolean };
   shelf: { screenshots: boolean };
+  /** The sound when an agent needs the user. `volume`: 0-100. `fullscreen`: also over a game or a fullscreen video. */
+  sound: { on: boolean; volume: number; fullscreen: boolean };
 }
 
 export interface WatchTarget {
@@ -433,6 +435,8 @@ export interface HeloApi {
   onCursor(fn: (v: { x: number; y: number }) => void): () => void;
   /** Main asks the island to close its panel (e.g. the user clicked another app). */
   onCollapse(fn: () => void): () => void;
+  /** Main asks the island to play the "an agent needs you" sound at this volume (0-100). */
+  onSound(fn: (v: { volume: number }) => void): () => void;
   onConvertJob(fn: (job: { id: string; bytes: Uint8Array; mime: string; to: ConvertFormat }) => void): () => void;
   ready(): void;
   hover(on: boolean): void;
@@ -488,6 +492,8 @@ export interface HeloApi {
   /** Puts versions, states and the end of the log on the clipboard, for a support message. */
   copyDiagnostics(): Promise<ActionResult>;
   openLogFolder(): void;
+  /** Plays the "an agent needs you" sound once, at the volume set. */
+  testSound(): void;
   updateSettings(patch: unknown): Promise<SettingsInfo>;
   setStartWithWindows(on: boolean): Promise<SettingsInfo>;
   connectAgent(agent: AgentName, on: boolean): Promise<ActionResult & { info: SettingsInfo }>;

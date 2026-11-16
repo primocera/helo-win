@@ -37,7 +37,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Type a free answer or plan feedback on the island (A5)
 - [x] Finished banner and Agents tab show lines changed
 - [x] Click the finished banner to jump to the terminal (also "needs your answer" and the card's "In terminal" button)
-- [ ] A sound when an agent needs you (permission, question, plan)
+- [x] A sound when an agent needs you (permission, question, plan, "needs your answer"); switch, volume and "Also in fullscreen" in Settings, AI agents
 - [ ] Agents tab shows the file a session is editing, and an Answer button on a session that waits
 - [ ] Codex usage rings
 

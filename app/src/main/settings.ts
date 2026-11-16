@@ -39,6 +39,7 @@ export const DEFAULT_SETTINGS: Settings = {
   calendar: { icsUrl: '' },
   finished: { addToShelf: true },
   shelf: { screenshots: true },
+  sound: { on: true, volume: 60, fullscreen: true },
 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
@@ -91,6 +92,7 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
   const cal = isObj(r.calendar) ? r.calendar : {};
   const fin = isObj(r.finished) ? r.finished : {};
   const sh = isObj(r.shelf) ? r.shelf : {};
+  const snd = isObj(r.sound) ? r.sound : {};
   const notif = isObj(r.notifications) ? r.notifications : {};
   return {
     features,
@@ -108,6 +110,7 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
     calendar: { icsUrl: 'icsUrl' in cal ? cleanIcsUrl(cal.icsUrl) : base.calendar.icsUrl },
     finished: { addToShelf: bool(fin.addToShelf, base.finished.addToShelf) },
     shelf: { screenshots: bool(sh.screenshots, base.shelf.screenshots) },
+    sound: { on: bool(snd.on, base.sound.on), volume: int(snd.volume, 0, 100, base.sound.volume), fullscreen: bool(snd.fullscreen, base.sound.fullscreen) },
   };
 }
 

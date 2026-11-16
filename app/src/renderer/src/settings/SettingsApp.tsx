@@ -106,6 +106,26 @@ function NumberField({ value, min, max, onChange, suffix, label }: { value: numb
   );
 }
 
+/** A 0-100 slider that saves when the user lets go. */
+function VolumeSlider({ value, onCommit }: { value: number; onCommit: (n: number) => void }) {
+  const [v, setV] = useState(value);
+  useEffect(() => setV(value), [value]);
+  return (
+    <input
+      type="range"
+      className="slider"
+      min={0}
+      max={100}
+      step={5}
+      value={v}
+      aria-label="Sound volume"
+      onChange={(e) => setV(Number(e.target.value))}
+      onPointerUp={() => onCommit(v)}
+      onKeyUp={() => onCommit(v)}
+    />
+  );
+}
+
 // ---- Startup apps --------------------------------------------------------------
 
 function StartupApps() {
@@ -400,6 +420,7 @@ function AgentCard({ agent, title, info, setInfo, children }: { agent: AgentName
 
 function Agents({ info, update, setInfo }: { info: SettingsInfo; update: (p: Patch) => void; setInfo: (i: SettingsInfo) => void }) {
   const f = info.settings.features;
+  const snd = info.settings.sound;
   return (
     <>
       <h1>AI agents</h1>
@@ -407,6 +428,22 @@ function Agents({ info, update, setInfo }: { info: SettingsInfo; update: (p: Pat
         <Row label="Agent requests and alerts" hint="Allow/Deny cards, “needs your answer” and “finished” banners.">
           <Switch label="Agent requests" on={f.agents} onChange={(v) => update({ features: { agents: v } })} />
         </Row>
+      </Group>
+      <Group title="Sound">
+        <Row label="Play a sound when an agent needs you" hint="Two soft notes when a card appears or an agent waits for your answer in the terminal.">
+          <Switch label="Sound when an agent needs you" on={snd.on} onChange={(v) => update({ sound: { on: v } })} />
+        </Row>
+        {snd.on && (
+          <div className="subrows">
+            <Row label="Volume">
+              <VolumeSlider value={snd.volume} onCommit={(n) => update({ sound: { volume: n } })} />
+              <button type="button" className="button" onClick={() => window.helo.testSound()}>Play</button>
+            </Row>
+            <Row label="Also in fullscreen" hint="Off, a game or a fullscreen video is never interrupted by the sound. The card still shows.">
+              <Switch label="Sound in fullscreen" on={snd.fullscreen} onChange={(v) => update({ sound: { fullscreen: v } })} />
+            </Row>
+          </div>
+        )}
       </Group>
       <AgentCard agent="claude" title="Claude Code" info={info} setInfo={setInfo}>
         <p className="row-hint">Writes HTTP hooks to ~/.claude/settings.json. New Claude Code sessions pick them up.</p>

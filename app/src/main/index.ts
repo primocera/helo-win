@@ -37,6 +37,7 @@ import { BannerQueue } from './banners';
 import { LogFile, diagnosticsText, redact } from './logfile';
 import { notificationFromRaw, notificationBanner, rememberApp } from './notifications';
 import { SessionWindows, parseForeground } from './windows';
+import { shouldChime } from './sound';
 import { formatDuration } from '../shared/time';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
 import type {
@@ -235,6 +236,16 @@ function jumpAction(key: string): (() => void) | null {
   return sessionWindows.get(key) ? () => void jumpTo(key) : null;
 }
 
+// The sound when an agent needs the user. The island's page plays it.
+let lastChime = 0;
+function chime(test = false) {
+  const now = Date.now();
+  if (!test && !shouldChime({ sound: settings.sound, fullscreen: fullscreenAhead, lastAt: lastChime, now })) return;
+  if (testMode || !island || island.isDestroyed() || !islandReady) return;
+  lastChime = now;
+  island.webContents.send('sound', { volume: settings.sound.volume });
+}
+
 function pushRequests() {
   push({ requests: [...pending.values()].map((p) => p.view) });
   // The card that was being typed in is gone: give the keyboard back.
@@ -342,6 +353,7 @@ function onPermission(input: HookInput, signal: AbortSignal, agent: AgentName): 
     pending.set(id, { view: permissionView(id, input, agent, Date.now(), readForDiff), resolve, sessionId: input.session_id, toolInput });
     signal.addEventListener('abort', () => settle(id, null), { once: true });
     pushRequests();
+    chime();
   });
 }
 
@@ -376,6 +388,7 @@ function onEvent(input: HookInput, agent: AgentName) {
     if (jump) banner.text = banner.text.replace(/^Open the terminal/, 'Click to open the terminal');
     // Stays on screen until the user clicks it (or answers in the terminal).
     showBanner(banner, 0, jump ?? (() => {}), waitKey(input.session_id));
+    chime();
     return;
   }
   showBanner(banner, 6000, jump);
@@ -723,6 +736,8 @@ function createIsland() {
       sandbox: true,
       backgroundThrottling: false,
       spellcheck: false,
+      // The "an agent needs you" sound plays without a click on the island first.
+      autoplayPolicy: 'no-user-gesture-required',
     },
   });
   island.setAlwaysOnTop(true, 'screen-saver');
@@ -1613,6 +1628,7 @@ function registerIpc() {
     if (fs.existsSync(logFile.file)) shell.showItemInFolder(logFile.file);
     else void shell.openPath(app.getPath('userData'));
   });
+  on('sound:test', isSettings, () => chime(true));
   handle('settings:update', isSettings, (_e, patch) => {
     const prev = settings;
     settings = updateSettings(settings, patch);

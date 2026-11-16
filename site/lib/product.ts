@@ -39,7 +39,7 @@ export const headline: Feature[] = [
   },
   {
     title: "Know the moment it's done",
-    text: "A banner when your agent finishes or needs an answer, for Claude Code, Codex CLI, Gemini CLI and Cursor. Click it to go to the terminal or editor that session is in. The same for browser downloads and Steam games, and for an app you ask it to watch.",
+    text: "A banner when your agent finishes or needs an answer, for Claude Code, Codex CLI, Gemini CLI and Cursor, and a soft sound when it needs you. Click it to go to the terminal or editor that session is in. The same for browser downloads and Steam games, and for an app you ask it to watch.",
     shipped: true,
   },
   {
@@ -128,6 +128,8 @@ export const specs: { name: string; lines: string[] }[] = [
       "Claude Code: allow, deny or always allow; answer questions; approve or reject plans",
       "Codex CLI: allow or deny",
       "Gemini CLI and Cursor: working, needs you, finished",
+      // sound.ts; settings.sound
+      "A sound when an agent needs you, with its own volume",
     ],
   },
   {
@@ -195,6 +197,7 @@ export const changelog: { version: string; date: string | null; summary: string;
           "A banner when an agent finishes, with how long it took and how many lines changed. Also for Gemini CLI and Cursor.",
           "\"Needs your answer\" stays until you answer, even when another banner passes over it.",
           "Click a banner to go to the terminal or editor the session is in.",
+          "A soft sound when an agent needs you, with its own volume. It can stay silent in fullscreen.",
           "The work map: a live drawing of the files, commands and subagents a Claude Code session is using.",
           "Usage rings for Claude Code.",
         ],

@@ -3,6 +3,7 @@ import { useIslandState, useNow } from './store';
 import { IdleView, BannerView, CardView, HudView } from './Views';
 import { Panel, visibleTabs } from './Panel';
 import { BlinkFace, FACE_LABELS } from './Blink';
+import { playChime } from './sound';
 import { faceFor, strongestMood, watchMood } from '../../../shared/face';
 import type { Behavior, ConvertFormat, Face, IslandState, PanelTab, SmokeView } from '../../../shared/types';
 
@@ -71,6 +72,7 @@ export function App() {
     else document.documentElement.style.removeProperty('--mint');
   }, [accent]);
 
+  useEffect(() => window.helo.onSound((v) => playChime(v.volume)), []);
   useEffect(() => window.helo.onSmoke((v) => setSmoke(v as SmokeView & { backdrop?: boolean })), []);
   useEffect(() => window.helo.onCursor((v) => {
     setLook(v);
