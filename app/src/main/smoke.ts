@@ -132,7 +132,7 @@ export async function runSmoke(ctx: SmokeCtx) {
       timer: { phase: 'focus', running: true, endsAt: now + 18 * 60_000 + 42_000, remainingMs: 18 * 60_000, focusMin: 25, breakMin: 5, longBreakMin: 15, longEvery: 4, longBreak: false, completedFocus: 2 },
       volume: { level: 64, muted: false },
       power: { hasBattery: true, percent: 82, pluggedIn: true, charging: true },
-      privacy: { microphone: [], camera: [] },
+      privacy: { microphone: ['Zoom'], camera: ['Zoom'], since: { Zoom: now - 754_000 }, micMuted: false },
       bluetooth: [{ name: 'WH-1000XM5', percent: 70 }],
       displays: [
         { index: 0, name: 'Generic PnP Monitor', brightness: 70, max: 100, contrast: null, contrastMax: null, input: null },

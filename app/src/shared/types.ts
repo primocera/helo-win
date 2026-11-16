@@ -204,6 +204,10 @@ export interface ShelfItem {
 export interface PrivacyState {
   microphone: string[];
   camera: string[];
+  /** When each app listed above started using the microphone or camera (app name -> epoch ms), as Windows recorded it. */
+  since: Record<string, number>;
+  /** The microphone is muted for every app. Null: no microphone, or not known. */
+  micMuted: boolean | null;
 }
 
 export interface PowerState {
@@ -496,6 +500,10 @@ export interface HeloApi {
   setKeepAwake(on: boolean): void;
   setVolume(level: number): void;
   setMute(on: boolean): void;
+  /** Mutes or unmutes the microphone, for every app. */
+  setMicMute(on: boolean): void;
+  /** Brings the window of an app that is using the microphone or camera to the front. */
+  callReturn(app: string): void;
   setDisplayBrightness(index: number, level: number): void;
   setDisplayContrast(index: number, level: number): void;
   setDisplayInput(index: number, input: number): void;

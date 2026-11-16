@@ -111,11 +111,50 @@ namespace HeloHelper {
       Guid ctx = Guid.Empty;
       return v.SetMute(on, ref ctx) == 0;
     }
+
+    // The microphone: role 2 is the device calls use, role 0 the default one. Often the same device.
+    static IAudioEndpointVolume Capture(int role) {
+      try {
+        IMMDeviceEnumerator en = (IMMDeviceEnumerator)(new MMDeviceEnumerator());
+        IMMDevice dev;
+        if (en.GetDefaultAudioEndpoint(1, role, out dev) != 0 || dev == null) return null;
+        Guid iid = typeof(IAudioEndpointVolume).GUID;
+        object o;
+        if (dev.Activate(ref iid, 23, IntPtr.Zero, out o) != 0) return null;
+        return (IAudioEndpointVolume)o;
+      } catch { return null; }
+    }
+
+    // "1" muted, "0" not muted, "" when there is no microphone.
+    public static string MicMuted() {
+      try {
+        IAudioEndpointVolume v = Capture(2);
+        if (v == null) v = Capture(0);
+        if (v == null) return "";
+        bool mute;
+        v.GetMute(out mute);
+        return mute ? "1" : "0";
+      } catch { return ""; }
+    }
+
+    // Mutes or unmutes the microphone for every app.
+    public static bool MicMute(bool on) {
+      bool done = false;
+      for (int role = 2; role >= 0; role -= 2) {
+        try {
+          IAudioEndpointVolume v = Capture(role);
+          if (v == null) continue;
+          Guid ctx = Guid.Empty;
+          if (v.SetMute(on, ref ctx) == 0) done = true;
+        } catch { }
+      }
+      return done;
+    }
   }
 
   public static class Privacy {
     // Registry keys of apps that are using the capability right now
-    // ("microphone" or "webcam"), joined with "\n".
+    // ("microphone" or "webcam"), each as "key|start time", joined with "\n".
     public static string InUse(string capability) {
       List<string> found = new List<string>();
       string path = @"Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\" + capability;
@@ -134,7 +173,8 @@ namespace HeloHelper {
           if (sub == null) continue;
           object start = sub.GetValue("LastUsedTimeStart");
           object stop = sub.GetValue("LastUsedTimeStop");
-          if (start is long && stop is long && (long)stop == 0 && (long)start > 0) found.Add(name);
+          // The name, then when it started as Unix milliseconds (the registry holds a FILETIME).
+          if (start is long && stop is long && (long)stop == 0 && (long)start > 0) found.Add(name + "|" + (((long)start - 116444736000000000L) / 10000L).ToString());
         }
       }
     }
@@ -663,10 +703,28 @@ function Open-App([string]$aumid) {
 }
 
 # ---- Main loop ----------------------------------------------------------------
+# Brings the window of an app to the front, given the registry key Windows files its microphone and
+# camera use under: an exe path with # for \ ("C:#Program Files#Zoom#bin#Zoom.exe"), or a Store
+# app's package family name ("MSTeams_8wekyb3d8bbwe").
+function Activate-ConsentApp([string]$key) {
+  if (-not $key -or $key.Length -gt 400) { return $false }
+  $procs = @()
+  if ($key -match '^[A-Za-z]:#') {
+    $path = $key.Replace('#', '\')
+    $procs = @(Get-Process | Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero -and $_.Path -eq $path })
+  } elseif ($key -match '^([A-Za-z0-9.\-]+)_([a-z0-9]{13})$') {
+    $pattern = '\\WindowsApps\\' + [regex]::Escape($Matches[1]) + '_[^\\]*__' + $Matches[2] + '\\'
+    $procs = @(Get-Process | Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero -and $_.Path -match $pattern })
+  }
+  if ($procs.Count -eq 0) { return $false }
+  [HeloHelper.Native]::Activate($procs[0].MainWindowHandle.ToInt64())
+}
+
 $features = @{ media = $false; volume = $false; privacy = $false; power = $false; clipboard = $false; brightness = $false; notifications = $false }
 $lastVolume = ''
 $lastMic = $null
 $lastCam = $null
+$lastMicMuted = $null
 $lastPower = ''
 $lastClip = [uint32]0
 $tick = 0
@@ -683,10 +741,12 @@ while ($true) {
       $id = $msg.id
       $result = $null
       switch ($msg.cmd) {
-        'enable' { foreach ($p in $msg.features.PSObject.Properties) { $features[$p.Name] = [bool]$p.Value }; $lastMediaJson = ''; $lastVolume = ''; $lastMic = $null; $lastCam = $null; $lastPower = ''; $lastBrightness = -1; $result = $true }
+        'enable' { foreach ($p in $msg.features.PSObject.Properties) { $features[$p.Name] = [bool]$p.Value }; $lastMediaJson = ''; $lastVolume = ''; $lastMic = $null; $lastCam = $null; $lastMicMuted = $null; $lastPower = ''; $lastBrightness = -1; $result = $true }
         'media' { $result = Invoke-Media $msg.action $msg.value; Poll-Media $true }
         'volume' { $result = [HeloHelper.Audio]::Set([int]$msg.value) }
         'mute' { $result = [HeloHelper.Audio]::Mute([bool]$msg.value) }
+        'mic-mute' { $result = [HeloHelper.Audio]::MicMute([bool]$msg.value); $lastMicMuted = $null }
+        'activate-app' { $result = Activate-ConsentApp ([string]$msg.key) }
         'brightness' {
           Get-CimInstance -Namespace root/wmi -ClassName WmiMonitorBrightnessMethods -ErrorAction Stop |
             Invoke-CimMethod -MethodName WmiSetBrightness -Arguments @{ Timeout = [uint32]1; Brightness = [byte]$msg.value } | Out-Null
@@ -753,6 +813,11 @@ while ($true) {
       if ($mic -ne $lastMic -or $cam -ne $lastCam) {
         $lastMic = $mic; $lastCam = $cam
         Send @{ type = 'privacy'; microphone = @($mic.Split("`n") | Where-Object { $_ }); camera = @($cam.Split("`n") | Where-Object { $_ }) }
+      }
+      $mm = [HeloHelper.Audio]::MicMuted()
+      if ($mm -ne $lastMicMuted) {
+        $lastMicMuted = $mm
+        if ($mm) { Send @{ type = 'mic'; muted = ($mm -eq '1') } } else { Send @{ type = 'mic'; muted = $null } }
       }
     }
     if ($features.power -and ($tick % 50 -eq 1)) {

@@ -64,13 +64,50 @@ export function appNameFromConsentKey(key: string): string {
   return name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^Windows /, 'Windows ');
 }
 
-export function privacyFromRaw(raw: { microphone?: unknown; camera?: unknown }, selfNames: string[] = []): PrivacyState {
+/** One line from the helper: the registry key, and after a "|" when the app started (epoch ms). Older lines are the key alone. */
+function consentEntry(line: string): { key: string; since: number } {
+  const m = /^(.*)\|(\d{1,15})$/.exec(line);
+  return m ? { key: m[1], since: Number(m[2]) } : { key: line, since: 0 };
+}
+
+type RawPrivacy = { microphone?: unknown; camera?: unknown };
+const rawList = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+
+/** `micMuted` is not in this message; it is carried over from the state before. */
+export function privacyFromRaw(raw: RawPrivacy, selfNames: string[] = [], micMuted: boolean | null = null): PrivacyState {
+  const since: Record<string, number> = {};
   const names = (v: unknown) => {
-    const list = Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
-    const out = list.map(appNameFromConsentKey).filter((n) => n && !selfNames.includes(n.toLowerCase()));
-    return [...new Set(out)].slice(0, 5);
+    const out: string[] = [];
+    for (const entry of rawList(v).map(consentEntry)) {
+      const name = appNameFromConsentKey(entry.key);
+      if (!name || selfNames.includes(name.toLowerCase())) continue;
+      if (!out.includes(name)) out.push(name);
+      // An app on a call uses both: the call is as old as the earlier of the two.
+      if (entry.since > 0 && (!since[name] || entry.since < since[name])) since[name] = entry.since;
+    }
+    return out.slice(0, 5);
   };
-  return { microphone: names(raw.microphone), camera: names(raw.camera) };
+  const microphone = names(raw.microphone);
+  const camera = names(raw.camera);
+  for (const name of Object.keys(since)) if (!microphone.includes(name) && !camera.includes(name)) delete since[name];
+  return { microphone, camera, since, micMuted };
+}
+
+/** The registry key behind each app name in the message, so the app's window can be found again. */
+export function consentKeys(raw: RawPrivacy): Map<string, string> {
+  const keys = new Map<string, string>();
+  for (const line of [...rawList(raw.microphone), ...rawList(raw.camera)]) {
+    const { key } = consentEntry(line);
+    const name = appNameFromConsentKey(key);
+    if (name && !keys.has(name)) keys.set(name, key);
+  }
+  return keys;
+}
+
+/** The apps that have just started using the microphone or camera. */
+export function privacyStarted(prev: PrivacyState, next: PrivacyState): string[] {
+  const before = new Set([...prev.microphone, ...prev.camera]);
+  return [...new Set([...next.camera, ...next.microphone])].filter((n) => !before.has(n));
 }
 
 export function privacyBanner(prev: PrivacyState, next: PrivacyState): Banner | null {

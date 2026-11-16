@@ -166,6 +166,8 @@ test('privacy: registry keys become app names and new users raise a banner', () 
   const prev = privacyFromRaw({ microphone: [], camera: [] });
   const next = privacyFromRaw({ microphone: ['C:#Apps#Teams.exe', 'C:#Apps#Teams.exe', 'C:#x#helo.exe'], camera: [] }, ['helo']);
   expect(next.microphone).toEqual(['Teams']);
+  expect(next.since).toEqual({});
+  expect(next.micMuted).toBe(null);
   expect(privacyBanner(prev, next)).toEqual({ kind: 'privacy', title: 'Microphone on', text: 'Teams' });
   expect(privacyBanner(next, next)).toBe(null);
 });

@@ -470,6 +470,15 @@ input[type="range"]:disabled::-webkit-slider-runnable-track { background: linear
 .toggle.on { background: rgba(255, 181, 71, 0.16); color: var(--amber); }
 .battery { display: flex; align-items: center; gap: 8px; }
 .privacy-on { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--amber); }
+.calls { display: flex; flex-direction: column; gap: 4px; }
+.call { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; }
+.call-name { min-width: 0; font-weight: 600; color: var(--amber); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.call-what { flex: none; font-size: 10.5px; color: var(--dim); }
+.call-time { margin-left: auto; flex: none; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.call .session-go { margin-left: 0; }
+.call-time + .session-go { margin-left: 0; }
+.call-what + .session-go { margin-left: auto; }
+.toggle.mic-mute { margin-top: 8px; }
 
 /* ---- Blink, the mascot ---------------------------------------------------- */
 

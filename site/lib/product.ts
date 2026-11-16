@@ -61,7 +61,7 @@ export const utilities: Feature[] = [
   { title: "Keep awake", text: "One switch stops the screen from sleeping while something long runs.", shipped: true },
   { title: "Battery alerts", text: "Plugged in, unplugged, full and low, shown in the island.", shipped: true },
   { title: "Low disk space", text: "A warning before the Windows drive fills up, at the limit you set.", shipped: true },
-  { title: "Microphone and camera", text: "See when an app starts using either one.", shipped: true },
+  { title: "Microphone and camera", text: "See when an app starts using either one and how long it has been on, go back to that app with a click, and mute the microphone.", shipped: true },
   { title: "Volume", text: "Volume changes show in the island, with a slider to set it.", shipped: true },
   { title: "Startup apps", text: "See what opens when you sign in to Windows, and switch your own apps on or off.", shipped: true },
 ];
@@ -223,6 +223,7 @@ export const changelog: { version: string; date: string | null; summary: string;
           "Calendar from an iCal address, with a Join button for Zoom, Meet, Teams and Webex.",
           `Links for scripts: ${product.name.toLowerCase()}://banner, timer, awake, shelf and open.`,
           "Alerts for finished downloads, Steam games ready to play, battery, low disk space, microphone and camera.",
+          "During a call: how long an app has had the microphone or camera, a button to go back to it, and a microphone mute.",
           "Brightness, contrast and input for monitors that support DDC/CI.",
         ],
       },

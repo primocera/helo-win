@@ -20,7 +20,7 @@ import { AgentTracker, parseUsage, parseModel, freshUsage, statusLineText } from
 import * as timerFns from './timer';
 import { ClipboardHistory, type ClipCodec } from './clipboard-history';
 import { Shelf, convertedName, CONVERTIBLE } from './shelf';
-import { powerFromRaw, batteryBanner, privacyFromRaw, privacyBanner, mediaFromRaw, mediaTrackKey, diskWarning, diskBanner, type DiskWarnState } from './system';
+import { powerFromRaw, batteryBanner, privacyFromRaw, privacyBanner, privacyStarted, consentKeys, mediaFromRaw, mediaTrackKey, diskWarning, diskBanner, type DiskWarnState } from './system';
 import { isMeetingLink } from './calendar';
 import { fetchLyrics } from './lyrics';
 import { fetchCalendar } from './calendar';
@@ -165,7 +165,7 @@ const state: IslandState = {
   notes: '',
   shelf: [],
   keepAwake: false,
-  privacy: { microphone: [], camera: [] },
+  privacy: { microphone: [], camera: [], since: {}, micMuted: null },
   power: null,
   volume: null,
   hud: null,
@@ -556,7 +556,7 @@ function syncHelperFeatures() {
   if (wantHelper && helper.status === 'off') helper.start();
   if (!wantHelper && helper.status !== 'off') helper.stop();
   if (!f.media) push({ media: null, lyrics: null });
-  if (!f.privacy) push({ privacy: { microphone: [], camera: [] } });
+  if (!f.privacy) push({ privacy: { microphone: [], camera: [], since: {}, micMuted: null } });
 }
 
 function settingsInfo(): SettingsInfo {
@@ -996,10 +996,19 @@ function onHelperMessage(msg: HelperMessage) {
       break;
     }
     case 'privacy': {
-      const next = privacyFromRaw(msg as { microphone?: unknown; camera?: unknown }, ['electron', 'helo']);
+      const raw = msg as { microphone?: unknown; camera?: unknown };
+      const next = privacyFromRaw(raw, ['electron', 'helo'], state.privacy.micMuted);
+      callKeys = consentKeys(raw);
       const banner = privacyBanner(state.privacy, next);
+      const started = privacyStarted(state.privacy, next)[0];
       push({ privacy: next });
-      if (banner && settings.features.privacy) showBanner(banner, 5000);
+      // Clicking the banner goes to the app that turned the microphone or camera on.
+      if (banner && settings.features.privacy) showBanner(banner, 5000, started ? () => returnToCall(started) : null);
+      break;
+    }
+    case 'mic': {
+      const micMuted = typeof msg.muted === 'boolean' ? msg.muted : null;
+      if (settings.features.privacy && micMuted !== state.privacy.micMuted) push({ privacy: { ...state.privacy, micMuted } });
       break;
     }
     case 'notification': {
@@ -1039,6 +1048,16 @@ function onHelperMessage(msg: HelperMessage) {
     default:
       break;
   }
+}
+
+// The registry key Windows files each app under, by the name shown. The helper finds the app's window from it.
+let callKeys = new Map<string, string>();
+
+/** Brings an app that is using the microphone or camera to the front. Only apps in the current list can be asked for. */
+function returnToCall(name: string) {
+  const key = callKeys.get(name);
+  if (!key || !helper || helper.status !== 'running') return;
+  helper.request('activate-app', { key }, 8000).catch((err) => log(`return to call: ${(err as Error).message}`));
 }
 
 function showHud(kind: 'volume' | 'brightness', level: number, muted: boolean) {
@@ -1668,6 +1687,13 @@ function registerIpc() {
     if (typeof v === 'number' && Number.isFinite(v)) helper?.request('volume', { value: Math.round(Math.max(0, Math.min(100, v))) }).catch(() => {});
   });
   on('volume:mute', isIsland, (_e, v) => { helper?.request('mute', { value: v === true }).catch(() => {}); });
+  on('mic:mute', isIsland, (_e, v) => {
+    if (!settings.features.privacy || !helper) return;
+    helper.request<boolean>('mic-mute', { value: v === true }, 4000)
+      .then((ok) => { if (ok) push({ privacy: { ...state.privacy, micMuted: v === true } }); })
+      .catch((err) => log(`mic mute: ${(err as Error).message}`));
+  });
+  on('call:return', isIsland, (_e, name) => returnToCall(str(name, 200)));
   on('displays:refresh', isIsland, () => { refreshDisplays(); });
   on('displays:set', isIsland, (_e, index, level) => {
     const d = state.displays.find((x) => x.index === index);

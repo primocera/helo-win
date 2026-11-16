@@ -77,7 +77,7 @@ export function Panel({ state, tab, setTab, now, fileOver }: { state: IslandStat
             {tab === 'notes' && <Notes initial={state.notes} />}
             {tab === 'shelf' && <Shelf items={state.shelf} fileOver={fileOver} converter={state.settings.features.converter} />}
             {tab === 'calendar' && <Calendar state={state} now={now} />}
-            {tab === 'system' && <System state={state} />}
+            {tab === 'system' && <System state={state} now={now} />}
             {tab === 'finished' && <Finished state={state} now={now} />}
           </>
         )}
@@ -585,14 +585,20 @@ const INPUTS = [
   { value: 0x1b, label: 'USB-C' },
 ];
 
-function System({ state }: { state: IslandState }) {
+function System({ state, now }: { state: IslandState; now: number }) {
   const f = state.settings.features;
   useEffect(() => {
     if (f.displays) window.helo.refreshDisplays();
   }, [f.displays]);
   const p = state.power;
   const v = state.volume;
-  const using = [...state.privacy.microphone.map((n) => `${n} (mic)`), ...state.privacy.camera.map((n) => `${n} (camera)`)];
+  const pr = state.privacy;
+  // One row per app: what it is using, and for how long.
+  const calls = [...new Set([...pr.microphone, ...pr.camera])].map((name) => ({
+    name,
+    what: [pr.microphone.includes(name) ? 'mic' : '', pr.camera.includes(name) ? 'camera' : ''].filter(Boolean).join(' + '),
+    since: pr.since[name] ?? 0,
+  }));
   return (
     <div className="system">
       <div className="card-row">
@@ -643,9 +649,32 @@ function System({ state }: { state: IslandState }) {
         {f.privacy && (
           <div className="tile grow">
             <div className="tile-label">Microphone &amp; camera</div>
-            {using.length ? (
-              <div className="privacy-on"><span className="mic-dot" />{using.join(', ')}</div>
+            {calls.length ? (
+              <div className="calls">
+                {calls.map((c) => (
+                  <div key={c.name} className="call">
+                    <span className="mic-dot" />
+                    <span className="call-name">{c.name}</span>
+                    <span className="call-what">{c.what}</span>
+                    {c.since > 0 && <span className="call-time" title="How long it has been on">{formatClock(now - c.since)}</span>}
+                    <button type="button" className="session-go" title={`Go to ${c.name}`} onClick={() => window.helo.callReturn(c.name)}>Open</button>
+                  </div>
+                ))}
+              </div>
             ) : <div className="muted">Not in use</div>}
+            {pr.micMuted != null && (pr.microphone.length > 0 || pr.micMuted) && (
+              <button
+                type="button"
+                className={`toggle mic-mute ${pr.micMuted ? 'on' : ''}`}
+                role="switch"
+                aria-checked={pr.micMuted}
+                title="Mutes the microphone for every app, until you switch it back."
+                onClick={() => window.helo.setMicMute(!pr.micMuted)}
+              >
+                <Icon name="mic" size={14} />
+                {pr.micMuted ? 'Microphone muted' : 'Mute microphone'}
+              </button>
+            )}
           </div>
         )}
       </div>
