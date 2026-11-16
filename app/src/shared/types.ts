@@ -306,6 +306,8 @@ export interface Settings {
   shelf: { screenshots: boolean };
   /** The sound when an agent needs the user. `volume`: 0-100. `fullscreen`: also over a game or a fullscreen video. */
   sound: { on: boolean; volume: number; fullscreen: boolean };
+  /** helo:// links from scripts and shortcuts. */
+  links: { on: boolean };
 }
 
 export interface WatchTarget {
@@ -441,6 +443,8 @@ export interface HeloApi {
   onCollapse(fn: () => void): () => void;
   /** Main asks the island to play the "an agent needs you" sound at this volume (0-100). */
   onSound(fn: (v: { volume: number }) => void): () => void;
+  /** Main asks the island to open its panel on this tab (a helo://open link). */
+  onOpenTab(fn: (tab: PanelTab) => void): () => void;
   onConvertJob(fn: (job: { id: string; bytes: Uint8Array; mime: string; to: ConvertFormat }) => void): () => void;
   ready(): void;
   hover(on: boolean): void;

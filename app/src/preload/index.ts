@@ -15,6 +15,7 @@ const api: HeloApi = {
   onCursor: (fn) => listen('cursor', fn),
   onCollapse: (fn) => listen('island:collapse', () => fn()),
   onSound: (fn) => listen('sound', fn),
+  onOpenTab: (fn) => listen('island:open', fn),
   onConvertJob: (fn) => listen('convert:job', fn),
   ready: () => ipcRenderer.send('island:ready'),
   hover: (on) => ipcRenderer.send('island:hover', Boolean(on)),

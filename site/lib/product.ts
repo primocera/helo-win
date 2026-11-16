@@ -162,6 +162,15 @@ export const specs: { name: string; lines: string[] }[] = [
     lines: ["PNG, JPG and WebP"],
   },
   {
+    name: "Links for scripts",
+    // links.ts: the five actions a helo:// link can ask for
+    lines: [
+      `${product.name.toLowerCase()}://banner, timer, awake, shelf and open`,
+      "A file is added to the shelf only after you click",
+      "Can be switched off",
+    ],
+  },
+  {
     name: "Placement",
     // settings.ts display
     lines: ["Top or bottom edge, or dragged anywhere", "Any display", "Hides in fullscreen"],
@@ -211,6 +220,7 @@ export const changelog: { version: string; date: string | null; summary: string;
           "Notifications from other apps, with a switch for each app. Click one to open the app.",
           "Focus timer with a long break, clipboard history, notes, file shelf and image converter.",
           "Calendar from an iCal address, with a Join button for Zoom, Meet, Teams and Webex.",
+          `Links for scripts: ${product.name.toLowerCase()}://banner, timer, awake, shelf and open.`,
           "Alerts for finished downloads, Steam games ready to play, battery, low disk space, microphone and camera.",
           "Brightness, contrast and input for monitors that support DDC/CI.",
         ],

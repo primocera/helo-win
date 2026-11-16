@@ -38,6 +38,7 @@ import { LogFile, diagnosticsText, redact } from './logfile';
 import { notificationFromRaw, notificationBanner, rememberApp } from './notifications';
 import { SessionWindows, parseForeground } from './windows';
 import { shouldChime } from './sound';
+import { parseLink, findLink, shownPath, LinkLimiter, LINK_SCHEME } from './links';
 import { formatDuration } from '../shared/time';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
 import type {
@@ -541,6 +542,7 @@ function applySettings(prev: Settings | null) {
   if (!settings.features.usage) state.agents.usage = null;
   syncHelperFeatures();
   syncFinishedWatchers();
+  if (!prev || prev.links.on !== settings.links.on) syncLinkHandler();
   refreshConnections();
   if (!prev || prev.features.battery !== settings.features.battery) void refreshBluetooth();
 }
@@ -777,6 +779,9 @@ function createIsland() {
 let hoverOn = false;
 let outsideSince = 0;
 
+/** A link opened the panel while the pointer was elsewhere: it stays open this long for the pointer to arrive. */
+let holdOpenUntil = 0;
+
 /**
  * Safety net for fast pointer moves: if the pointer jumps out of the window,
  * the page may never see a mouseleave. While hovered or open (and not being
@@ -792,8 +797,10 @@ function checkPointerLeft() {
   const b = island.getBounds();
   if (p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height) {
     outsideSince = 0;
+    holdOpenUntil = 0;
     return;
   }
+  if (Date.now() < holdOpenUntil) return;
   if (!outsideSince) {
     outsideSince = Date.now();
     return;
@@ -1225,6 +1232,69 @@ export async function convertImage(source: string, to: ConvertFormat): Promise<s
   const target = convertedName(source, to === 'jpeg' ? 'jpg' : to);
   fs.writeFileSync(target, out, { flag: 'wx' });
   return target;
+}
+
+// ---------------------------------------------------------------------------
+// helo:// links from scripts and shortcuts (links.ts says what a link may ask for)
+
+const linkLimiter = new LinkLimiter();
+
+function runLink(raw: string) {
+  if (!settings.links.on || license.status().state === 'expired') return;
+  const link = parseLink(raw);
+  if (!link) {
+    log('link refused: not one of the things a link can do');
+    return;
+  }
+  if (!linkLimiter.allow(Date.now())) return;
+  const f = settings.features;
+  switch (link.kind) {
+    case 'banner':
+      showBanner({ kind: 'info', title: link.title, text: link.text });
+      break;
+    case 'timer': {
+      if (!f.timer) break;
+      const now = Date.now();
+      const t = state.timer;
+      const next = link.action === 'pause' ? timerFns.pause(t, now)
+        : link.action === 'reset' ? timerFns.reset(t)
+          : link.action === 'skip' ? timerFns.skip(t)
+            // With minutes: a focus session of that length, from the start.
+            : link.minutes ? timerFns.start({ ...timerFns.reset(t), remainingMs: link.minutes * 60_000 }, now)
+              : timerFns.start(t, now);
+      push({ timer: next });
+      break;
+    }
+    case 'awake':
+      setKeepAwake(link.on === 'toggle' ? keepAwakeId == null : link.on);
+      break;
+    case 'shelf': {
+      if (!f.shelf) break;
+      // The path came from outside. It is shown first, and only read once the user clicks.
+      const file = link.path;
+      showBanner({ kind: 'info', title: 'Add to the shelf? Click to add', text: shownPath(file) }, 20_000, () => {
+        if (shelf.add([file])) void loadShelfIcons();
+        else showBanner({ kind: 'warn', title: 'Not added to the shelf', text: 'That file does not exist, or it is already there.' }, 4000);
+      });
+      break;
+    }
+    case 'open':
+      if (!island || island.isDestroyed() || !islandReady) break;
+      holdOpenUntil = Date.now() + 8000;
+      island.webContents.send('island:open', link.tab);
+      break;
+  }
+}
+
+/** Windows starts the app with the link as an argument; the app says here that links are its to open. */
+function syncLinkHandler() {
+  if (!app.isPackaged || testMode) return;
+  try {
+    if (settings.links.on) app.setAsDefaultProtocolClient(LINK_SCHEME);
+    else app.removeAsDefaultProtocolClient(LINK_SCHEME);
+  } catch (err) {
+    log(`link handler: ${(err as Error).message}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1813,7 +1883,12 @@ function usePort(port: number) {
   showBanner({ kind: failed.length ? 'warn' : 'info', title: `Port ${old.port} was busy`, text }, 20_000);
 }
 
-app.on('second-instance', () => openSettings());
+// Starting the app again opens Settings; starting it with a link runs the link.
+app.on('second-instance', (_e, argv) => {
+  const link = findLink(argv);
+  if (link) runLink(link);
+  else openSettings();
+});
 app.on('window-all-closed', () => { /* tray app: keep running */ });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('before-quit', () => {
@@ -1830,6 +1905,9 @@ function disconnectAll() {
   try {
     if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: false });
   } catch { /* the entry is also removed with the app */ }
+  try {
+    if (app.isPackaged) app.removeAsDefaultProtocolClient(LINK_SCHEME);
+  } catch { /* nothing to remove */ }
   log(`disconnect-all: hooks removed from ${removed.join(', ') || 'nothing'}${failed.length ? `; could not change ${failed.join(', ')}` : ''}`);
   app.exit(failed.length ? 1 : 0);
 }
@@ -1950,4 +2028,7 @@ app.whenReady().then(async () => {
   setInterval(sendCursor, 66);
   applySettings(null);
   loadShelfIcons();
+  // The app was started by a link: run it once the island is up.
+  const startLink = findLink(process.argv.slice(1));
+  if (startLink) setTimeout(() => runLink(startLink), 2000);
 });

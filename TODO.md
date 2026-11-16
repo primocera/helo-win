@@ -65,7 +65,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] Camera check a minute before a meeting, with the Join button
 - [ ] Calls: how long an app has had the microphone, click to return to the meeting, mute
 - [ ] Document conversion on the shelf (PDF, Markdown, Word)
-- [ ] `helo://` links for scripts
+- [x] `helo://` links for scripts: banner, timer, awake, shelf (after a click), open a tab; switch in Settings, General
 - [x] Notifications from other apps, with a switch per app (works without a Store package; checked with a real toast)
 - [x] Notifications: click the banner to open the app that sent it
 - [ ] Notifications: hide Windows' own banner while the island shows it, if Windows allows it

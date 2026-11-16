@@ -255,6 +255,14 @@ function General({ info, update, setInfo }: { info: SettingsInfo; update: (p: Pa
           </div>
         </Row>
       </Group>
+      <Group title="Scripts">
+        <Row
+          label={`${info.appName.toLowerCase()}:// links`}
+          hint={<>Lets a script or a shortcut show a banner, start the timer, keep the screen awake, offer a file to the shelf or open a tab. For example: <code>start {info.appName.toLowerCase()}://timer/start?minutes=25</code>. A link can do those five things and nothing else, and a file is only added after you click.</>}
+        >
+          <Switch label="Links from scripts" on={info.settings.links.on} onChange={(v) => update({ links: { on: v } })} />
+        </Row>
+      </Group>
       <Group title="Help">
         <Row
           label="Diagnostics"

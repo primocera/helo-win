@@ -98,6 +98,14 @@ export function App() {
     window.helo.hover(false);
   }), [closePanel]);
 
+  // A helo://open link: the panel opens on that tab, as if the pointer had come to it.
+  useEffect(() => window.helo.onOpenTab((t) => {
+    clearTimers();
+    setTab(t);
+    setPanelOpen(true);
+    window.helo.hover(true);
+  }), []);
+
   // Tell the main process when the panel opens or closes (focusability).
   useEffect(() => {
     window.helo.panel(panelOpen);
