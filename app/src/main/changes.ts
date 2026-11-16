@@ -37,8 +37,22 @@ export function callChange(tool: unknown, toolInput: unknown, readFile: (file: s
   return null;
 }
 
+/** The file an Edit, MultiEdit, Write or NotebookEdit call is about, or '' for any other tool. */
+export function editedFile(tool: unknown, toolInput: unknown): string {
+  if (tool !== 'Edit' && tool !== 'MultiEdit' && tool !== 'Write' && tool !== 'NotebookEdit') return '';
+  const i = toolInput && typeof toolInput === 'object' ? (toolInput as Input) : {};
+  return str(i.file_path) || str(i.notebook_path);
+}
+
+/** The last part of a path, whichever way its slashes lean. */
+function baseName(file: string): string {
+  return file.split(/[\\/]/).filter(Boolean).pop()?.slice(0, 80) ?? '';
+}
+
 export class ChangeTracker {
   private totals = new Map<string, LineCount>();
+  /** The file each session is editing, by session. Gone when the session stops or gets a new prompt. */
+  private files = new Map<string, string>();
   /** Calls that have started but not yet reported back. */
   private open = new Map<string, LineCount>();
 
@@ -49,21 +63,38 @@ export class ChangeTracker {
     return `${session}:${str(input.tool_use_id) || file}`;
   }
 
-  /** Records a hook event. Returns true when a session's total changed. */
+  private noteFile(session: string, input: Input): boolean {
+    const file = baseName(editedFile(input.tool_name, input.tool_input));
+    if (!file || this.files.get(session) === file) return false;
+    this.files.delete(session);
+    this.files.set(session, file);
+    if (this.files.size > 200) this.files.delete(this.files.keys().next().value as string);
+    return true;
+  }
+
+  /** Records a hook event. Returns true when a session's total or the file it is editing changed. */
   record(input: Input): boolean {
     const session = str(input.session_id) || 'default';
     switch (input.hook_event_name) {
       // A new prompt starts a new count.
-      case 'UserPromptSubmit':
-        return this.totals.delete(session);
+      case 'UserPromptSubmit': {
+        const hadFile = this.files.delete(session);
+        return this.totals.delete(session) || hadFile;
+      }
+      case 'Stop':
+        return this.files.delete(session);
+      // Asking to edit a file is also where the session is.
+      case 'PermissionRequest':
+        return this.noteFile(session, input);
       case 'PreToolUse': {
+        const fileChanged = this.noteFile(session, input);
         const change = callChange(input.tool_name, input.tool_input, this.readFile);
         if (change) {
           this.open.set(this.callKey(session, input), change);
           // Calls that never report back (the session was closed) must not pile up.
           if (this.open.size > 200) this.open.delete(this.open.keys().next().value as string);
         }
-        return false;
+        return fileChanged;
       }
       case 'PostToolUseFailure':
         this.open.delete(this.callKey(session, input));
@@ -86,8 +117,14 @@ export class ChangeTracker {
     return this.totals.get(str(session) || 'default') ?? null;
   }
 
+  /** The name (no folder) of the file the session is editing, or ''. */
+  file(session: unknown): string {
+    return this.files.get(str(session) || 'default') ?? '';
+  }
+
   forget(session: unknown): void {
     this.totals.delete(str(session) || 'default');
+    this.files.delete(str(session) || 'default');
   }
 }
 

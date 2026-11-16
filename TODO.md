@@ -38,7 +38,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Finished banner and Agents tab show lines changed
 - [x] Click the finished banner to jump to the terminal (also "needs your answer" and the card's "In terminal" button)
 - [x] A sound when an agent needs you (permission, question, plan, "needs your answer"); switch, volume and "Also in fullscreen" in Settings, AI agents
-- [ ] Agents tab shows the file a session is editing, and an Answer button on a session that waits
+- [x] Agents tab shows the file a session is editing (Claude Code), and an Answer button on a session that waits (Open on the others) when its window is known
 - [ ] Codex usage rings
 
 ## App: release

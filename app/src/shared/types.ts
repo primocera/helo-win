@@ -96,6 +96,10 @@ export interface AgentSession {
   /** Lines added and removed since the session's last prompt (Claude Code, with the work map on). */
   added?: number;
   removed?: number;
+  /** The name of the file the session is editing right now (Claude Code). */
+  file?: string;
+  /** The session's window is known, so the island can bring it forward. */
+  jump?: boolean;
 }
 
 export interface AgentsState {
@@ -482,6 +486,8 @@ export interface HeloApi {
   refreshDisplays(): void;
   openSettings(section?: string): void;
   bannerClick(): void;
+  /** Brings the window of this session (its `key`) to the front. */
+  sessionJump(key: string): void;
   listWindows(): Promise<WatchTarget[]>;
   startWatch(pid: number, condition: WatchCondition): Promise<ActionResult>;
   cancelWatch(): void;

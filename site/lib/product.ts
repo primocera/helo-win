@@ -197,6 +197,7 @@ export const changelog: { version: string; date: string | null; summary: string;
           "A banner when an agent finishes, with how long it took and how many lines changed. Also for Gemini CLI and Cursor.",
           "\"Needs your answer\" stays until you answer, even when another banner passes over it.",
           "Click a banner to go to the terminal or editor the session is in.",
+          "The Agents tab shows the file a Claude Code session is editing, and a button that takes you to a session that waits.",
           "A soft sound when an agent needs you, with its own volume. It can stay silent in fullscreen.",
           "The work map: a live drawing of the files, commands and subagents a Claude Code session is using.",
           "Usage rings for Claude Code.",

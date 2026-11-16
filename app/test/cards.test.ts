@@ -1,7 +1,7 @@
 // What a card shows of the thing being approved, and the lines-changed count.
 import { test, expect } from 'vitest';
 import { fullSummary, permissionView, MAX_SUMMARY } from '../src/main/format';
-import { ChangeTracker, callChange, changeText } from '../src/main/changes';
+import { ChangeTracker, callChange, changeText, editedFile } from '../src/main/changes';
 
 test('card summary: the whole command is kept, with its line breaks', () => {
   const command = `echo start\n${'npm run build && '.repeat(60)}\r\nrm -rf /important`;
@@ -40,7 +40,8 @@ test('line counts: Edit, MultiEdit and Write', () => {
 test('line counts: added only when the tool ran, per session, and reset by the next prompt', () => {
   const t = new ChangeTracker();
   const edit = { session_id: 's', tool_name: 'Edit', tool_use_id: 't1', tool_input: { file_path: 'a.ts', old_string: 'a', new_string: 'b\nc' } };
-  expect(t.record({ ...edit, hook_event_name: 'PreToolUse' })).toBe(false);
+  // Nothing is counted yet, but the file being edited is now known.
+  expect(t.record({ ...edit, hook_event_name: 'PreToolUse' })).toBe(true);
   expect(t.get('s')).toBe(null);
   expect(t.record({ ...edit, hook_event_name: 'PostToolUse' })).toBe(true);
   expect(t.get('s')).toEqual({ added: 2, removed: 1 });
@@ -61,6 +62,27 @@ test('line counts: added only when the tool ran, per session, and reset by the n
   expect(t.record({ hook_event_name: 'UserPromptSubmit', session_id: 's' })).toBe(true);
   expect(t.get('s')).toBe(null);
   expect(t.get('other')).toEqual({ added: 2, removed: 1 });
+});
+
+test('file being edited: known from a tool call or a permission request, gone on stop or a new prompt', () => {
+  const t = new ChangeTracker();
+  expect(t.file('s1')).toBe('');
+  expect(t.record({ hook_event_name: 'PreToolUse', session_id: 's1', tool_name: 'Edit', tool_use_id: 'a', tool_input: { file_path: 'C:\\code\\app\\src\\main.ts', old_string: 'a', new_string: 'b' } })).toBe(true);
+  expect(t.file('s1')).toBe('main.ts');
+  // The same file again changes nothing; reading a file is not editing it.
+  expect(t.record({ hook_event_name: 'PreToolUse', session_id: 's1', tool_name: 'Edit', tool_use_id: 'b', tool_input: { file_path: 'C:\\code\\app\\src\\main.ts', old_string: 'c', new_string: 'd' } })).toBe(false);
+  expect(t.record({ hook_event_name: 'PreToolUse', session_id: 's1', tool_name: 'Read', tool_use_id: 'c', tool_input: { file_path: '/home/me/notes.md' } })).toBe(false);
+  expect(t.file('s1')).toBe('main.ts');
+  expect(t.record({ hook_event_name: 'PermissionRequest', session_id: 's1', tool_name: 'Write', tool_input: { file_path: '/home/me/app/README.md', content: 'x' } })).toBe(true);
+  expect(t.file('s1')).toBe('README.md');
+  expect(t.file('s2')).toBe('');
+  expect(editedFile('NotebookEdit', { notebook_path: 'C:/nb/plot.ipynb' })).toBe('C:/nb/plot.ipynb');
+  expect(editedFile('Bash', { command: 'rm x', file_path: 'x' })).toBe('');
+  expect(t.record({ hook_event_name: 'Stop', session_id: 's1' })).toBe(true);
+  expect(t.file('s1')).toBe('');
+  t.record({ hook_event_name: 'PreToolUse', session_id: 's1', tool_name: 'Write', tool_use_id: 'd', tool_input: { file_path: 'a.txt', content: 'x' } });
+  expect(t.record({ hook_event_name: 'UserPromptSubmit', session_id: 's1' })).toBe(true);
+  expect(t.file('s1')).toBe('');
 });
 
 test('line counts: the text on the banner', () => {

@@ -381,6 +381,10 @@ input[type="range"]:disabled::-webkit-slider-runnable-track { background: linear
 .session-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-agent { flex: none; font-size: 10.5px; color: var(--dim); }
 .session-mood { margin-left: auto; flex: none; font-size: 11px; color: var(--muted); }
+.session-file { min-width: 0; flex: 0 1 auto; font-size: 11px; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-go { flex: none; height: 22px; padding: 0 10px; border: 0; border-radius: 7px; background: var(--tile-3); color: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
+.session-go:hover { filter: brightness(1.2); }
+.session-go.answer { background: var(--blue); }
 .mood-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
 .mood-working { background: var(--mint); animation: pulse 1.4s ease-in-out infinite; }
 .mood-waiting { background: var(--amber); animation: pulse 0.9s ease-in-out infinite; }

@@ -51,6 +51,7 @@ const api: HeloApi = {
   setDisplayInput: (index, input) => ipcRenderer.send('displays:input', Number(index), Number(input)),
   refreshDisplays: () => ipcRenderer.send('displays:refresh'),
   bannerClick: () => ipcRenderer.send('banner:click'),
+  sessionJump: (key) => ipcRenderer.send('session:jump', String(key)),
   listWindows: () => ipcRenderer.invoke('watch:windows'),
   startWatch: (pid, condition) => ipcRenderer.invoke('watch:start', Number(pid), condition),
   cancelWatch: () => ipcRenderer.send('watch:cancel'),

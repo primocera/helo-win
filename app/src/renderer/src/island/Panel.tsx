@@ -335,6 +335,7 @@ function Agents({ state, now }: { state: IslandState; now: number }) {
                 <span className={`mood-dot mood-${s.mood}`} />
                 <span className="session-name">{s.project || SOURCE_NAME[s.agent]}</span>
                 <span className="session-agent">{SOURCE_TAG[s.agent]}</span>
+                {s.file && <span className="session-file" title={`Editing ${s.file}`}>{s.file}</span>}
                 {(s.added || s.removed) ? (
                   <span className="session-lines" title="Lines added and removed since your last prompt">
                     {s.added ? <span className="plus">+{s.added}</span> : null}
@@ -342,6 +343,16 @@ function Agents({ state, now }: { state: IslandState; now: number }) {
                   </span>
                 ) : null}
                 <span className="session-mood">{MOOD_TEXT[s.mood]} · {relativeTime(s.since, now)}</span>
+                {s.jump && (
+                  <button
+                    type="button"
+                    className={`session-go ${s.mood === 'waiting' ? 'answer' : ''}`}
+                    title={s.mood === 'waiting' ? 'Go to its window and answer' : 'Go to its window'}
+                    onClick={() => window.helo.sessionJump(s.key)}
+                  >
+                    {s.mood === 'waiting' ? 'Answer' : 'Open'}
+                  </button>
+                )}
               </div>
             ))}
           </div>

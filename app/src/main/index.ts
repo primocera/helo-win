@@ -259,8 +259,16 @@ function pushAgents() {
     agents: {
       ...state.agents,
       sessions: tracker.list().map((s) => {
-        const c = s.agent === 'claude' ? changes.get(s.key.slice('claude:'.length)) : null;
-        return c ? { ...s, added: c.added, removed: c.removed } : s;
+        const id = s.agent === 'claude' ? s.key.slice('claude:'.length) : null;
+        const c = id ? changes.get(id) : null;
+        // The file is only worth showing while the session is at it.
+        const file = id && (s.mood === 'working' || s.mood === 'waiting') ? changes.file(id) : '';
+        return {
+          ...s,
+          ...(c ? { added: c.added, removed: c.removed } : null),
+          ...(file ? { file } : null),
+          ...(sessionWindows.get(s.key) ? { jump: true } : null),
+        };
       }),
       mood: tracker.mood(),
       usage: freshUsage(state.agents.usage),
@@ -343,6 +351,7 @@ function onPermission(input: HookInput, signal: AbortSignal, agent: AgentName): 
     showBanner({ kind: 'warn', title: `${config.appName} trial ended`, text: 'Enter a license key in Settings.' });
     return Promise.resolve(null);
   }
+  if (agent === 'claude') changes.record(input);
   tracker.record(input, agent);
   pushAgents();
   // It is asking for a tool, so it is no longer waiting for an answer in the terminal.
@@ -1602,6 +1611,8 @@ function registerIpc() {
   on('banner:click', isIsland, () => {
     banners.click();
   });
+  // "Answer" or "Open" on a session in the Agents tab. Only a window remembered for that session is ever brought forward.
+  on('session:jump', isIsland, (_e, key) => void jumpTo(str(key, 300)));
   handle('watch:windows', isIsland, async () => {
     if (!helper || helper.status !== 'running') return [];
     return parseWindows(await helper.request('windows'));
