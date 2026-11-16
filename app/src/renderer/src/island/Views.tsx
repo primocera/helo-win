@@ -152,24 +152,79 @@ function DiffBox({ diff }: { diff: DiffView }) {
   );
 }
 
+/** The longest answer or feedback a card accepts (the main process cuts at the same length). */
+const MAX_TYPED = 2000;
+
+/**
+ * A text field on a card. The island never takes the keyboard by itself: it does while this
+ * field is on screen (the user clicked to get it), and gives it back when the field goes.
+ * Enter sends, Shift+Enter is a new line, Esc cancels.
+ */
+function TypeBox({ value, onChange, onSend, onCancel, placeholder }: { value: string; onChange: (v: string) => void; onSend: () => void; onCancel: () => void; placeholder: string }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    window.helo.typing(true);
+    ref.current?.focus();
+    return () => window.helo.typing(false);
+  }, []);
+  return (
+    <textarea
+      ref={ref}
+      className="card-type"
+      rows={2}
+      maxLength={MAX_TYPED}
+      value={value}
+      placeholder={placeholder}
+      spellCheck={false}
+      onChange={(e) => onChange(e.target.value)}
+      // A click after the keyboard went elsewhere brings it back.
+      onMouseDown={() => window.helo.typing(true)}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onCancel();
+        } else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+          e.preventDefault();
+          if (value.trim()) onSend();
+        }
+      }}
+    />
+  );
+}
+
 /** One question at a time; the answers go back to Claude Code when the last one is picked. */
 function QuestionCard({ request, more }: { request: PermissionView; more: number }) {
   const questions = request.questions ?? [];
   const [step, setStep] = useState(0);
   const [picks, setPicks] = useState<string[][]>(() => questions.map(() => []));
+  const [typed, setTyped] = useState<string[]>(() => questions.map(() => ''));
+  const [writing, setWriting] = useState(false);
   const q = questions[Math.min(step, questions.length - 1)];
   const last = step >= questions.length - 1;
   const chosen = picks[step] ?? [];
+  const own = (typed[step] ?? '').trim();
   const armed = useArmed(`${request.id}:${step}`);
 
-  const advance = (next: string[][]) => {
-    if (last) window.helo.answer(request.id, next);
-    else setStep(step + 1);
+  const goTo = (n: number) => {
+    setStep(n);
+    setWriting(Boolean(typed[n]));
+  };
+  const advance = (next: string[][], text: string[] = typed) => {
+    if (last) window.helo.answer(request.id, next, text);
+    else goTo(step + 1);
   };
   const pick = (label: string) => {
     const next = picks.map((p, i) => (i !== step ? p : q.multi ? (p.includes(label) ? p.filter((x) => x !== label) : [...p, label]) : [label]));
     setPicks(next);
-    if (!q.multi) advance(next);
+    if (q.multi) return;
+    // Picking an option on a pick-one question drops anything typed for it.
+    const text = typed.map((t, i) => (i === step ? '' : t));
+    setTyped(text);
+    advance(next, text);
+  };
+  const stopWriting = () => {
+    setTyped(typed.map((t, i) => (i === step ? '' : t)));
+    setWriting(false);
   };
 
   return (
@@ -194,13 +249,25 @@ function QuestionCard({ request, more }: { request: PermissionView; more: number
           </button>
         ))}
       </div>
+      {writing && (
+        <TypeBox
+          value={typed[step] ?? ''}
+          onChange={(v) => setTyped(typed.map((t, i) => (i === step ? v : t)))}
+          onSend={() => advance(picks)}
+          onCancel={stopWriting}
+          placeholder={q.multi ? 'Add your own answer. Enter sends, Esc cancels.' : 'Your own answer. Enter sends, Esc cancels.'}
+        />
+      )}
       <div className="card-actions">
-        {step > 0 && <button type="button" className="btn ghost" onClick={() => setStep(step - 1)}>Back</button>}
-        <button type="button" className="btn ghost" title="Type your own answer in the terminal" onClick={() => window.helo.skip(request.id)}>
-          Answer in terminal
+        {step > 0 && <button type="button" className="btn ghost" onClick={() => goTo(step - 1)}>Back</button>}
+        <button type="button" className="btn ghost" title="Answer this question in the terminal instead" onClick={() => window.helo.skip(request.id)}>
+          In terminal
         </button>
-        {q.multi && (
-          <button type="button" className="btn primary" disabled={!chosen.length} onClick={armed(() => advance(picks))}>
+        {writing
+          ? <button type="button" className="btn ghost" onClick={stopWriting}>Cancel</button>
+          : <button type="button" className="btn ghost" title="Write an answer that is not in the list" onClick={armed(() => setWriting(true))}>Type an answer</button>}
+        {(q.multi || writing) && (
+          <button type="button" className="btn primary" disabled={!chosen.length && !own} onClick={armed(() => advance(picks))}>
             {last ? 'Send' : 'Next'}
           </button>
         )}
@@ -211,21 +278,45 @@ function QuestionCard({ request, more }: { request: PermissionView; more: number
 
 function PlanCard({ request, more, onDecide }: { request: PermissionView; more: number; onDecide: (id: string, b: Behavior) => void }) {
   const armed = useArmed(request.id);
+  const [writing, setWriting] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const send = () => window.helo.decide(request.id, 'deny', feedback.trim());
   return (
     <div className="card">
       <CardHead request={request} more={more} label="Plan" />
       <div className="plan">{request.plan || 'The plan text was not sent. Read it in the terminal.'}</div>
-      <div className="card-actions">
-        <button type="button" className="btn" title="Claude keeps planning and asks what to change" onClick={armed(() => onDecide(request.id, 'deny'))}>
-          Reject <kbd>Alt Shift N</kbd>
-        </button>
-        <button type="button" className="btn ghost" title="Choose in the terminal, where you can also type feedback" onClick={() => window.helo.skip(request.id)}>
-          Decide in terminal
-        </button>
-        <button type="button" className="btn primary" onClick={armed(() => onDecide(request.id, 'allow'))}>
-          Approve <kbd>Alt Shift Y</kbd>
-        </button>
-      </div>
+      {writing && (
+        <TypeBox
+          value={feedback}
+          onChange={setFeedback}
+          onSend={send}
+          onCancel={() => setWriting(false)}
+          placeholder="What should change? Enter sends, Esc cancels."
+        />
+      )}
+      {writing ? (
+        <div className="card-actions">
+          <button type="button" className="btn ghost" onClick={() => setWriting(false)}>Cancel</button>
+          <button type="button" className="btn primary" disabled={!feedback.trim()} title="Rejects the plan and tells Claude what to change" onClick={armed(send)}>
+            Send feedback
+          </button>
+        </div>
+      ) : (
+        <div className="card-actions">
+          <button type="button" className="btn" title="Claude keeps planning and asks what to change" onClick={armed(() => onDecide(request.id, 'deny'))}>
+            Reject <kbd>Alt Shift N</kbd>
+          </button>
+          <button type="button" className="btn ghost narrow" title="Reject the plan and say what should change" onClick={armed(() => setWriting(true))}>
+            Feedback
+          </button>
+          <button type="button" className="btn ghost narrow" title="Choose in the terminal" onClick={() => window.helo.skip(request.id)}>
+            In terminal
+          </button>
+          <button type="button" className="btn primary" onClick={armed(() => onDecide(request.id, 'allow'))}>
+            Approve <kbd>Alt Shift Y</kbd>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

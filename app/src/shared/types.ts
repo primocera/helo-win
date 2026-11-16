@@ -428,9 +428,12 @@ export interface HeloApi {
   panel(open: boolean): void;
   /** The window size the current view needs. */
   size(size: 'compact' | 'full'): void;
-  decide(id: string, behavior: Behavior): void;
-  /** Answers a question card: for each question (by position), the labels picked. */
-  answer(id: string, picks: string[][]): void;
+  /** `feedback`: what the user typed when rejecting a plan. */
+  decide(id: string, behavior: Behavior, feedback?: string): void;
+  /** Answers a question card: for each question (by position), the labels picked and the text typed ('' for none). */
+  answer(id: string, picks: string[][], typed?: string[]): void;
+  /** A text field on a card is in use: the island takes the keyboard, and gives it back after. */
+  typing(on: boolean): void;
   /** Leaves a question or plan for the terminal. */
   skip(id: string): void;
   media(action: 'toggle' | 'next' | 'previous' | 'seek', positionMs?: number): void;

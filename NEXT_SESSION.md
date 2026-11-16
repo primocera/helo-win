@@ -5,7 +5,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 ## Where things stand
 
 - **Everything is committed and pushed to `main`.** The site deploys from `main` to https://helo-win.vercel.app.
-- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (137 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
+- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (140 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
 - **The user tested the app on 2026-11-16** and reported that the work map and everything else works. That was before this session's changes were built, so the points under "Not yet tried" below are still open.
 - **The installer in `app/dist` is from 13 Nov** and has none of the work since. Rebuild with `npm run dist` in `app/`.
 
@@ -23,6 +23,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 - **S7: port fallback.** When the saved port is taken, the bridge tries the next ten and then any free port (`listenOrFallback` in `bridge.ts`), saves the new port in `bridge.json` and points every connected agent's hooks at it (`movePort` in `hooks-install.ts`). A banner says so. `GET /helo/hello` answers `{"app":"helo"}` without a token. Tests in `test/port.test.ts`. Not tried by hand with the real app (it would rewrite the real hook files). The browser extension keeps the old port and must be paired again after a move.
 - **T1: log file and Copy diagnostics.** `src/main/logfile.ts` writes `helo.log` in the data folder (two files of 200 KB at most) and hides tokens, long random strings and the home folder path. Clipboard text and notification text are never passed to it. Settings, General, Help has "Copy diagnostics" and "Show log file". Uncaught errors, helper status and window crashes are logged. Tests in `test/logfile.test.ts`. The two buttons were not clicked by hand.
 - **B2 / R4: uninstall cleanup.** The uninstaller runs the app with `--disconnect-all` (`removeAll` in `hooks-install.ts`: hooks and status line out of all four agents' files, Helo's backup copies deleted, start-with-Windows entry removed), then asks whether to delete the data folder; the default and a silent uninstall keep it (`app/resources/uninstall.nsh`). The app half was run against a throwaway home folder (`HELO_AGENT_HOME`, development builds only). The NSIS half is only proven once the installer is built and an uninstall is run by hand. Not done: a visible status line when the app is not running.
+- **A5: typing on a card.** Question cards have "Type an answer" and plan cards have "Feedback" (rejects the plan and passes the text to Claude). A card only takes the keyboard after the user clicks one of those; focus goes back to the window they were in on send, cancel or when the card goes (`setTyping` in `index.ts`, `TypeBox` in `Views.tsx`). Enter sends, Shift+Enter is a new line, Esc cancels. Tests in `test/typing.test.ts` cover the answers; the focus hand-over was not tried by hand and needs a live Claude Code question and plan.
 
 ## Not yet tried
 
@@ -34,7 +35,6 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 
 ## Do next, in this order
 
-5. **A5: type an answer or plan feedback on the island.** Cards then take keyboard focus; the audit left this as the user's call and the user has not objected.
 6. **OpenCode connection.** Install OpenCode on this PC first (ask the user); its docs describe two plugin APIs and leave the permission payloads out.
 7. **S12: clipboard safety** (expiry, pause switch, encrypted on disk), then **S10 / S11** (licence file and timeouts).
 8. **Smaller features from the Halo comparison:** calendar Join button, clipboard search and pins, long break, disk-space warning. See `TODO.md`.

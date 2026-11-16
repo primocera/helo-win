@@ -29,7 +29,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Gemini CLI connection (working, needs you, finished)
 - [x] Cursor connection (working, finished, error)
 - [ ] OpenCode connection (needs OpenCode installed here to test; its docs leave the payloads out)
-- [ ] Type a free answer or plan feedback on the island (A5)
+- [x] Type a free answer or plan feedback on the island (A5)
 - [x] Finished banner and Agents tab show lines changed
 - [ ] Agents tab shows the file a session is editing
 - [ ] Click the finished banner to jump to the terminal

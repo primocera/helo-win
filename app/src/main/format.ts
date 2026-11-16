@@ -186,17 +186,40 @@ export function questionViews(toolInput: unknown): QuestionView[] | null {
  * (question text -> label; several labels joined with commas). Returns null
  * unless every question has a valid pick.
  */
-export function buildAnswers(questions: QuestionView[], picks: unknown): Record<string, string> | null {
+export function buildAnswers(questions: QuestionView[], picks: unknown, typed?: unknown): Record<string, string> | null {
   if (!Array.isArray(picks) || picks.length !== questions.length) return null;
   const answers: Record<string, string> = {};
   for (let n = 0; n < questions.length; n++) {
     const q = questions[n];
     const chosen = Array.isArray(picks[n]) ? [...new Set(picks[n] as unknown[])] : [];
-    if (!chosen.length || (!q.multi && chosen.length !== 1)) return null;
     if (!chosen.every((c) => typeof c === 'string' && q.options.some((o) => o.label === c))) return null;
+    // The user's own words, typed on the card: what the terminal calls "Other".
+    const own = Array.isArray(typed) ? typedText(typed[n]) : '';
+    if (own) {
+      // On a pick-one question the typed answer is the answer; on pick-several it joins the picks.
+      answers[q.question] = q.multi ? [...(chosen as string[]), own].join(', ') : own;
+      continue;
+    }
+    if (!chosen.length || (!q.multi && chosen.length !== 1)) return null;
     answers[q.question] = (chosen as string[]).join(', ');
   }
   return answers;
+}
+
+/** The longest answer or feedback that can be typed on a card. */
+export const MAX_TYPED = 2000;
+
+/** Text typed on a card, trimmed and cut to size. Anything that is not text is ''. */
+export function typedText(value: unknown): string {
+  return typeof value === 'string' ? value.trim().slice(0, MAX_TYPED) : '';
+}
+
+/** What Claude Code is told when a plan is rejected from the card, with or without the user's feedback. */
+export function planRejection(appName: string, feedback: unknown): string {
+  const text = typedText(feedback);
+  return text
+    ? `The user rejected this plan from ${appName} and wrote this feedback: ${text}`
+    : `The user rejected this plan from ${appName}. Ask what they would like changed before planning again.`;
 }
 
 export function permissionView(

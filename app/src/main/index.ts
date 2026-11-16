@@ -12,7 +12,7 @@ import { config } from './config';
 import * as hooks from './hooks-install';
 import { createBridge, type HookInput, type PermissionReply } from './bridge';
 import { createLicense, type License } from './license';
-import { permissionView, eventBanner, buildAnswers, AGENT_LABEL } from './format';
+import { permissionView, eventBanner, buildAnswers, planRejection, MAX_TYPED, AGENT_LABEL } from './format';
 import { readJson, writeJson, debounced } from './jsonfile';
 import { normalizeSettings, updateSettings, DEFAULT_SETTINGS } from './settings';
 import { WorkMap, MAP_EVENTS } from './workmap';
@@ -200,6 +200,8 @@ function waitKey(sessionId: unknown): string {
 
 function pushRequests() {
   push({ requests: [...pending.values()].map((p) => p.view) });
+  // The card that was being typed in is gone: give the keyboard back.
+  if (pending.size === 0 && typing) void setTyping(false);
   applyFullscreen();
   syncShortcuts();
 }
@@ -218,19 +220,23 @@ function pushAgents() {
   });
 }
 
-/** `picks`: the labels chosen on a question card, one list per question. */
-function settle(id: string, behavior: Behavior | null, picks?: unknown) {
+/**
+ * `picks`: the labels chosen on a question card, one list per question.
+ * `typed`: what the user typed on the card. For a question, one text per question (or '');
+ * for a rejected plan, the feedback.
+ */
+function settle(id: string, behavior: Behavior | null, picks?: unknown, typed?: unknown) {
   const entry = pending.get(id);
   if (!entry) return;
   let reply: Behavior | PermissionReply | null = behavior;
   if (entry.view.kind === 'question' && behavior) {
-    // A question is answered with picks, or left for the terminal; it is never just allowed or denied.
-    const answers = behavior === 'allow' ? buildAnswers(entry.view.questions ?? [], picks) : null;
+    // A question is answered with picks or typed text, or left for the terminal; it is never just allowed or denied.
+    const answers = behavior === 'allow' ? buildAnswers(entry.view.questions ?? [], picks, typed) : null;
     if (!answers) return;
     reply = { behavior: 'allow', updatedInput: { ...entry.toolInput, answers } };
   } else if (entry.view.kind === 'plan' && behavior) {
     reply = behavior === 'deny'
-      ? { behavior: 'deny', message: `The user rejected this plan from ${config.appName}. Ask what they would like changed before planning again.` }
+      ? { behavior: 'deny', message: planRejection(config.appName, typed) }
       : { behavior: 'allow', updatedInput: entry.toolInput };
   }
   pending.delete(id);
@@ -743,14 +749,48 @@ async function setPanelOpen(open: boolean) {
     if (helper?.status === 'running') {
       helper.request<number>('foreground-window').then((h) => { if (!island?.isFocused()) previousForeground = Number(h) || 0; }).catch(() => {});
     }
-  } else {
-    const hadFocus = island.isFocused();
-    if (hadFocus && previousForeground && helper?.status === 'running') {
-      await helper.request('activate', { handle: previousForeground }, 2000).catch(() => false);
-    }
-    island.setFocusable(false);
-    if (island.isFocused()) island.blur();
+  } else if (!typing) {
+    await releaseFocus();
   }
+  island.setAlwaysOnTop(true, 'screen-saver');
+  island.setSkipTaskbar(true);
+}
+
+/** Gives the keyboard back to the window the user was in, and makes the island unfocusable again. */
+async function releaseFocus() {
+  if (!island || island.isDestroyed()) return;
+  const hadFocus = island.isFocused();
+  if (hadFocus && previousForeground && helper?.status === 'running') {
+    await helper.request('activate', { handle: previousForeground }, 2000).catch(() => false);
+  }
+  if (island.isDestroyed() || panelOpen || typing) return;
+  island.setFocusable(false);
+  if (island.isFocused()) island.blur();
+}
+
+/**
+ * The user clicked a text field on a card (an answer of their own, or feedback on a plan).
+ * Only then does a card take the keyboard; it goes back where it was when they send or cancel.
+ */
+let typing = false;
+async function setTyping(on: boolean) {
+  if (!island || island.isDestroyed() || on === typing) return;
+  typing = on;
+  if (on) {
+    if (!panelOpen) {
+      // Clicking the unfocusable island did not change the window in front: remember it.
+      if (helper?.status === 'running') {
+        const h = await helper.request<number>('foreground-window', {}, 1000).catch(() => 0);
+        if (!island.isFocused()) previousForeground = Number(h) || 0;
+      }
+      if (!typing || island.isDestroyed()) return;
+      island.setFocusable(true);
+    }
+    island.focus();
+  } else if (!panelOpen) {
+    await releaseFocus();
+  }
+  if (island.isDestroyed()) return;
   island.setAlwaysOnTop(true, 'screen-saver');
   island.setSkipTaskbar(true);
 }
@@ -1312,13 +1352,14 @@ function registerIpc() {
   on('island:panel', isIsland, (_e, v) => setPanelOpen(v === true));
   on('island:size', isIsland, (_e, v) => setIslandSize(v === 'full' ? 'full' : 'compact'));
   on('decide', isIsland, (_e, msg) => {
-    const m = msg as { id?: unknown; behavior?: unknown };
-    if (m && (m.behavior === 'allow' || m.behavior === 'deny' || m.behavior === 'always')) settle(str(m.id), m.behavior);
+    const m = msg as { id?: unknown; behavior?: unknown; feedback?: unknown };
+    if (m && (m.behavior === 'allow' || m.behavior === 'deny' || m.behavior === 'always')) settle(str(m.id), m.behavior, undefined, str(m.feedback, MAX_TYPED));
   });
   on('answer', isIsland, (_e, msg) => {
-    const m = msg as { id?: unknown; picks?: unknown };
-    if (m) settle(str(m.id), 'allow', m.picks);
+    const m = msg as { id?: unknown; picks?: unknown; typed?: unknown };
+    if (m) settle(str(m.id), 'allow', m.picks, m.typed);
   });
+  on('island:typing', isIsland, (_e, v) => void setTyping(v === true));
   on('skip', isIsland, (_e, id) => settle(str(id, 100), null));
   on('media', isIsland, (_e, msg) => {
     const m = msg as { action?: unknown; positionMs?: unknown };
