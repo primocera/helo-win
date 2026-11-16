@@ -48,6 +48,10 @@ export default function PrivacyPage() {
         </li>
         <li>The work map shows the names of files and tools. It does not keep file contents.</li>
         <li>
+          Codex&apos;s usage limits. Codex CLI writes them into its own session files on your PC, and {n} reads them
+          from there for the usage rings. It looks only at those lines, not at the conversation, and keeps nothing.
+        </li>
+        <li>
           Notifications from other apps. {n} reads them from Windows to show them in the island. It shows each one
           once and does not save it. It remembers only the names of the apps, for the per-app switches.
         </li>

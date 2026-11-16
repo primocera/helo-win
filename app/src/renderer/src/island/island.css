@@ -375,6 +375,9 @@ input[type="range"]:disabled::-webkit-slider-runnable-track { background: linear
 
 /* Agents */
 .usage { flex: none; }
+.usage-pick { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--tile-2); letter-spacing: 0; text-transform: none; }
+.usage-pick button { height: 18px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: inherit; font-size: 10.5px; font-weight: 600; cursor: pointer; }
+.usage-pick button.active { background: var(--tile-3); color: var(--text, #fff); }
 .rings { display: flex; gap: 16px; }
 .ring { position: relative; display: grid; justify-items: center; width: 92px; }
 .ring svg { display: block; }

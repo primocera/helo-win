@@ -106,6 +106,8 @@ export interface AgentsState {
   sessions: AgentSession[];
   mood: Mood;
   usage: Usage | null;
+  /** Codex's limits, read from its own session files. Null when Codex has not been used lately. */
+  codexUsage: Usage | null;
   /** The model the latest Claude Code session is on (e.g. "Opus 5.5"), from its status line. */
   model: string | null;
   claude: ConnectionState;

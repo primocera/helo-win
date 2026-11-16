@@ -111,6 +111,7 @@ export async function runSmoke(ctx: SmokeCtx) {
         mood: 'idle',
         model: 'Opus 5.5',
         usage: { fiveHour: { usedPercent: 38, resetsAt: now + 2.4 * 3_600_000 }, sevenDay: { usedPercent: 61, resetsAt: now + 3.2 * 86_400_000 }, updatedAt: now },
+        codexUsage: { fiveHour: { usedPercent: 12, resetsAt: now + 4.1 * 3_600_000 }, sevenDay: { usedPercent: 48, resetsAt: now + 5.5 * 86_400_000 }, updatedAt: now },
         claude: { connected: true, note: '' },
         codex: { connected: false, note: '' },
         gemini: { connected: false, note: '' },

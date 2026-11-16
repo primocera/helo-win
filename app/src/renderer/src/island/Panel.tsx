@@ -322,16 +322,31 @@ const SOURCE_TAG: Record<SessionSource, string> = { claude: 'Claude', codex: 'Co
 function Agents({ state, now }: { state: IslandState; now: number }) {
   const a = state.agents;
   const f = state.settings.features;
+  // Whose limits the rings show. Codex's are offered once Codex has some to show.
+  const [picked, setPicked] = useState<'claude' | 'codex'>('claude');
+  const who = a.codexUsage && (picked === 'codex' || !a.usage) ? 'codex' : 'claude';
+  const usage = who === 'codex' ? a.codexUsage : a.usage;
   const anyConnected = AGENT_NAMES.some((name) => a[name].connected);
   return (
     <div className="card-row">
       {f.usage && (
         <div className="tile usage">
-          <div className="tile-label">Claude usage{a.model && <span className="model-chip" title="The model your latest Claude Code session is on">{a.model}</span>}</div>
-          {a.usage ? (
+          <div className="tile-label">
+            {a.codexUsage ? (
+              <span className="usage-pick" role="tablist" aria-label="Whose usage">
+                {(['claude', 'codex'] as const).map((id) => (
+                  <button key={id} type="button" role="tab" aria-selected={who === id} className={who === id ? 'active' : ''} onClick={() => setPicked(id)}>
+                    {id === 'claude' ? 'Claude' : 'Codex'}
+                  </button>
+                ))}
+              </span>
+            ) : 'Claude usage'}
+            {who === 'claude' && a.model && <span className="model-chip" title="The model your latest Claude Code session is on">{a.model}</span>}
+          </div>
+          {usage ? (
             <div className="rings">
-              <Ring value={a.usage.fiveHour?.usedPercent ?? null} label="5 hours" sub={a.usage.fiveHour ? resetsIn(a.usage.fiveHour.resetsAt, now) : 'no data'} />
-              <Ring value={a.usage.sevenDay?.usedPercent ?? null} label="Week" sub={a.usage.sevenDay ? resetsIn(a.usage.sevenDay.resetsAt, now) : 'no data'} />
+              {(who === 'claude' || usage.fiveHour) && <Ring value={usage.fiveHour?.usedPercent ?? null} label="5 hours" sub={usage.fiveHour ? resetsIn(usage.fiveHour.resetsAt, now) : 'no data'} />}
+              {(who === 'claude' || usage.sevenDay) && <Ring value={usage.sevenDay?.usedPercent ?? null} label="Week" sub={usage.sevenDay ? resetsIn(usage.sevenDay.resetsAt, now) : 'no data'} />}
             </div>
           ) : (
             <div className="muted small-gap">

@@ -459,7 +459,7 @@ function Agents({ info, update, setInfo }: { info: SettingsInfo; update: (p: Pat
       </Group>
       <AgentCard agent="claude" title="Claude Code" info={info} setInfo={setInfo}>
         <p className="row-hint">Writes HTTP hooks to ~/.claude/settings.json. New Claude Code sessions pick them up.</p>
-        <Row label="Usage rings" hint="5-hour and weekly limits from Claude Code's status line (Pro, Max and Ultra plans). Adds a short status line unless you already have your own.">
+        <Row label="Usage rings" hint="5-hour and weekly limits from Claude Code's status line (Pro, Max and Ultra plans). Adds a short status line unless you already have your own. Codex's limits show beside them once you have used Codex: they are read from the session files Codex keeps on this PC.">
           <Switch label="Usage rings" on={f.usage} onChange={(v) => update({ features: { usage: v } })} />
         </Row>
         <Row label="Work map" hint="A live map in the island of what Claude Code is using: files, shell, network, memory, subagents. Adds hooks for tool calls; Helo only watches them and never holds a call up. Shows names only, never file contents.">

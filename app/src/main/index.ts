@@ -38,6 +38,7 @@ import { LogFile, diagnosticsText, redact } from './logfile';
 import { notificationFromRaw, notificationBanner, rememberApp } from './notifications';
 import { SessionWindows, parseForeground } from './windows';
 import { shouldChime } from './sound';
+import { readCodexUsage } from './codex-usage';
 import { parseLink, findLink, shownPath, LinkLimiter, LINK_SCHEME } from './links';
 import { formatDuration } from '../shared/time';
 import { nextRepeat } from '../shared/playback';
@@ -151,6 +152,7 @@ const state: IslandState = {
     sessions: [],
     mood: 'idle',
     usage: null,
+    codexUsage: null,
     model: null,
     claude: { connected: false, note: '' },
     codex: { connected: false, note: '' },
@@ -274,8 +276,17 @@ function pushAgents() {
       }),
       mood: tracker.mood(),
       usage: freshUsage(state.agents.usage),
+      codexUsage: freshUsage(state.agents.codexUsage),
     },
   });
+}
+
+/** Codex's usage limits, from the session files Codex keeps. Read at start, every few minutes, and when a Codex run ends. */
+function refreshCodexUsage() {
+  const next = settings.features.usage && !testMode ? readCodexUsage(path.join(CODEX_DIR, 'sessions')) : null;
+  if (JSON.stringify(next) === JSON.stringify(state.agents.codexUsage)) return;
+  state.agents.codexUsage = next;
+  pushAgents();
 }
 
 /**
@@ -388,6 +399,8 @@ function onEvent(input: HookInput, agent: AgentName) {
   // The user answered in the terminal, or the session finished or failed: its "waiting for you"
   // banner has done its job. (A plain notification says nothing about that, so it stays.)
   if (banner?.kind !== 'input' && input.hook_event_name !== 'Notification') banners.answered(waitKey(input.session_id));
+  // Codex writes its new limits to its session file as it answers.
+  if (agent === 'codex' && input.hook_event_name === 'Stop') setTimeout(refreshCodexUsage, 1500);
   if (banner && input.hook_event_name === 'Stop' && workedMs >= 5000) banner.title += ` · ${formatDuration(workedMs)}`;
   if (banner && input.hook_event_name === 'Stop' && agent === 'claude') {
     const lines = changeText(changes.get(input.session_id));
@@ -541,6 +554,7 @@ function applySettings(prev: Settings | null) {
     push({ map: null });
   }
   if (!settings.features.usage) state.agents.usage = null;
+  if (!prev || prev.features.usage !== settings.features.usage) refreshCodexUsage();
   syncHelperFeatures();
   syncFinishedWatchers();
   if (!prev || prev.links.on !== settings.links.on) syncLinkHandler();
@@ -2086,6 +2100,7 @@ app.whenReady().then(async () => {
     void pollForeground();
     if (ticks % 900 === 0) refreshCalendar().catch(() => {});
     if (ticks % 300 === 0) void refreshBluetooth();
+    if (ticks % 300 === 150) refreshCodexUsage();
     // The Screenshots folder appears with the first screenshot; start watching once it does.
     if (ticks % 60 === 0 && screenshotWatcher && !screenshotWatcher.running) syncFinishedWatchers();
     if (ticks % 3600 === 0) {
