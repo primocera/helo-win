@@ -126,3 +126,40 @@ test('moving port: a file that cannot be read is reported, not overwritten', () 
   expect(fs.readFileSync(files.claude, 'utf8')).toBe('{ broken');
   expect(hooks.isCodexInstalled(files.codex, { ...from, port: 50000 })).toBe(true);
 });
+
+// Uninstalling (B2, R4): the agents' files go back to what the user had.
+test('uninstall: hooks leave every agent\'s file, and Helo\'s backups go too', () => {
+  const dir = tmp();
+  const files = { claude: path.join(dir, 'c.json'), codex: path.join(dir, 'x.json'), gemini: path.join(dir, 'g.json'), cursor: path.join(dir, 'u.json') };
+  const opts = { port: 47615, token: 'c'.repeat(48) };
+  const mine = { model: 'opus', hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node mine.js' }] }] } };
+  fs.writeFileSync(files.claude, JSON.stringify(mine));
+  hooks.install(files.claude, { ...opts, statusLine: true, map: true });
+  hooks.installCodex(files.codex, opts);
+  hooks.installCursor(files.cursor, opts);
+  // Gemini was never connected: the user's own file, byte for byte.
+  const geminiText = '{ "theme": "Dracula" }';
+  fs.writeFileSync(files.gemini, geminiText);
+  expect(fs.existsSync(`${files.claude}.helo-backup`)).toBe(true);
+
+  expect(hooks.removeAll(files)).toEqual({ removed: ['claude', 'codex', 'cursor'], failed: [] });
+  expect(read(files.claude)).toEqual(mine);
+  expect(read(files.codex)).toEqual({});
+  expect(read(files.cursor)).toEqual({ version: 1, hooks: {} });
+  expect(fs.readFileSync(files.gemini, 'utf8')).toBe(geminiText);
+  for (const file of Object.values(files)) expect(fs.readFileSync(file, 'utf8')).not.toContain('/helo/');
+  expect(fs.readdirSync(dir).sort()).toEqual(['c.json', 'g.json', 'u.json', 'x.json']);
+  // A second run changes nothing.
+  expect(hooks.removeAll(files)).toEqual({ removed: [], failed: [] });
+});
+
+test('uninstall: missing files are not created, and a broken one is reported and left alone', () => {
+  const dir = tmp();
+  const files = { claude: path.join(dir, 'c.json'), codex: path.join(dir, 'nope', 'x.json'), gemini: path.join(dir, 'g.json'), cursor: path.join(dir, 'u.json') };
+  fs.writeFileSync(files.claude, '{ broken');
+  fs.writeFileSync(`${files.claude}.helo-backup`, '{}');
+  expect(hooks.removeAll(files)).toEqual({ removed: [], failed: ['claude'] });
+  expect(fs.readFileSync(files.claude, 'utf8')).toBe('{ broken');
+  expect(fs.existsSync(`${files.claude}.helo-backup`)).toBe(true);
+  expect(fs.readdirSync(dir).sort()).toEqual(['c.json', 'c.json.helo-backup']);
+});

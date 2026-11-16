@@ -34,3 +34,5 @@ nsis:
   shortcutName: Helo
   uninstallDisplayName: Helo
   deleteAppDataOnUninstall: false
+  # Removes the hooks from the agents' files and asks about the data folder.
+  include: resources/uninstall.nsh

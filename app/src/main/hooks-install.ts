@@ -408,3 +408,40 @@ export function movePort(files: Record<HookAgent, string>, from: BridgeOpts, to:
   }
   return { moved, failed };
 }
+
+// ---------------------------------------------------------------------------
+// Uninstalling the app: take Helo out of every agent's file
+
+/**
+ * Removes Helo's hooks (and status line) from every agent's file, and the backup copies Helo
+ * left beside them. A file without Helo's hooks is not touched, a missing one is not created,
+ * and one that cannot be read is reported in `failed` and keeps its backup.
+ */
+export function removeAll(files: Record<HookAgent, string>): { removed: HookAgent[]; failed: HookAgent[] } {
+  const strip: Record<HookAgent, (settings: Json) => Json> = {
+    claude: stripHooks,
+    codex: stripCodexHooks,
+    gemini: stripGeminiHooks,
+    cursor: stripCursorHooks,
+  };
+  const removed: HookAgent[] = [];
+  const failed: HookAgent[] = [];
+  for (const agent of Object.keys(strip) as HookAgent[]) {
+    const file = files[agent];
+    try {
+      if (fs.existsSync(file)) {
+        const before = readSettings(file);
+        const after = strip[agent](before);
+        if (JSON.stringify(after) !== JSON.stringify(before)) {
+          writeSettings(file, after);
+          removed.push(agent);
+        }
+      }
+      fs.rmSync(`${file}.helo-backup`, { force: true });
+      fs.rmSync(`${file}.helo-tmp`, { force: true });
+    } catch {
+      failed.push(agent);
+    }
+  }
+  return { removed, failed };
+}

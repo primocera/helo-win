@@ -53,6 +53,8 @@ const argValue = (name: string) => {
 const smokeDir = argValue('smoke');
 const selfTestOut = argValue('selftest');
 const testMode = Boolean(smokeDir || selfTestOut);
+/** Run by the uninstaller: take the hooks out of the agents' files and quit. No window, no tray. */
+const disconnectOnly = process.argv.includes('--disconnect-all');
 
 // The island is a small transparent always-on-top window; Chromium's occlusion
 // tracking can wrongly treat it as hidden and stop painting it.
@@ -63,14 +65,16 @@ const testRoot = testMode ? fs.mkdtempSync(path.join(os.tmpdir(), 'helo-test-run
 if (testRoot) app.setPath('userData', path.join(testRoot, 'userData'));
 // Development aid: run against a separate data folder.
 else if (process.env.HELO_USER_DATA && !app.isPackaged) app.setPath('userData', process.env.HELO_USER_DATA);
-if (!testMode && !app.requestSingleInstanceLock()) app.quit();
+if (!testMode && !disconnectOnly && !app.requestSingleInstanceLock()) app.quit();
 
-const CLAUDE_SETTINGS = testRoot ? path.join(testRoot, 'claude', 'settings.json') : path.join(os.homedir(), '.claude', 'settings.json');
-const CODEX_DIR = testRoot ? path.join(testRoot, 'codex') : path.join(os.homedir(), '.codex');
+// Development aid: keep the agents' config files somewhere other than the real home folder.
+const agentHome = process.env.HELO_AGENT_HOME && !app.isPackaged ? process.env.HELO_AGENT_HOME : os.homedir();
+const CLAUDE_SETTINGS = testRoot ? path.join(testRoot, 'claude', 'settings.json') : path.join(agentHome, '.claude', 'settings.json');
+const CODEX_DIR = testRoot ? path.join(testRoot, 'codex') : path.join(agentHome, '.codex');
 const CODEX_HOOKS = path.join(CODEX_DIR, 'hooks.json');
-const GEMINI_DIR = testRoot ? path.join(testRoot, 'gemini') : path.join(os.homedir(), '.gemini');
+const GEMINI_DIR = testRoot ? path.join(testRoot, 'gemini') : path.join(agentHome, '.gemini');
 const GEMINI_SETTINGS = path.join(GEMINI_DIR, 'settings.json');
-const CURSOR_DIR = testRoot ? path.join(testRoot, 'cursor') : path.join(os.homedir(), '.cursor');
+const CURSOR_DIR = testRoot ? path.join(testRoot, 'cursor') : path.join(agentHome, '.cursor');
 const CURSOR_HOOKS = path.join(CURSOR_DIR, 'hooks.json');
 
 // The window is only as big as it needs to be: transparent windows on Windows
@@ -1650,7 +1654,21 @@ app.on('before-quit', () => {
   if (keepAwakeId != null) powerSaveBlocker.stop(keepAwakeId);
 });
 
+/** What the uninstaller asks for: no hooks left in any agent's file, and no "start with Windows" entry. */
+function disconnectAll() {
+  const { removed, failed } = hooks.removeAll({ claude: CLAUDE_SETTINGS, codex: CODEX_HOOKS, gemini: GEMINI_SETTINGS, cursor: CURSOR_HOOKS });
+  try {
+    if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: false });
+  } catch { /* the entry is also removed with the app */ }
+  log(`disconnect-all: hooks removed from ${removed.join(', ') || 'nothing'}${failed.length ? `; could not change ${failed.join(', ')}` : ''}`);
+  app.exit(failed.length ? 1 : 0);
+}
+
 app.whenReady().then(async () => {
+  if (disconnectOnly) {
+    disconnectAll();
+    return;
+  }
   fs.mkdirSync(app.getPath('userData'), { recursive: true });
   license = createLicense({ file: userFile('license.json'), store: config.store, trialDays: config.trialDays });
   loadSettings();
