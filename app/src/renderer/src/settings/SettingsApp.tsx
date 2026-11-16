@@ -166,6 +166,12 @@ function StartupApps() {
 
 function General({ info, update, setInfo }: { info: SettingsInfo; update: (p: Patch) => void; setInfo: (i: SettingsInfo) => void }) {
   const d = info.settings.display;
+  const [copyNote, setCopyNote] = useState('');
+  const copyDiagnostics = async () => {
+    const r = await window.helo.copyDiagnostics();
+    setCopyNote(r.ok ? 'Copied. Paste it into your message.' : `Could not copy: ${r.error ?? 'unknown error'}`);
+    setTimeout(() => setCopyNote(''), 4000);
+  };
   return (
     <>
       <h1>General</h1>
@@ -227,6 +233,15 @@ function General({ info, update, setInfo }: { info: SettingsInfo; update: (p: Pa
               </button>
             ))}
           </div>
+        </Row>
+      </Group>
+      <Group title="Help">
+        <Row
+          label="Diagnostics"
+          hint={copyNote || 'Copies the version, what is switched on, the connection states and the last lines of the log, to paste into a message when something does not work. It holds no tokens, license keys, clipboard items or notification text.'}
+        >
+          <button type="button" className="button" onClick={copyDiagnostics}>Copy diagnostics</button>
+          <button type="button" className="button" onClick={() => window.helo.openLogFolder()}>Show log file</button>
         </Row>
       </Group>
     </>

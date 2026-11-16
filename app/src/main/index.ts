@@ -33,6 +33,7 @@ import { listStartupApps, setStartupApp } from './startup-apps';
 import { faceOnly } from '../shared/face';
 import { ChangeTracker, changeText } from './changes';
 import { BannerQueue } from './banners';
+import { LogFile, diagnosticsText, redact } from './logfile';
 import { notificationFromRaw, notificationBanner, rememberApp } from './notifications';
 import { formatDuration } from '../shared/time';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
@@ -89,9 +90,18 @@ const helperScript = () => (app.isPackaged
   ? path.join(process.resourcesPath, 'winhelper.ps1')
   : path.join(app.getAppPath(), 'resources', 'winhelper.ps1'));
 
+// The log file (data folder, two files of 200 KB at most). Tokens are hidden by the file itself;
+// clipboard text and other apps' notification text are never passed to `log` at all.
+const logFile = new LogFile(userFile('helo.log'), {
+  home: os.homedir(),
+  secrets: () => (bridgeInfo ? [bridgeInfo.token, bridgeInfo.webToken] : []),
+});
 const log = (msg: string) => {
   if (!app.isPackaged || testMode) console.log(`[helo] ${msg}`);
+  logFile.write(msg);
 };
+process.on('uncaughtException', (err) => log(`uncaught: ${err?.stack || err}`));
+process.on('unhandledRejection', (err) => log(`unhandled rejection: ${(err as Error)?.stack || err}`));
 
 // ---------------------------------------------------------------------------
 // State
@@ -490,6 +500,27 @@ function settingsInfo(): SettingsInfo {
   };
 }
 
+/** The text behind "Copy diagnostics": versions, states and the end of the log. No tokens, keys or content. */
+function diagnostics(): string {
+  const lic = license.status();
+  return diagnosticsText({
+    appName: config.appName,
+    version: app.getVersion(),
+    packaged: app.isPackaged,
+    electron: process.versions.electron,
+    windows: os.release(),
+    port: livePort,
+    bridgeError: bridgeError ? redact(bridgeError.message, [], os.homedir()) : '',
+    helper: helper?.status ?? 'off',
+    license: lic.state === 'trial' ? `trial, ${lic.daysLeft} days left` : lic.state,
+    displays: screen.getAllDisplays().length,
+    features: { ...settings.features },
+    agents: Object.fromEntries(Object.entries(connectionStates()).map(([name, c]) => [name, { connected: c.connected, note: redact(c.note, [], os.homedir()) }])),
+    notificationApps: Object.keys(settings.notifications.apps).length,
+    log: logFile.tail(80),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Island window
 
@@ -602,11 +633,13 @@ function pageUrl(page: 'island' | 'settings', win: BrowserWindow) {
 }
 
 function lockDown(contents: WebContents) {
-  if (testMode || !app.isPackaged) {
-    contents.on('console-message', (e) => log(`renderer ${e.level}: ${e.message} (${e.sourceId}:${e.lineNumber})`));
-    contents.on('did-fail-load', (_e, code, desc, url) => log(`load failed ${code} ${desc} ${url}`));
-    contents.on('preload-error', (_e, p, err) => log(`preload error ${p}: ${err.message}`));
-  }
+  // In the installed app only the page's errors are kept, not everything it prints.
+  contents.on('console-message', (e) => {
+    if (testMode || !app.isPackaged || e.level === 'error') log(`renderer ${e.level}: ${e.message} (${e.sourceId}:${e.lineNumber})`);
+  });
+  contents.on('did-fail-load', (_e, code, desc, url) => log(`load failed ${code} ${desc} ${url}`));
+  contents.on('preload-error', (_e, p, err) => log(`preload error ${p}: ${err.message}`));
+  contents.on('render-process-gone', (_e, details) => log(`window process gone: ${details.reason} (${details.exitCode})`));
   contents.on('will-navigate', (e) => e.preventDefault());
   contents.setWindowOpenHandler(() => ({ action: 'deny' }));
   contents.session.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
@@ -1421,6 +1454,18 @@ function registerIpc() {
   on('buy', isOurs, () => shell.openExternal(config.store.buyUrl));
 
   handle('settings:info', isSettings, () => settingsInfo());
+  handle('diagnostics:copy', isSettings, () => {
+    try {
+      clipboard.writeText(diagnostics());
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+  on('diagnostics:openLog', isSettings, () => {
+    if (fs.existsSync(logFile.file)) shell.showItemInFolder(logFile.file);
+    else void shell.openPath(app.getPath('userData'));
+  });
   handle('settings:update', isSettings, (_e, patch) => {
     const prev = settings;
     settings = updateSettings(settings, patch);
@@ -1610,6 +1655,7 @@ app.whenReady().then(async () => {
   license = createLicense({ file: userFile('license.json'), store: config.store, trialDays: config.trialDays });
   loadSettings();
   bridgeInfo = loadBridgeInfo();
+  log(`start ${app.getVersion()}${app.isPackaged ? '' : ' dev'}, Windows ${os.release()}, Electron ${process.versions.electron}`);
   history = new ClipboardHistory(userFile('clipboard'), settings.clipboard.maxItems);
   shelf = new Shelf(userFile('shelf.json'));
   state.settings = settings;
@@ -1627,6 +1673,7 @@ app.whenReady().then(async () => {
     livePort = bridgePort;
   } catch (err) {
     bridgeError = err as Error;
+    log(`bridge could not listen: ${bridgeError.message}`);
   }
   if (!testMode && bridgePort && bridgePort !== bridgeInfo.port) usePort(bridgePort);
   app.on('before-quit', () => { bridge.close(); });
@@ -1643,6 +1690,7 @@ app.whenReady().then(async () => {
   helper = new WinHelper({ script: helperScript(), log });
   helper.on('message', onHelperMessage);
   helper.on('status', (s) => {
+    log(`helper ${s}`);
     push({ helper: s });
     if (s === 'running') refreshDisplays();
   });

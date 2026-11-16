@@ -463,6 +463,9 @@ export interface HeloApi {
   // Settings window
   onSettingsSection(fn: (section: string) => void): () => void;
   settingsInfo(): Promise<SettingsInfo>;
+  /** Puts versions, states and the end of the log on the clipboard, for a support message. */
+  copyDiagnostics(): Promise<ActionResult>;
+  openLogFolder(): void;
   updateSettings(patch: unknown): Promise<SettingsInfo>;
   setStartWithWindows(on: boolean): Promise<SettingsInfo>;
   connectAgent(agent: AgentName, on: boolean): Promise<ActionResult & { info: SettingsInfo }>;

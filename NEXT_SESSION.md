@@ -5,7 +5,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 ## Where things stand
 
 - **Everything is committed and pushed to `main`.** The site deploys from `main` to https://helo-win.vercel.app.
-- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (130 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
+- **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (135 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
 - **The user tested the app on 2026-11-16** and reported that the work map and everything else works. That was before this session's changes were built, so the points under "Not yet tried" below are still open.
 - **The installer in `app/dist` is from 13 Nov** and has none of the work since. Rebuild with `npm run dist` in `app/`.
 
@@ -21,6 +21,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 
 - **B3: banner queue** (`src/main/banners.ts`, `test/banners.test.ts`). A short banner covers "needs your answer" and the waiting one comes back afterwards. One waiting banner per session; it goes when the session is answered, finishes, fails or asks for a tool.
 - **S7: port fallback.** When the saved port is taken, the bridge tries the next ten and then any free port (`listenOrFallback` in `bridge.ts`), saves the new port in `bridge.json` and points every connected agent's hooks at it (`movePort` in `hooks-install.ts`). A banner says so. `GET /helo/hello` answers `{"app":"helo"}` without a token. Tests in `test/port.test.ts`. Not tried by hand with the real app (it would rewrite the real hook files). The browser extension keeps the old port and must be paired again after a move.
+- **T1: log file and Copy diagnostics.** `src/main/logfile.ts` writes `helo.log` in the data folder (two files of 200 KB at most) and hides tokens, long random strings and the home folder path. Clipboard text and notification text are never passed to it. Settings, General, Help has "Copy diagnostics" and "Show log file". Uncaught errors, helper status and window crashes are logged. Tests in `test/logfile.test.ts`. The two buttons were not clicked by hand.
 
 ## Not yet tried
 
@@ -32,7 +33,6 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 
 ## Do next, in this order
 
-3. **T1: log file and "Copy diagnostics"** in Settings. Never write tokens, clipboard text or notification text.
 4. **B2 / R4: uninstall cleanup.** NSIS step that removes the hooks from all four agents' files; ask about the data folder.
 5. **A5: type an answer or plan feedback on the island.** Cards then take keyboard focus; the audit left this as the user's call and the user has not objected.
 6. **OpenCode connection.** Install OpenCode on this PC first (ask the user); its docs describe two plugin APIs and leave the permission payloads out.
