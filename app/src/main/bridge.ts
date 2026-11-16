@@ -10,6 +10,20 @@ export const HOOK_PATH = '/helo/hook';
 export const STATUS_PATH = '/helo/status';
 /** The browser extension posts here, with its own token. */
 export const WEB_PATH = '/helo/web';
+/** Answers "this port is Helo" without a token, so a port can be checked before it is trusted. */
+export const HELLO_PATH = '/helo/hello';
+export const HELLO_REPLY = '{"app":"helo"}';
+
+/** How many ports after the saved one are tried when it is taken, before any free port is used. */
+export const PORT_TRIES = 10;
+
+/** The ports to try, in order, when `port` is the saved one. 0 = any free port. */
+export function portCandidates(port: number): number[] {
+  const list = [port];
+  for (let i = 1; i <= PORT_TRIES && port + i <= 65535; i++) list.push(port + i);
+  list.push(0);
+  return list;
+}
 const MAX_BODY = 1_000_000;
 // Hook events carry whole tool inputs and outputs (a file being written, an image that was read).
 const MAX_HOOK_BODY = 8_000_000;
@@ -66,6 +80,10 @@ export function createBridge({ token, onPermission, onEvent, onStatus, webToken,
   const server = http.createServer((req, res) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1');
     const route = url.pathname;
+    if (req.method === 'GET' && route === HELLO_PATH) {
+      res.writeHead(200, { 'Content-Type': 'application/json' }).end(HELLO_REPLY);
+      return;
+    }
     const isWeb = route === WEB_PATH && Boolean(webToken);
     if (req.method !== 'POST' || (route !== HOOK_PATH && route !== STATUS_PATH && !isWeb)) {
       res.writeHead(404).end();
@@ -192,16 +210,37 @@ export function createBridge({ token, onPermission, onEvent, onStatus, webToken,
     }));
   }
 
-  return {
-    listen(port: number): Promise<number> {
-      return new Promise((resolve, reject) => {
-        server.once('error', reject);
-        server.listen(port, '127.0.0.1', () => {
-          server.off('error', reject);
-          const addr = server.address();
-          resolve(typeof addr === 'object' && addr ? addr.port : port);
-        });
+  function listen(port: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(port, '127.0.0.1', () => {
+        server.off('error', reject);
+        const addr = server.address();
+        resolve(typeof addr === 'object' && addr ? addr.port : port);
       });
+    });
+  }
+
+  return {
+    listen,
+    /**
+     * Listens on `port`, or when another program holds it, on the next free port after it
+     * (and failing those, on any free port). Returns the port in use; the caller saves it
+     * and rewrites the hooks when it differs.
+     */
+    async listenOrFallback(port: number): Promise<number> {
+      let last: unknown = null;
+      for (const candidate of portCandidates(port)) {
+        try {
+          return await listen(candidate);
+        } catch (err) {
+          const code = (err as NodeJS.ErrnoException).code;
+          // Taken, or reserved by Windows (Hyper-V and WSL reserve ranges): try the next one.
+          if (code !== 'EADDRINUSE' && code !== 'EACCES') throw err;
+          last = err;
+        }
+      }
+      throw last;
     },
     close(): Promise<void> {
       return new Promise((resolve) => {

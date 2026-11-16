@@ -376,3 +376,35 @@ export function isCursorInstalled(file: string, opts: BridgeOpts): boolean {
     return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Moving to another port (the saved one was taken at startup)
+
+export type HookAgent = 'claude' | 'codex' | 'gemini' | 'cursor';
+
+/**
+ * Points every connected agent's hooks at the new port. An agent counts as connected when its
+ * file has Helo's hooks for the old port. Files that cannot be read or written are left alone
+ * and reported in `failed`.
+ */
+export function movePort(files: Record<HookAgent, string>, from: BridgeOpts, to: InstallOptions): { moved: HookAgent[]; failed: HookAgent[] } {
+  const steps: Record<HookAgent, [(file: string, opts: BridgeOpts) => boolean, (file: string, opts: InstallOptions) => unknown]> = {
+    claude: [isInstalled, install],
+    codex: [isCodexInstalled, installCodex],
+    gemini: [isGeminiInstalled, installGemini],
+    cursor: [isCursorInstalled, installCursor],
+  };
+  const moved: HookAgent[] = [];
+  const failed: HookAgent[] = [];
+  for (const agent of Object.keys(steps) as HookAgent[]) {
+    const [connected, connect] = steps[agent];
+    if (!connected(files[agent], from)) continue;
+    try {
+      connect(files[agent], to);
+      moved.push(agent);
+    } catch {
+      failed.push(agent);
+    }
+  }
+  return { moved, failed };
+}

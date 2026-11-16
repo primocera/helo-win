@@ -359,7 +359,7 @@ function onStatus(input: HookInput): string {
 
 function connectionStates(): Record<AgentName, ConnectionState> {
   if (bridgeError) {
-    const note = `Port ${bridgeInfo.port} is busy. Quit the other app that uses it and restart ${config.appName}.`;
+    const note = `${config.appName} could not open a local port (${bridgeError.message}). Restart ${config.appName}.`;
     const off = { connected: false, note };
     return { claude: off, codex: off, gemini: off, cursor: off };
   }
@@ -1574,6 +1574,26 @@ function loadBridgeInfo() {
   return fresh;
 }
 
+/**
+ * Another program holds the saved port, so the bridge listens on `port` instead: saves it and
+ * points the connected agents' hooks at it, so they stop posting (with the token) to that program.
+ */
+function usePort(port: number) {
+  const old = { port: bridgeInfo.port, token: bridgeInfo.token };
+  bridgeInfo = { ...bridgeInfo, port };
+  writeJson(userFile('bridge.json'), bridgeInfo);
+  const { moved, failed } = hooks.movePort(
+    { claude: CLAUDE_SETTINGS, codex: CODEX_HOOKS, gemini: GEMINI_SETTINGS, cursor: CURSOR_HOOKS },
+    old,
+    { ...bridgeInfo, statusLine: settings.features.usage, map: settings.features.map },
+  );
+  log(`port ${old.port} is taken, now on ${port}; hooks moved: ${moved.join(', ') || 'none'}; failed: ${failed.join(', ') || 'none'}`);
+  const text = failed.length
+    ? `Now on ${port}. Reconnect ${failed.map((a) => AGENT_LABEL[a]).join(', ')} in Settings.`
+    : moved.length ? `Now on ${port}. Restart agent sessions that are running.` : `Now on ${port}.`;
+  showBanner({ kind: failed.length ? 'warn' : 'info', title: `Port ${old.port} was busy`, text }, 20_000);
+}
+
 app.on('second-instance', () => openSettings());
 app.on('window-all-closed', () => { /* tray app: keep running */ });
 app.on('will-quit', () => globalShortcut.unregisterAll());
@@ -1603,11 +1623,12 @@ app.whenReady().then(async () => {
   const bridge = createBridge({ token: bridgeInfo.token, onPermission, onEvent, onStatus, webToken: bridgeInfo.webToken, onWeb });
   let bridgePort = 0;
   try {
-    bridgePort = await bridge.listen(testMode ? 0 : bridgeInfo.port);
+    bridgePort = testMode ? await bridge.listen(0) : await bridge.listenOrFallback(bridgeInfo.port);
     livePort = bridgePort;
   } catch (err) {
     bridgeError = err as Error;
   }
+  if (!testMode && bridgePort && bridgePort !== bridgeInfo.port) usePort(bridgePort);
   app.on('before-quit', () => { bridge.close(); });
 
   createIsland();
