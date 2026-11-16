@@ -2,6 +2,7 @@
 // Everything that crosses IPC is plain JSON data described here.
 
 import type { WorkMapState } from './workmap';
+import type { DocFormat } from './convert';
 
 /** 'always' = allow and add the rule Claude Code suggested (Claude Code only). */
 export type Behavior = 'allow' | 'deny' | 'always';
@@ -440,6 +441,7 @@ export interface ActionResult {
 }
 
 export type ConvertFormat = 'png' | 'jpeg' | 'webp';
+export type { DocFormat } from './convert';
 
 /** Smoke mode: which view the renderer should show for a screenshot. */
 export interface SmokeView {
@@ -497,7 +499,8 @@ export interface HeloApi {
   shelfClear(): void;
   shelfOpen(id: string): void;
   shelfDrag(id: string): void;
-  shelfConvert(id: string, to: ConvertFormat): Promise<ActionResult & { path?: string }>;
+  /** Converts an image (PNG, JPG, WebP) or a document (HTML, PDF) on the shelf; the result lands beside it and on the shelf. */
+  shelfConvert(id: string, to: ConvertFormat | DocFormat): Promise<ActionResult & { path?: string }>;
   convertDone(id: string, result: { bytes?: Uint8Array; error?: string }): void;
   setKeepAwake(on: boolean): void;
   setVolume(level: number): void;

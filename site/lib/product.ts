@@ -55,7 +55,7 @@ export const utilities: Feature[] = [
   { title: "Clipboard history", text: "Text and images you copied, one click to copy again. Search it, pin what you reuse, pause it when you like.", shipped: true },
   { title: "Notes", text: "A scratchpad that saves as you type.", shipped: true },
   { title: "File shelf", text: "Park files on the island and drag them out where you need them. Saved screenshots land there too.", shipped: true },
-  { title: "Image converter", text: "Turn an image on the shelf into PNG, JPG or WebP.", shipped: true },
+  { title: "Converter", text: "Turn an image on the shelf into PNG, JPG or WebP, and a Markdown, Word, HTML or text file into HTML or PDF.", shipped: true },
   { title: "Calendar", text: "Your next events from a private iCal address, with a reminder five minutes before and a Join button for Zoom, Meet, Teams and Webex.", shipped: true },
   { title: "Finished alerts", text: "Told when a download ends, a Steam game is ready, or an app you picked goes quiet.", shipped: true },
   { title: "Keep awake", text: "One switch stops the screen from sleeping while something long runs.", shipped: true },
@@ -160,8 +160,9 @@ export const specs: { name: string; lines: string[] }[] = [
     lines: ["Any private iCal (.ics) address", "Refreshed every 15 minutes", "Join button for Zoom, Meet, Teams and Webex links"],
   },
   {
-    name: "Image converter",
-    lines: ["PNG, JPG and WebP"],
+    name: "Converter",
+    // convertImage and convertDocument in index.ts; documents.ts; shared/convert.ts
+    lines: ["Images: PNG, JPG and WebP", "Markdown and Word (.docx) to HTML or PDF", "HTML and text to PDF", "Done on your PC"],
   },
   {
     name: "Links for scripts",
@@ -221,7 +222,8 @@ export const changelog: { version: string; date: string | null; summary: string;
           "Right-click the island for Settings, Hide and Quit, or to have it step aside for a minute.",
           "Music controls with artwork, shuffle and repeat, the song's title beside the closed island, and synced lyrics if you turn them on.",
           "Notifications from other apps, with a switch for each app. Click one to open the app.",
-          "Focus timer with a long break, clipboard history, notes, file shelf and image converter.",
+          "Focus timer with a long break, clipboard history, notes and file shelf.",
+          "A converter on the shelf: images to PNG, JPG or WebP, and Markdown, Word, HTML and text files to HTML or PDF.",
           "Calendar from an iCal address, with a Join button for Zoom, Meet, Teams and Webex.",
           `Links for scripts: ${product.name.toLowerCase()}://banner, timer, awake, shelf and open.`,
           "Alerts for finished downloads, Steam games ready to play, battery, low disk space, microphone and camera.",

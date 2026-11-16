@@ -5,6 +5,8 @@ import { Bars } from './Views';
 import { WorkMapView } from './WorkMap';
 import { formatClock, formatRemaining, relativeTime, eventWhen } from '../../../shared/time';
 import { livePosition, lineAt } from '../../../shared/playback';
+import { docTargets } from '../../../shared/convert';
+import type { DocFormat } from '../../../shared/convert';
 import type { CalendarEvent, ClipItem, ConvertFormat, IslandState, PanelTab, SessionSource, ShelfItem, WatchCondition, WatchTarget } from '../../../shared/types';
 import { AGENT_NAMES } from '../../../shared/types';
 
@@ -535,7 +537,7 @@ const IMAGE = /\.(png|jpe?g|webp|gif|bmp)$/i;
 
 function Shelf({ items, fileOver, converter }: { items: ShelfItem[]; fileOver: boolean; converter: boolean }) {
   const [message, setMessage] = useState('');
-  const convert = async (id: string, to: ConvertFormat) => {
+  const convert = async (id: string, to: ConvertFormat | DocFormat) => {
     setMessage('Converting…');
     const r = await window.helo.shelfConvert(id, to);
     setMessage(r.ok ? '' : r.error || 'Conversion failed.');
@@ -574,6 +576,11 @@ function Shelf({ items, fileOver, converter }: { items: ShelfItem[]; fileOver: b
                   {converter && IMAGE.test(it.name) && !it.missing && (['png', 'jpeg', 'webp'] as const).map((f) => (
                     <button key={f} type="button" className="chip" title={`Convert to ${f.toUpperCase()}`} onClick={() => convert(it.id, f)}>
                       {f === 'jpeg' ? 'JPG' : f.toUpperCase()}
+                    </button>
+                  ))}
+                  {converter && !it.missing && !it.isDirectory && docTargets(it.name).map((f) => (
+                    <button key={f} type="button" className="chip" title={`Convert to ${f.toUpperCase()}`} onClick={() => convert(it.id, f)}>
+                      {f.toUpperCase()}
                     </button>
                   ))}
                   <button type="button" className="icon-btn" title="Remove from shelf" onClick={() => window.helo.shelfRemove(it.id)}>

@@ -338,7 +338,7 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
         <FeatureRow {...p} k="shelf" label="File shelf" hint="Drop files on the island and drag them out later.">
           <Row label="Put new screenshots on the shelf"><Switch label="Add screenshots to shelf" on={s.shelf.screenshots} onChange={(v) => update({ shelf: { screenshots: v } })} /></Row>
         </FeatureRow>
-        <FeatureRow {...p} k="converter" label="Image converter" hint="Convert images on the shelf between PNG, JPG and WebP." />
+        <FeatureRow {...p} k="converter" label="Converter" hint="Convert images on the shelf between PNG, JPG and WebP, and Markdown, Word, HTML and text files to HTML or PDF. Done on this PC." />
       </Group>
       <Group title="System">
         <FeatureRow {...p} k="keepAwake" label="Keep awake" hint="A switch in the island that stops the screen from sleeping." />

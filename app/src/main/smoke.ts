@@ -42,6 +42,8 @@ interface SmokeCtx {
   push: (p: Partial<IslandState>) => void;
   openSettings: (section?: string) => BrowserWindow;
   isReady: () => boolean;
+  /** Converts a document; the screenshot run also makes a sample PDF, to look at with the pictures. */
+  convertDocument?: (source: string, to: 'html' | 'pdf') => Promise<string>;
   quit: (code: number) => void;
 }
 
@@ -244,6 +246,21 @@ export async function runSmoke(ctx: SmokeCtx) {
       settingsWin.webContents.send('settings:section', section);
       await shot(`30-settings-${section}`, settingsWin, section === 'startup' ? 3000 : 700);
     }
+    if (ctx.convertDocument) {
+      // A sample document through the real converter: Markdown with a picture beside it, a table and a script that must not run.
+      try {
+        fs.writeFileSync(path.join(dir, 'sample-picture.svg'), Buffer.from(sampleThumb().split(',')[1], 'base64'));
+        const md = path.join(dir, 'sample.md');
+        fs.rmSync(path.join(dir, 'sample.pdf'), { force: true });
+        fs.rmSync(path.join(dir, 'sample.html'), { force: true });
+        fs.writeFileSync(md, '# Release notes\n\nA paragraph with **bold** text, `code` and a [link](https://example.com).\n\n![A picture from the same folder](sample-picture.svg)\n\n| Feature | State |\n|---|---|\n| Sound | done |\n| Links | done |\n\n<script>document.body.innerHTML = "a script ran"</script>\n\n<img src="https://example.invalid/tracker.png" alt="">\n');
+        const pdf = await ctx.convertDocument(md, 'pdf');
+        const html = await ctx.convertDocument(md, 'html');
+        console.log(`[helo] smoke document: ${path.basename(pdf)} ${fs.statSync(pdf).size} bytes, ${path.basename(html)} ${fs.statSync(html).size} bytes`);
+      } catch (err) {
+        console.log(`[helo] smoke document failed: ${(err as Error).message}`);
+      }
+    }
     console.log(`[helo] smoke screenshots saved to ${dir}`);
     ctx.quit(0);
   } catch (err) {
@@ -268,6 +285,7 @@ interface SelfTestCtx {
   geminiSettings: string;
   cursorHooks: string;
   convertImage: (source: string, to: 'png' | 'jpeg' | 'webp') => Promise<string>;
+  convertDocument: (source: string, to: 'html' | 'pdf') => Promise<string>;
   setPanelOpen: (open: boolean) => Promise<void>;
   captureClipboard: () => Promise<void>;
   history: ClipboardHistory;
@@ -484,6 +502,29 @@ export async function runSelfTest(ctx: SelfTestCtx) {
       } catch (err) {
         check(`converter: PNG -> ${to}`, false, (err as Error).message);
       }
+    }
+
+    // Documents: Markdown to HTML and PDF, with a picture from its own folder; a page that asks for the network gets none.
+    const md = path.join(ctx.tmp, 'doc-source.md');
+    fs.copyFileSync(src, path.join(ctx.tmp, 'doc-picture.png'));
+    fs.writeFileSync(md, '# Self-test\n\nA paragraph with **bold** text.\n\n![picture](doc-picture.png)\n\n<script>document.title = "ran"</script>\n');
+    for (const to of ['html', 'pdf'] as const) {
+      try {
+        const out = await ctx.convertDocument(md, to);
+        const bytes = fs.readFileSync(out);
+        const good = to === 'pdf' ? bytes.subarray(0, 5).toString('latin1') === '%PDF-' && bytes.length > 3000 : bytes.toString('utf8').includes('<h1>Self-test</h1>');
+        check(`converter: Markdown -> ${to}`, good, `${path.basename(out)} ${bytes.length} bytes`);
+      } catch (err) {
+        check(`converter: Markdown -> ${to}`, false, (err as Error).message);
+      }
+    }
+    try {
+      const page = path.join(ctx.tmp, 'doc-page.html');
+      fs.writeFileSync(page, '<!doctype html><html><body><h1>Page</h1><img src="https://example.invalid/x.png"><script src="https://example.invalid/x.js"></script></body></html>');
+      const out = await ctx.convertDocument(page, 'pdf');
+      check('converter: HTML -> pdf, nothing fetched', fs.readFileSync(out).subarray(0, 5).toString('latin1') === '%PDF-', `${path.basename(out)} ${fs.statSync(out).size} bytes`);
+    } catch (err) {
+      check('converter: HTML -> pdf, nothing fetched', false, (err as Error).message);
     }
 
     // Focus: cards and banners must not take focus; the open panel may.

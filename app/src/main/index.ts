@@ -39,13 +39,14 @@ import { notificationFromRaw, notificationBanner, rememberApp } from './notifica
 import { SessionWindows, parseForeground } from './windows';
 import { shouldChime } from './sound';
 import { readCodexUsage } from './codex-usage';
+import { documentPage, docTargets } from './documents';
 import { parseLink, findLink, shownPath, LinkLimiter, LINK_SCHEME } from './links';
 import { formatDuration } from '../shared/time';
 import { nextRepeat } from '../shared/playback';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
 import type {
   AgentName, Banner, Behavior, ConnectionState, ConvertFormat, FinishedItem, IslandState, PermissionView, Settings, SettingsInfo,
-  StartupApp, WatchCondition, WatchTarget,
+  StartupApp, WatchCondition, WatchTarget, DocFormat,
 } from '../shared/types';
 import { AGENT_NAMES } from '../shared/types';
 
@@ -1274,6 +1275,62 @@ export async function convertImage(source: string, to: ConvertFormat): Promise<s
   return target;
 }
 
+/**
+ * Prints a page to PDF in a hidden window. The page is a document of the user's, so the window
+ * runs no scripts, and its session (kept apart from the app's own, and only in memory) lets
+ * through nothing but files from the document's folder and the page itself.
+ */
+async function printPdf(html: string, baseDir: string): Promise<Buffer> {
+  const tmpFile = path.join(app.getPath('temp'), `helo-convert-${crypto.randomUUID()}.html`);
+  fs.writeFileSync(tmpFile, html);
+  const win = new BrowserWindow({
+    show: false,
+    width: 900,
+    height: 1200,
+    webPreferences: { javascript: false, sandbox: true, contextIsolation: true, nodeIntegration: false, partition: `convert-${crypto.randomUUID()}` },
+  });
+  try {
+    const ses = win.webContents.session;
+    const inside = (file: string, dir: string) => {
+      const rel = path.relative(dir, file);
+      return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+    };
+    ses.webRequest.onBeforeRequest((details, done) => {
+      let ok = details.url.startsWith('data:');
+      try {
+        const u = new URL(details.url);
+        if (u.protocol === 'file:' && !u.host) {
+          const file = path.normalize(decodeURIComponent(u.pathname).replace(/^\/([A-Za-z]:)/, '$1'));
+          ok = file.toLowerCase() === tmpFile.toLowerCase() || inside(file, baseDir);
+        }
+      } catch { /* not a URL: refused */ }
+      done({ cancel: !ok });
+    });
+    ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+    win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    win.webContents.on('will-navigate', (e) => e.preventDefault());
+    await Promise.race([
+      win.loadFile(tmpFile),
+      new Promise<never>((_r, reject) => setTimeout(() => reject(new Error('The document took too long to open.')), 30_000)),
+    ]);
+    return await win.webContents.printToPDF({ printBackground: true, pageSize: 'A4', margins: { top: 0.7, bottom: 0.7, left: 0.75, right: 0.75 } });
+  } finally {
+    if (!win.isDestroyed()) win.destroy();
+    fs.rmSync(tmpFile, { force: true });
+  }
+}
+
+/** Converts a Markdown, Word, HTML or text file to HTML or PDF, beside the original. Returns the new file. */
+export async function convertDocument(source: string, to: DocFormat): Promise<string> {
+  if (!docTargets(source).includes(to)) throw new Error(`That file cannot be converted to ${to.toUpperCase()}.`);
+  const page = await documentPage(source);
+  const out = to === 'pdf' ? await printPdf(page.print, path.dirname(source)) : Buffer.from(page.save ?? '', 'utf8');
+  if (to === 'pdf' && out.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('The PDF did not come out right.');
+  const target = convertedName(source, to);
+  fs.writeFileSync(target, out, { flag: 'wx' });
+  return target;
+}
+
 // ---------------------------------------------------------------------------
 // helo:// links from scripts and shortcuts (links.ts says what a link may ask for)
 
@@ -1677,9 +1734,9 @@ function registerIpc() {
     const p = shelf.pathOf(str(id, 100));
     if (!settings.features.converter) return { ok: false, error: 'The converter is turned off in Settings.' };
     if (!p) return { ok: false, error: 'That file is no longer on the shelf.' };
-    if (to !== 'png' && to !== 'jpeg' && to !== 'webp') return { ok: false, error: 'Unknown format.' };
+    if (to !== 'png' && to !== 'jpeg' && to !== 'webp' && to !== 'html' && to !== 'pdf') return { ok: false, error: 'Unknown format.' };
     try {
-      const out = await convertImage(p, to);
+      const out = to === 'html' || to === 'pdf' ? await convertDocument(p, to) : await convertImage(p, to);
       shelf.add([out]);
       await loadShelfIcons();
       showBanner({ kind: 'done', title: 'Converted', text: path.basename(out) }, 3000);
@@ -2031,7 +2088,7 @@ app.whenReady().then(async () => {
   Object.assign(state.agents, conn);
 
   if (smokeDir) {
-    runSmoke({ dir: smokeDir, island: island!, push, state, openSettings, isReady: () => islandReady, quit: (code) => app.exit(code) });
+    runSmoke({ dir: smokeDir, island: island!, push, state, openSettings, isReady: () => islandReady, convertDocument, quit: (code) => app.exit(code) });
     return;
   }
 
@@ -2058,6 +2115,7 @@ app.whenReady().then(async () => {
       geminiSettings: GEMINI_SETTINGS,
       cursorHooks: CURSOR_HOOKS,
       convertImage,
+      convertDocument,
       setPanelOpen,
       captureClipboard,
       history: history!,
