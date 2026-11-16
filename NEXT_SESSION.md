@@ -7,7 +7,7 @@ Written 2026-11-16. Read this first, then `TODO.md` (the full list, with tick bo
 - **Everything is committed and pushed to `main`.** The site deploys from `main` to https://helo-win.vercel.app.
 - **Checks on 2026-11-16:** `npm run typecheck`, `npm test` (159 tests) and `npm run build` pass in `app/`; `npm run lint` and `npm run build` pass in `site/`.
 - **The user tested the app on 2026-11-16** and reported that the work map and everything else works. That was before this session's changes were built, so the points under "Not yet tried" below are still open.
-- **The installer was rebuilt on 2026-11-16** with everything below: `app/dist/Helo-Setup-0.1.0.exe` (116 MB, unsigned). It has not been installed or uninstalled by hand yet.
+- **The installer was rebuilt on 2026-11-16**, before the third session, so it lacks the banner click and the notification click: `app/dist/Helo-Setup-0.1.0.exe` (116 MB, unsigned). It has not been installed or uninstalled by hand yet.
 
 ## Built on 2026-11-16
 
@@ -95,8 +95,8 @@ Not gaps, so do not build them: Halo's lock screen controls and its notch option
 
 ## Do next, in this order
 
-1. **Click the finished banner to jump to the terminal** (gap 1), and with the same window lookup, **click a notification to open its app** (gap 6).
-2. **A sound when an agent needs you** (gap 2), with a switch and a volume in Settings. Off in fullscreen is the user's call; default on.
+1. Done in the third session: click a banner to go to the session's window, click a notification to open its app.
+2. **A sound when an agent needs you** (gap 2), with a switch and a volume in Settings. Off in fullscreen is the user's call; default on. Planned, nothing on disk yet: `settings.sound = { on, volume, fullscreen }` (not a feature switch, so the site's count of 22 stays); a pure `shouldChime` in `src/main/sound.ts` (one sound per 1.5 s); main sends a `sound` message to the island, which plays two soft notes with WebAudio (no sound file; the island window needs `autoplayPolicy: 'no-user-gesture-required'`); it plays when a card appears and when a "needs your answer" banner shows; Settings, AI agents gets the switch, a volume slider, a Play button and "Also in fullscreen".
 3. **Agents tab: file being edited and an Answer button** (gap 3).
 4. **`helo://` links** (gap 10). Register the protocol in the installer; accept only the five actions, and never a file path from a link without the user seeing it.
 5. **Right-click menu on the island and "step aside for a minute"** (gap 13).
@@ -111,8 +111,8 @@ Not gaps, so do not build them: Halo's lock screen controls and its notch option
 Paste this to start:
 
     Read NEXT_SESSION.md and TODO.md in C:\Users\primo\helo-win, then carry on
-    down "Do next, in this order" in NEXT_SESSION.md, starting with item 1
-    (click the finished banner to jump to the terminal). These are the gaps
+    down "Do next, in this order" in NEXT_SESSION.md, starting with item 2
+    (a sound when an agent needs you; the plan is written beside it). These are the gaps
     against halo-mac.com; the full list is under "Gaps against halo-mac.com".
     Work through as many items as you can without stopping to ask. After each
     item: run typecheck, tests and build, tick it in TODO.md, commit and push
@@ -120,7 +120,8 @@ Paste this to start:
     (site/lib/product.ts, the changelog and the privacy page) in step with
     what you build. Run things for me instead of telling me the command. If
     something needs my decision, pick the sensible default, note it in TODO.md
-    under "Needs you", and keep going. At the end, rebuild the installer.
+    under "Needs you", and keep going. At the end, rebuild the installer
+    (it was last built before the third session's changes).
 
 ## Waiting on the user
 
