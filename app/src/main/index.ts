@@ -1001,8 +1001,8 @@ async function captureClipboard() {
 // that a password manager marked a copy as private, so without it nothing is captured at all.
 
 /**
- * Encrypts the clipboard history on disk with Windows' per-user data protection. Null when
- * Windows cannot provide it; the history is then stored as before.
+ * Encrypts the clipboard history and the license file on disk with Windows' per-user data
+ * protection. Null when Windows cannot provide it; both are then stored as before.
  */
 function clipCodec(): ClipCodec | null {
   try {
@@ -1726,12 +1726,12 @@ app.whenReady().then(async () => {
     return;
   }
   fs.mkdirSync(app.getPath('userData'), { recursive: true });
-  license = createLicense({ file: userFile('license.json'), store: config.store, trialDays: config.trialDays });
+  const codec = clipCodec();
+  license = createLicense({ file: userFile('license.json'), store: config.store, trialDays: config.trialDays, codec });
   loadSettings();
   bridgeInfo = loadBridgeInfo();
   log(`start ${app.getVersion()}${app.isPackaged ? '' : ' dev'}, Windows ${os.release()}, Electron ${process.versions.electron}`);
-  const codec = clipCodec();
-  if (!codec) log('clipboard history is not encrypted: Windows data protection is not available');
+  if (!codec) log('clipboard history and license file are not encrypted: Windows data protection is not available');
   history = new ClipboardHistory(userFile('clipboard'), settings.clipboard.maxItems, Date.now, { codec, expireMs: settings.clipboard.expireHours * 3_600_000 });
   shelf = new Shelf(userFile('shelf.json'));
   state.settings = settings;

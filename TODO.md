@@ -41,7 +41,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Log file and "Copy diagnostics" in Settings (T1)
 - [x] Uninstall removes the hooks and asks about the data folder (B2, R4)
 - [x] Clipboard history: expiry, pause switch, encrypted on disk (S12)
-- [ ] Licence file protected with `safeStorage`; timeouts on licence calls (S10, S11)
+- [x] Licence file protected with `safeStorage`; timeouts on licence calls (S10, S11)
 - [ ] Packaged build fails when store IDs are unset (R1)
 - [ ] Auto-update or a new-version check (R3)
 - [ ] Rebuild the installer (the one in `app/dist` is from 13 Nov)
