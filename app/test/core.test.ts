@@ -353,10 +353,9 @@ test('license: revalidation removes a revoked key but tolerates being offline', 
   await license.revalidate();
   expect(license.status().state).not.toBe('licensed');
 });
-
-test('format: permission card shows the command and the project folder', () => {
+test('format: permission card shows the command exactly as sent, and the project folder', () => {
   const view = permissionView('1', { tool_name: 'Bash', cwd: 'C:\\code\\shop', tool_input: { command: 'npm  test' } }, 'claude', 5);
-  expect(view).toEqual({ id: '1', kind: 'tool', agent: 'claude', tool: 'Bash', summary: 'npm test', project: 'shop', always: null, receivedAt: 5 });
+  expect(view).toEqual({ id: '1', kind: 'tool', agent: 'claude', tool: 'Bash', summary: 'npm  test', project: 'shop', always: null, receivedAt: 5 });
 });
 
 test('format: Always allow is offered only for allow-rule suggestions, and never for Codex', () => {

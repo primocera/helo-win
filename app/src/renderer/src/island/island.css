@@ -140,6 +140,8 @@ button { font: inherit; color: inherit; }
 .idle-watch { color: var(--mint); flex: none; }
 .agent-claude { background: #e8875a; }
 .agent-codex { background: #e9e9ee; }
+.agent-gemini { background: #7aa7ff; }
+.agent-cursor { background: #b9b9c4; }
 
 /* ---- Banner ------------------------------------------------------------ */
 
@@ -168,11 +170,14 @@ button { font: inherit; color: inherit; }
   color: #e6e6ea;
   overflow-wrap: anywhere;
   user-select: text;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
 }
+.card-cut { font-size: 11.5px; color: #ffb86b; }
+.session-lines { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted, #9a9aa4); }
+.session-lines .plus { color: #6fd08c; }
+.session-lines .minus { color: #ff8a8a; margin-left: 4px; }
 .card-actions { display: flex; gap: 8px; }
 .btn:disabled { opacity: 0.45; cursor: default; }
 

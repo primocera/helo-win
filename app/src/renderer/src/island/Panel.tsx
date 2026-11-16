@@ -6,6 +6,7 @@ import { WorkMapView } from './WorkMap';
 import { formatClock, formatRemaining, relativeTime, eventWhen } from '../../../shared/time';
 import { livePosition, lineAt } from '../../../shared/playback';
 import type { CalendarEvent, ClipItem, ConvertFormat, IslandState, PanelTab, SessionSource, ShelfItem, WatchCondition, WatchTarget } from '../../../shared/types';
+import { AGENT_NAMES } from '../../../shared/types';
 
 const TABS: { id: PanelTab; icon: string; label: string; feature: (f: IslandState['settings']['features']) => boolean }[] = [
   { id: 'media', icon: 'home', label: 'Home', feature: () => true },
@@ -296,13 +297,13 @@ function resetsIn(at: number, now: number) {
 
 const MOOD_TEXT = { idle: 'Idle', working: 'Working', waiting: 'Waiting for you', done: 'Done' } as const;
 
-const SOURCE_NAME: Record<SessionSource, string> = { claude: 'Claude Code', codex: 'Codex', 'claude-web': 'Claude chat', 'chatgpt-web': 'ChatGPT chat' };
-const SOURCE_TAG: Record<SessionSource, string> = { claude: 'Claude', codex: 'Codex', 'claude-web': 'Claude · web', 'chatgpt-web': 'ChatGPT · web' };
+const SOURCE_NAME: Record<SessionSource, string> = { claude: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', cursor: 'Cursor', 'claude-web': 'Claude chat', 'chatgpt-web': 'ChatGPT chat' };
+const SOURCE_TAG: Record<SessionSource, string> = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini', cursor: 'Cursor', 'claude-web': 'Claude · web', 'chatgpt-web': 'ChatGPT · web' };
 
 function Agents({ state, now }: { state: IslandState; now: number }) {
   const a = state.agents;
   const f = state.settings.features;
-  const anyConnected = a.claude.connected || a.codex.connected;
+  const anyConnected = AGENT_NAMES.some((name) => a[name].connected);
   return (
     <div className="card-row">
       {f.usage && (
@@ -331,6 +332,12 @@ function Agents({ state, now }: { state: IslandState; now: number }) {
                 <span className={`mood-dot mood-${s.mood}`} />
                 <span className="session-name">{s.project || SOURCE_NAME[s.agent]}</span>
                 <span className="session-agent">{SOURCE_TAG[s.agent]}</span>
+                {(s.added || s.removed) ? (
+                  <span className="session-lines" title="Lines added and removed since your last prompt">
+                    {s.added ? <span className="plus">+{s.added}</span> : null}
+                    {s.removed ? <span className="minus">−{s.removed}</span> : null}
+                  </span>
+                ) : null}
                 <span className="session-mood">{MOOD_TEXT[s.mood]} · {relativeTime(s.since, now)}</span>
               </div>
             ))}

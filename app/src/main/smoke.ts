@@ -112,6 +112,8 @@ export async function runSmoke(ctx: SmokeCtx) {
         usage: { fiveHour: { usedPercent: 38, resetsAt: now + 2.4 * 3_600_000 }, sevenDay: { usedPercent: 61, resetsAt: now + 3.2 * 86_400_000 }, updatedAt: now },
         claude: { connected: true, note: '' },
         codex: { connected: false, note: '' },
+        gemini: { connected: false, note: '' },
+        cursor: { connected: false, note: '' },
       },
       clipboard: [
         { id: '0', kind: 'text', type: 'color', pinned: true, text: '#2B6BE4', at: now - 9 * 3_600_000 },
@@ -259,6 +261,8 @@ interface SelfTestCtx {
   bridgeOpts: { port: number; token: string };
   claudeSettings: string;
   codexHooks: string;
+  geminiSettings: string;
+  cursorHooks: string;
   convertImage: (source: string, to: 'png' | 'jpeg' | 'webp') => Promise<string>;
   setPanelOpen: (open: boolean) => Promise<void>;
   captureClipboard: () => Promise<void>;

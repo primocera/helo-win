@@ -49,7 +49,7 @@ const POINTS: { icon: keyof typeof ICON; title: string; text: string }[] = [
   {
     icon: "keys",
     title: "Yes or no from the keyboard",
-    text: "Ctrl+Alt+Y allows and Ctrl+Alt+N denies the request on the island, from any app, while one is waiting.",
+    text: "Alt+Shift+Y allows and Alt+Shift+N denies the request on the island, from any app, while one is waiting.",
   },
   {
     icon: "plan",
@@ -74,7 +74,8 @@ export default function AgentsSection() {
           </h2>
           <p className={shared.lead}>
             {product.name} works with Claude Code and Codex CLI. Their requests and finished tasks come to the top of
-            your screen, so you do not have to go looking for the right terminal.
+            your screen, so you do not have to go looking for the right terminal. Gemini CLI and Cursor show up too:
+            working, finished, and for Gemini CLI, waiting for you.
           </p>
         </div>
 
@@ -112,8 +113,8 @@ export default function AgentsSection() {
             <div className={styles.text}>
               <h3 className={styles.cardTitle}>Every session in one tab.</h3>
               <p className={styles.cardText}>
-                The Agents tab lists your Claude Code and Codex sessions and whether each is working, waiting for you or
-                done. On Pro, Max and Ultra plans, two rings show how much of your Claude 5-hour and weekly limits you
+                The Agents tab lists your Claude Code, Codex, Gemini CLI and Cursor sessions and whether each is
+                working, waiting for you or done. On Pro, Max and Ultra plans, two rings show how much of your Claude 5-hour and weekly limits you
                 have used.
               </p>
             </div>

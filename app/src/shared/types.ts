@@ -5,7 +5,9 @@ import type { WorkMapState } from './workmap';
 
 /** 'always' = allow and add the rule Claude Code suggested (Claude Code only). */
 export type Behavior = 'allow' | 'deny' | 'always';
-export type AgentName = 'claude' | 'codex';
+export type AgentName = 'claude' | 'codex' | 'gemini' | 'cursor';
+/** Every agent Helo can connect to, in the order Settings lists them. */
+export const AGENT_NAMES: readonly AgentName[] = ['claude', 'codex', 'gemini', 'cursor'];
 /** Where a tracked session comes from: a coding agent, or a chat in the browser (via the extension). */
 export type SessionSource = AgentName | 'claude-web' | 'chatgpt-web';
 
@@ -40,7 +42,10 @@ export interface PermissionView {
   plan?: string;
   agent: AgentName;
   tool: string;
+  /** The whole command, path or address being approved, line breaks kept. */
   summary: string;
+  /** The summary was too long to send in full; the rest has to be read in the terminal. */
+  summaryCut?: boolean;
   project: string;
   /** Rule text for the "Always allow" button, e.g. "Bash(npm test)", or null when not offered. */
   always: string | null;
@@ -86,6 +91,9 @@ export interface AgentSession {
   project: string;
   mood: Mood;
   since: number;
+  /** Lines added and removed since the session's last prompt (Claude Code, with the work map on). */
+  added?: number;
+  removed?: number;
 }
 
 export interface AgentsState {
@@ -96,6 +104,8 @@ export interface AgentsState {
   model: string | null;
   claude: ConnectionState;
   codex: ConnectionState;
+  gemini: ConnectionState;
+  cursor: ConnectionState;
 }
 
 export interface ConnectionState {
@@ -363,7 +373,7 @@ export interface SettingsInfo {
   price: string;
   appName: string;
   version: string;
-  agents: { claude: ConnectionState; codex: ConnectionState };
+  agents: Record<AgentName, ConnectionState>;
   /** Pasted into the browser extension so it can reach this app. */
   webPairingCode: string;
 }

@@ -10,6 +10,8 @@ export const product = {
   maxPcs: 3,
   buyUrl: "https://example.com/buy", // checkout page (not set up yet)
   requirements: "Windows 10 or 11",
+  // Where the site is served. Used for the sitemap and the share image; change it when the real domain is set.
+  siteUrl: "https://helo-win.vercel.app",
   // How many features have their own on/off switch in Settings: the keys of DEFAULT_FEATURES in
   // app/src/main/settings.ts (agents, map, usage, mascot, media, lyrics, timer, clipboard, notes, shelf, keepAwake,
   // battery, privacy, hud, displays, calendar, converter, downloads, steam, watchApp). Recount when that list changes.
@@ -30,12 +32,12 @@ export type Feature = {
 export const headline: Feature[] = [
   {
     title: "Answer your coding agent without leaving your work",
-    text: "When Claude Code or Codex CLI asks to run something, the island opens with what it wants to do. Allow or deny with a click, or with Ctrl+Alt+Y and Ctrl+Alt+N. Claude Code's questions and plans can be answered there too, and its edits show the lines they change.",
+    text: "When Claude Code or Codex CLI asks to run something, the island opens with what it wants to do. Allow or deny with a click, or with Alt+Shift+Y and Alt+Shift+N. Claude Code's questions and plans can be answered there too, and its edits show the lines they change.",
     shipped: true,
   },
   {
     title: "Know the moment it's done",
-    text: "A banner when your agent finishes or needs an answer. The same for browser downloads and Steam games, and for an app you ask it to watch.",
+    text: "A banner when your agent finishes or needs an answer, for Claude Code, Codex CLI, Gemini CLI and Cursor. The same for browser downloads and Steam games, and for an app you ask it to watch.",
     shipped: true,
   },
   {
@@ -79,7 +81,7 @@ export const faq: { q: string; a: string }[] = [
   },
   {
     q: "What does it change on my PC?",
-    a: `Connecting Claude Code adds four hooks to its settings file, six more while the work map is on (it is by default), and a status line for the usage rings unless you already have one. Connecting Codex CLI adds three hooks to its hooks file. A backup of each file is kept, and disconnecting takes it all out again. Uninstalling does not do that yet, so disconnect first. ${product.name} listens only on your own machine.`,
+    a: `Connecting Claude Code adds four hooks to its settings file, six more while the work map is on (it is by default), and a status line for the usage rings unless you already have one. Connecting Codex CLI adds three hooks to its hooks file, Gemini CLI four to its settings file, and Cursor three to its hooks file. A backup of each file is kept, and disconnecting takes it all out again. Uninstalling does not do that yet, so disconnect first. ${product.name} listens only on your own machine.`,
   },
   {
     q: "What data leaves my PC?",

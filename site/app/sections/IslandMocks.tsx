@@ -403,11 +403,11 @@ export function MockPermission({
         <div className={s.summary}>{command}</div>
         <div className={s.actions}>
           <span className={s.btn}>
-            Deny <kbd className={s.kbd}>Ctrl Alt N</kbd>
+            Deny <kbd className={s.kbd}>Alt Shift N</kbd>
           </span>
           {showAlways && <span className={`${s.btn} ${s.ghost}`}>Always allow</span>}
           <span className={`${s.btn} ${s.primary}`}>
-            Allow <kbd className={s.kbd}>Ctrl Alt Y</kbd>
+            Allow <kbd className={s.kbd}>Alt Shift Y</kbd>
           </span>
         </div>
       </div>

@@ -1,6 +1,8 @@
 // Adds and removes Helo's hooks in the agents' own config files:
 //   Claude Code: HTTP hooks + an optional status line in ~/.claude/settings.json
 //   Codex CLI:   command hooks (curl to the same local endpoint) in ~/.codex/hooks.json
+//   Gemini CLI:  command hooks in ~/.gemini/settings.json (watch only)
+//   Cursor:      command hooks in ~/.cursor/hooks.json (watch only)
 // Other hooks and settings are always kept. Every write leaves a .helo-backup copy.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -244,6 +246,132 @@ export function uninstallCodex(file: string): void {
 export function isCodexInstalled(file: string, opts: BridgeOpts): boolean {
   try {
     return hasCodexHooks(readSettings(file), opts);
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Watch-only agents. Their hooks are command hooks too, and curl forwards the event the
+// same way, but Helo never decides anything for them: it answers at once.
+
+function watchCommand({ port, token }: BridgeOpts, agent: 'gemini' | 'cursor'): string {
+  return `curl.exe -s -m 3 -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" --data-binary "@-" "http://127.0.0.1:${port}${HOOK_PATH}?agent=${agent}"`;
+}
+
+const matchesBridge = (command: unknown, opts: BridgeOpts) =>
+  typeof command === 'string' && command.includes(`Bearer ${opts.token}`) && command.includes(`:${opts.port}/`);
+
+// ---------------------------------------------------------------------------
+// Gemini CLI (~/.gemini/settings.json). Same shape as Claude Code's hooks (event -> groups ->
+// hooks), with its own event names and the timeout in milliseconds.
+
+const GEMINI_EVENTS = ['BeforeAgent', 'AfterAgent', 'Notification', 'AfterTool'];
+const GEMINI_MARK = /127\.0\.0\.1:\d+\/helo\/hook\?agent=gemini/;
+
+function isOurGeminiHook(hook: Hook): boolean {
+  return Boolean(hook) && typeof hook.command === 'string' && GEMINI_MARK.test(hook.command);
+}
+
+export function geminiCommand(opts: BridgeOpts): string {
+  return watchCommand(opts, 'gemini');
+}
+
+export function stripGeminiHooks(settings: Json): Json {
+  return stripMatching(settings, isOurGeminiHook);
+}
+
+export function applyGeminiHooks(settings: Json, opts: BridgeOpts): Json {
+  const next = stripGeminiHooks(settings) as Json & { hooks?: Record<string, unknown[]> };
+  if (!next.hooks || typeof next.hooks !== 'object') next.hooks = {};
+  for (const event of GEMINI_EVENTS) {
+    if (!Array.isArray(next.hooks[event])) next.hooks[event] = [];
+    const hook = { name: 'helo', type: 'command', command: geminiCommand(opts), timeout: 5000 };
+    // Tool events match on the tool's name; "*" is every tool.
+    next.hooks[event].push(event === 'AfterTool' ? { matcher: '*', hooks: [hook] } : { hooks: [hook] });
+  }
+  return next;
+}
+
+export function hasGeminiHooks(settings: Json, opts: BridgeOpts): boolean {
+  return hasAll(settings, GEMINI_EVENTS, (h) => isOurGeminiHook(h) && matchesBridge(h.command, opts));
+}
+
+export function installGemini(file: string, opts: BridgeOpts): void {
+  writeSettings(file, applyGeminiHooks(readSettings(file), opts));
+}
+
+export function uninstallGemini(file: string): void {
+  writeSettings(file, stripGeminiHooks(readSettings(file)));
+}
+
+export function isGeminiInstalled(file: string, opts: BridgeOpts): boolean {
+  try {
+    return hasGeminiHooks(readSettings(file), opts);
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cursor (~/.cursor/hooks.json): { "version": 1, "hooks": { event: [ { command, timeout } ] } }.
+// The list under each event holds the hooks themselves, not groups. Timeout is in seconds.
+
+const CURSOR_EVENTS = ['beforeSubmitPrompt', 'afterAgentResponse', 'stop'];
+const CURSOR_MARK = /127\.0\.0\.1:\d+\/helo\/hook\?agent=cursor/;
+
+function isOurCursorHook(hook: unknown): boolean {
+  return Boolean(hook) && typeof hook === 'object' && typeof (hook as Hook).command === 'string' && CURSOR_MARK.test((hook as Hook).command as string);
+}
+
+export function cursorCommand(opts: BridgeOpts): string {
+  return watchCommand(opts, 'cursor');
+}
+
+export function stripCursorHooks(settings: Json): Json {
+  const next = structuredClone(settings) as Json & { hooks?: Record<string, unknown> };
+  if (!next.hooks || typeof next.hooks !== 'object') return next;
+  for (const event of Object.keys(next.hooks)) {
+    const list = next.hooks[event];
+    if (!Array.isArray(list)) continue;
+    const kept = list.filter((h) => !isOurCursorHook(h));
+    if (kept.length) next.hooks[event] = kept;
+    else delete next.hooks[event];
+  }
+  return next;
+}
+
+export function applyCursorHooks(settings: Json, opts: BridgeOpts): Json {
+  const next = stripCursorHooks(settings) as Json & { hooks?: Record<string, unknown[]> };
+  if (typeof next.version !== 'number') next.version = 1;
+  if (!next.hooks || typeof next.hooks !== 'object') next.hooks = {};
+  for (const event of CURSOR_EVENTS) {
+    if (!Array.isArray(next.hooks[event])) next.hooks[event] = [];
+    next.hooks[event].push({ command: cursorCommand(opts), timeout: 5 });
+  }
+  return next;
+}
+
+export function hasCursorHooks(settings: Json, opts: BridgeOpts): boolean {
+  const hooks = (settings.hooks || {}) as Record<string, unknown>;
+  return CURSOR_EVENTS.every((event) => {
+    const list = hooks[event];
+    return Array.isArray(list) && list.some((h) => isOurCursorHook(h) && matchesBridge((h as Hook).command, opts));
+  });
+}
+
+export function installCursor(file: string, opts: BridgeOpts): void {
+  writeSettings(file, applyCursorHooks(readSettings(file), opts));
+}
+
+/** Removes Helo's hooks. A file left with only the version number is kept: Cursor reads it as "no hooks". */
+export function uninstallCursor(file: string): void {
+  writeSettings(file, stripCursorHooks(readSettings(file)));
+}
+
+export function isCursorInstalled(file: string, opts: BridgeOpts): boolean {
+  try {
+    return hasCursorHooks(readSettings(file), opts);
   } catch {
     return false;
   }

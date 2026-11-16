@@ -382,6 +382,12 @@ function Agents({ info, update, setInfo }: { info: SettingsInfo; update: (p: Pat
       <AgentCard agent="codex" title="Codex CLI" info={info} setInfo={setInfo}>
         <p className="row-hint">Writes command hooks to ~/.codex/hooks.json. Codex asks you to review new hooks: run /hooks in Codex once and trust them.</p>
       </AgentCard>
+      <AgentCard agent="gemini" title="Gemini CLI" info={info} setInfo={setInfo}>
+        <p className="row-hint">Writes command hooks to ~/.gemini/settings.json. Shows working, needs you and finished. Gemini CLI has no hook that can answer its approval prompt, so you still allow or deny in the terminal.</p>
+      </AgentCard>
+      <AgentCard agent="cursor" title="Cursor" info={info} setInfo={setInfo}>
+        <p className="row-hint">Writes command hooks to ~/.cursor/hooks.json. Shows working and finished for Cursor's agent. Approvals stay in Cursor.</p>
+      </AgentCard>
       <WebChat info={info} />
       <div className="agent muted-card">
         <div className="row-label">OpenCode</div>

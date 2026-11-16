@@ -26,6 +26,10 @@ export function moodForEvent(event: unknown, notificationType?: unknown): Mood |
       return 'done';
     case 'PermissionResolved':
       return 'working';
+    // The run was cancelled or broke: nothing is running and nothing was finished.
+    case 'Aborted':
+    case 'Failed':
+      return 'idle';
     default:
       return null;
   }

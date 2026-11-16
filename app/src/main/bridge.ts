@@ -3,6 +3,7 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
 import { alwaysAllowSuggestion } from './format';
+import { WATCH_ONLY, createNormalizer } from './agent-events';
 import type { AgentName, Behavior } from '../shared/types';
 
 export const HOOK_PATH = '/helo/hook';
@@ -47,10 +48,21 @@ function tokenMatches(header: unknown, token: string): boolean {
 }
 
 function agentFrom(url: URL): AgentName {
-  return url.searchParams.get('agent') === 'codex' ? 'codex' : 'claude';
+  const name = url.searchParams.get('agent');
+  return name === 'codex' || name === 'gemini' || name === 'cursor' ? name : 'claude';
+}
+
+/**
+ * Gemini CLI and Cursor run command hooks and read JSON from the command's output. Helo only
+ * watches these two, so every answer is the one that changes nothing: Cursor's prompt hook
+ * must be told to carry on, and everything else gets an empty object.
+ */
+function watchReply(agent: AgentName, input: HookInput | null): string {
+  return agent === 'cursor' && input?.hook_event_name === 'beforeSubmitPrompt' ? '{"continue":true}' : '{}';
 }
 
 export function createBridge({ token, onPermission, onEvent, onStatus, webToken, onWeb, decisionTimeoutMs = 280_000 }: BridgeHandlers) {
+  const normalize = createNormalizer();
   const server = http.createServer((req, res) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1');
     const route = url.pathname;
@@ -72,7 +84,9 @@ export function createBridge({ token, onPermission, onEvent, onStatus, webToken,
       if (size > (route === HOOK_PATH ? MAX_HOOK_BODY : MAX_BODY)) {
         tooBig = true;
         // For a hook, an empty 200 is "no decision": the agent carries on as if Helo were not there.
-        res.writeHead(route === HOOK_PATH ? 200 : 413).end();
+        const agent = agentFrom(url);
+        if (route === HOOK_PATH && WATCH_ONLY.has(agent)) res.writeHead(200, { 'Content-Type': 'application/json' }).end(watchReply(agent, null));
+        else res.writeHead(route === HOOK_PATH ? 200 : 413).end();
         req.destroy();
         return;
       }
@@ -82,7 +96,7 @@ export function createBridge({ token, onPermission, onEvent, onStatus, webToken,
       if (tooBig) return;
       let input: HookInput;
       try {
-        const parsed: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        const parsed: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8').replace(/^﻿/, ''));
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
         input = parsed as HookInput;
       } catch {
@@ -113,6 +127,12 @@ export function createBridge({ token, onPermission, onEvent, onStatus, webToken,
   });
 
   async function handle(input: HookInput, agent: AgentName, res: http.ServerResponse) {
+    if (WATCH_ONLY.has(agent)) {
+      res.writeHead(200, { 'Content-Type': 'application/json' }).end(watchReply(agent, input));
+      const event = normalize(agent, input);
+      if (event) onEvent(event, agent);
+      return;
+    }
     if (input.hook_event_name !== 'PermissionRequest') {
       res.writeHead(200).end();
       onEvent(input, agent);

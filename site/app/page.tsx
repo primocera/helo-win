@@ -1,3 +1,4 @@
+import Link from "next/link";
 import styles from "./page.module.css";
 import shared from "./sections/shared.module.css";
 import { faq, product, utilities, type Feature } from "@/lib/product";
@@ -133,6 +134,10 @@ export default function Home() {
       <ScrollEffects />
 
       <footer className={styles.footer}>
+        <nav className={styles.footerLinks} aria-label="Footer">
+          <a href="#questions">Questions</a>
+          <Link href="/privacy">Privacy</Link>
+        </nav>
         © {product.name}. Made by an independent developer.
       </footer>
     </>

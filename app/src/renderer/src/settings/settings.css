@@ -89,6 +89,8 @@ select:focus, input:focus { border-color: var(--blue); }
 .agent-badge { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; color: #0b0b0c; }
 .agent-badge.claude { background: #e8875a; }
 .agent-badge.codex { background: #e9e9ee; }
+.agent-badge.gemini { background: #7aa7ff; }
+.agent-badge.cursor { background: #b9b9c4; }
 .agent-text { flex: 1; }
 .agent > .row-hint { margin-top: 10px; }
 .status { font-size: 12px; color: var(--dim); }

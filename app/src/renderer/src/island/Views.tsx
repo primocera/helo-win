@@ -1,6 +1,6 @@
 // The compact island states: idle pill, banner, permission card, HUD.
 // All text from hooks, media or files is rendered as React text (never HTML).
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon, Mark } from '../common/icons';
 import { relativeTime } from '../../../shared/time';
 import type { Banner, BannerKind, Behavior, DiffView, Hud, IslandState, PermissionView } from '../../../shared/types';
@@ -100,7 +100,19 @@ export function BannerView({ banner, now }: { banner: Banner; now: number }) {
   );
 }
 
-const AGENT_NAME = { claude: 'Claude Code', codex: 'Codex' } as const;
+/** How long a card ignores clicks after it appears or changes, so a click meant for the app underneath cannot answer it. */
+const ARM_MS = 500;
+
+/** Wraps click handlers so they do nothing until the card (or this step of it) has been on screen for ARM_MS. */
+function useArmed(key: string): <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => void {
+  const shownAt = useRef({ key, at: Date.now() });
+  if (shownAt.current.key !== key) shownAt.current = { key, at: Date.now() };
+  return (fn) => (...args) => {
+    if (Date.now() - shownAt.current.at >= ARM_MS) fn(...args);
+  };
+}
+
+const AGENT_NAME = { claude: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', cursor: 'Cursor' } as const;
 
 function CardHead({ request, more, label }: { request: PermissionView; more: number; label: string }) {
   return (
@@ -147,6 +159,7 @@ function QuestionCard({ request, more }: { request: PermissionView; more: number
   const q = questions[Math.min(step, questions.length - 1)];
   const last = step >= questions.length - 1;
   const chosen = picks[step] ?? [];
+  const armed = useArmed(`${request.id}:${step}`);
 
   const advance = (next: string[][]) => {
     if (last) window.helo.answer(request.id, next);
@@ -173,7 +186,7 @@ function QuestionCard({ request, more }: { request: PermissionView; more: number
             type="button"
             className={`option ${chosen.includes(o.label) ? 'on' : ''}`}
             aria-pressed={chosen.includes(o.label)}
-            onClick={() => pick(o.label)}
+            onClick={armed(() => pick(o.label))}
           >
             <span className="option-label">{o.label}</span>
             {o.description && <span className="option-text">{o.description}</span>}
@@ -186,7 +199,7 @@ function QuestionCard({ request, more }: { request: PermissionView; more: number
           Answer in terminal
         </button>
         {q.multi && (
-          <button type="button" className="btn primary" disabled={!chosen.length} onClick={() => advance(picks)}>
+          <button type="button" className="btn primary" disabled={!chosen.length} onClick={armed(() => advance(picks))}>
             {last ? 'Send' : 'Next'}
           </button>
         )}
@@ -196,19 +209,20 @@ function QuestionCard({ request, more }: { request: PermissionView; more: number
 }
 
 function PlanCard({ request, more, onDecide }: { request: PermissionView; more: number; onDecide: (id: string, b: Behavior) => void }) {
+  const armed = useArmed(request.id);
   return (
     <div className="card">
       <CardHead request={request} more={more} label="Plan" />
       <div className="plan">{request.plan || 'The plan text was not sent. Read it in the terminal.'}</div>
       <div className="card-actions">
-        <button type="button" className="btn" title="Claude keeps planning and asks what to change" onClick={() => onDecide(request.id, 'deny')}>
-          Reject <kbd>Ctrl Alt N</kbd>
+        <button type="button" className="btn" title="Claude keeps planning and asks what to change" onClick={armed(() => onDecide(request.id, 'deny'))}>
+          Reject <kbd>Alt Shift N</kbd>
         </button>
         <button type="button" className="btn ghost" title="Choose in the terminal, where you can also type feedback" onClick={() => window.helo.skip(request.id)}>
           Decide in terminal
         </button>
-        <button type="button" className="btn primary" onClick={() => onDecide(request.id, 'allow')}>
-          Approve <kbd>Ctrl Alt Y</kbd>
+        <button type="button" className="btn primary" onClick={armed(() => onDecide(request.id, 'allow'))}>
+          Approve <kbd>Alt Shift Y</kbd>
         </button>
       </div>
     </div>
@@ -217,22 +231,28 @@ function PlanCard({ request, more, onDecide }: { request: PermissionView; more: 
 
 export function CardView({ request, more, onDecide }: { request: PermissionView; more: number; onDecide: (id: string, b: Behavior) => void }) {
   if (request.kind === 'question' && request.questions?.length) return <QuestionCard key={request.id} request={request} more={more} />;
-  if (request.kind === 'plan') return <PlanCard request={request} more={more} onDecide={onDecide} />;
+  if (request.kind === 'plan') return <PlanCard key={request.id} request={request} more={more} onDecide={onDecide} />;
+  return <ToolCard key={request.id} request={request} more={more} onDecide={onDecide} />;
+}
+
+function ToolCard({ request, more, onDecide }: { request: PermissionView; more: number; onDecide: (id: string, b: Behavior) => void }) {
+  const armed = useArmed(request.id);
   return (
     <div className="card">
       <CardHead request={request} more={more} label={request.tool} />
       {request.diff ? <DiffBox diff={request.diff} /> : <div className="card-summary">{request.summary || 'No details'}</div>}
+      {request.summaryCut && !request.diff && <div className="card-cut">This is longer than the card can show. Read the rest in the terminal before you allow it.</div>}
       <div className="card-actions">
-        <button type="button" className="btn" onClick={() => onDecide(request.id, 'deny')}>
-          Deny <kbd>Ctrl Alt N</kbd>
+        <button type="button" className="btn" onClick={armed(() => onDecide(request.id, 'deny'))}>
+          Deny <kbd>Alt Shift N</kbd>
         </button>
         {request.always && (
-          <button type="button" className="btn ghost" title={`Allow and add the rule ${request.always}`} onClick={() => onDecide(request.id, 'always')}>
+          <button type="button" className="btn ghost" title={`Allow and add the rule ${request.always}`} onClick={armed(() => onDecide(request.id, 'always'))}>
             Always allow
           </button>
         )}
-        <button type="button" className="btn primary" onClick={() => onDecide(request.id, 'allow')}>
-          Allow <kbd>Ctrl Alt Y</kbd>
+        <button type="button" className="btn primary" onClick={armed(() => onDecide(request.id, 'allow'))}>
+          Allow {!request.summaryCut && <kbd>Alt Shift Y</kbd>}
         </button>
       </div>
     </div>

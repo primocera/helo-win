@@ -25,7 +25,37 @@ export function summarize(input: unknown): string {
   }
 }
 
-export const AGENT_LABEL: Record<AgentName, string> = { claude: 'Claude', codex: 'Codex' };
+/** The most text a card shows. Longer than this and the card says so, and the Allow shortcut is off. */
+export const MAX_SUMMARY = 6000;
+
+/**
+ * What a card shows for a tool call: the whole command (or path, address, pattern) with its
+ * line breaks kept, so nothing the user is approving is hidden. `cut` is true when even
+ * MAX_SUMMARY was not enough.
+ */
+export function fullSummary(input: unknown): { text: string; cut: boolean } {
+  const i = input && typeof input === 'object' ? (input as Record<string, unknown>) : {};
+  let text = '';
+  for (const field of ['command', 'file_path', 'url', 'pattern', 'query']) {
+    const v = i[field];
+    if (typeof v === 'string' && v) {
+      text = v;
+      break;
+    }
+  }
+  if (!text) {
+    try {
+      text = JSON.stringify(i, null, 1);
+    } catch {
+      text = '';
+    }
+    if (text === '{}') text = '';
+  }
+  text = text.replace(/\r\n/g, '\n').trim();
+  return text.length > MAX_SUMMARY ? { text: text.slice(0, MAX_SUMMARY), cut: true } : { text, cut: false };
+}
+
+export const AGENT_LABEL: Record<AgentName, string> = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini', cursor: 'Cursor' };
 
 export interface PermissionSuggestion {
   type: 'addRules';
@@ -181,6 +211,7 @@ export function permissionView(
   const isPlan = agent === 'claude' && input.tool_name === 'ExitPlanMode';
   const planText = isPlan && input.tool_input && typeof input.tool_input === 'object' ? (input.tool_input as Record<string, unknown>).plan : null;
   const diff = agent === 'claude' ? editDiff(input.tool_name, input.tool_input, readFile) : null;
+  const summary = fullSummary(input.tool_input);
   return {
     id,
     kind: questions ? 'question' : isPlan ? 'plan' : 'tool',
@@ -189,7 +220,8 @@ export function permissionView(
     ...(diff ? { diff } : {}),
     agent,
     tool: clip(input.tool_name || 'Tool', 40),
-    summary: summarize(input.tool_input),
+    summary: summary.text,
+    ...(summary.cut ? { summaryCut: true } : {}),
     project: clip(projectName(input.cwd), 40),
     always: suggestion ? ruleLabel(suggestion) : null,
     receivedAt: now,
@@ -205,6 +237,8 @@ export function eventBanner(input: Record<string, unknown>, agent: AgentName = '
       return { kind: 'done', title: project ? `Finished in ${project}` : `${who} finished`, text: clip(input.last_assistant_message, 120) };
     case 'NeedsInput':
       return { kind: 'input', title: `${who} needs your answer`, text: project ? `Open the terminal for ${project}` : 'Open the terminal' };
+    case 'Failed':
+      return { kind: 'warn', title: project ? `${who} stopped in ${project}` : `${who} stopped`, text: 'It ended with an error.' };
     case 'Notification':
       // "Claude is waiting for your input": treated like a question, so it stays up until clicked.
       if (input.notification_type === 'idle_prompt') {

@@ -31,12 +31,14 @@ import { DownloadWatcher, SteamWatcher, ScreenshotWatcher } from './finished-wat
 import { BusyIdleDetector } from './finished';
 import { listStartupApps, setStartupApp } from './startup-apps';
 import { faceOnly } from '../shared/face';
+import { ChangeTracker, changeText } from './changes';
 import { formatDuration } from '../shared/time';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
 import type {
   AgentName, Banner, Behavior, ConnectionState, ConvertFormat, FinishedItem, IslandState, PermissionView, Settings, SettingsInfo,
   StartupApp, WatchCondition, WatchTarget,
 } from '../shared/types';
+import { AGENT_NAMES } from '../shared/types';
 
 // ---------------------------------------------------------------------------
 // Modes and paths
@@ -63,6 +65,10 @@ if (!testMode && !app.requestSingleInstanceLock()) app.quit();
 const CLAUDE_SETTINGS = testRoot ? path.join(testRoot, 'claude', 'settings.json') : path.join(os.homedir(), '.claude', 'settings.json');
 const CODEX_DIR = testRoot ? path.join(testRoot, 'codex') : path.join(os.homedir(), '.codex');
 const CODEX_HOOKS = path.join(CODEX_DIR, 'hooks.json');
+const GEMINI_DIR = testRoot ? path.join(testRoot, 'gemini') : path.join(os.homedir(), '.gemini');
+const GEMINI_SETTINGS = path.join(GEMINI_DIR, 'settings.json');
+const CURSOR_DIR = testRoot ? path.join(testRoot, 'cursor') : path.join(os.homedir(), '.cursor');
+const CURSOR_HOOKS = path.join(CURSOR_DIR, 'hooks.json');
 
 // The window is only as big as it needs to be: transparent windows on Windows
 // repaint all of their pixels on every animation frame.
@@ -128,6 +134,8 @@ const state: IslandState = {
     model: null,
     claude: { connected: false, note: '' },
     codex: { connected: false, note: '' },
+    gemini: { connected: false, note: '' },
+    cursor: { connected: false, note: '' },
   },
   map: null,
   media: null,
@@ -189,7 +197,10 @@ function pushAgents() {
   push({
     agents: {
       ...state.agents,
-      sessions: tracker.list(),
+      sessions: tracker.list().map((s) => {
+        const c = s.agent === 'claude' ? changes.get(s.key.slice('claude:'.length)) : null;
+        return c ? { ...s, added: c.added, removed: c.removed } : s;
+      }),
       mood: tracker.mood(),
       usage: freshUsage(state.agents.usage),
     },
@@ -223,24 +234,32 @@ function pushMap() {
   push({ map: workMap.view() });
 }
 
-// Ctrl+Alt+Y / Ctrl+Alt+N answer the request on screen. They are only
-// registered while a request is waiting.
+// Alt+Shift+Y / Alt+Shift+N answer the request on screen. They are only registered while a
+// request is waiting. Not Ctrl+Alt: on keyboards with an AltGr key (Slovenian, Croatian, German
+// and many more) AltGr is Ctrl+Alt, so typing a bracket would answer the card.
+const ALLOW_KEY = 'Alt+Shift+Y';
+const DENY_KEY = 'Alt+Shift+N';
 function syncShortcuts() {
   const want = pending.size > 0;
   if (want === shortcutsOn) return;
   shortcutsOn = want;
   if (!want) {
-    globalShortcut.unregister('Control+Alt+Y');
-    globalShortcut.unregister('Control+Alt+N');
+    globalShortcut.unregister(ALLOW_KEY);
+    globalShortcut.unregister(DENY_KEY);
     return;
   }
   const answer = (behavior: Behavior) => () => {
     const first = pending.keys().next().value;
-    if (first) settle(first, behavior);
+    if (!first) return;
+    // Part of the command is not on the card, so it cannot be allowed without looking: click, or use the terminal.
+    if (behavior === 'allow' && pending.get(first)?.view.summaryCut) return;
+    settle(first, behavior);
   };
-  globalShortcut.register('Control+Alt+Y', answer('allow'));
-  globalShortcut.register('Control+Alt+N', answer('deny'));
+  globalShortcut.register(ALLOW_KEY, answer('allow'));
+  globalShortcut.register(DENY_KEY, answer('deny'));
 }
+
+const changes = new ChangeTracker((file) => readForDiff(file));
 
 /** The current text of a file an agent wants to overwrite (small text files only), for the diff card. */
 function readForDiff(file: string): string | null {
@@ -272,6 +291,7 @@ function onPermission(input: HookInput, signal: AbortSignal, agent: AgentName): 
 
 function onEvent(input: HookInput, agent: AgentName) {
   if (agent === 'claude' && settings.features.map && workMap.record(input)) pushMap();
+  if (agent === 'claude' && changes.record(input)) pushAgents();
   // The work map's own events mean nothing to the cards, banners and the face.
   if ((MAP_EVENTS as readonly string[]).includes(String(input.hook_event_name))) return;
   if (!settings.features.agents) return;
@@ -283,7 +303,7 @@ function onEvent(input: HookInput, agent: AgentName) {
   if (input.hook_event_name === 'Notification' && input.notification_type === 'permission_prompt') {
     for (const entry of pending.values()) if (entry.sessionId === input.session_id) return;
   }
-  if (input.hook_event_name === 'UserPromptSubmit') {
+  if (input.hook_event_name === 'UserPromptSubmit' || input.hook_event_name === 'PermissionResolved') {
     // The user answered in the terminal: the "waiting for you" banner has done its job.
     if (state.banner?.kind === 'input' && (!waitingSession || waitingSession === input.session_id)) {
       bannerAction = null;
@@ -293,6 +313,10 @@ function onEvent(input: HookInput, agent: AgentName) {
   }
   const banner = eventBanner(input, agent);
   if (banner && input.hook_event_name === 'Stop' && workedMs >= 5000) banner.title += ` · ${formatDuration(workedMs)}`;
+  if (banner && input.hook_event_name === 'Stop' && agent === 'claude') {
+    const lines = changeText(changes.get(input.session_id));
+    if (lines) banner.title += ` · ${lines}`;
+  }
   if (banner?.kind === 'input') {
     // Stays on screen until the user clicks it (or answers in the terminal).
     waitingSession = typeof input.session_id === 'string' ? input.session_id : null;
@@ -340,10 +364,11 @@ function onStatus(input: HookInput): string {
 // ---------------------------------------------------------------------------
 // Agent connections
 
-function connectionStates(): { claude: ConnectionState; codex: ConnectionState } {
+function connectionStates(): Record<AgentName, ConnectionState> {
   if (bridgeError) {
     const note = `Port ${bridgeInfo.port} is busy. Quit the other app that uses it and restart ${config.appName}.`;
-    return { claude: { connected: false, note }, codex: { connected: false, note } };
+    const off = { connected: false, note };
+    return { claude: off, codex: off, gemini: off, cursor: off };
   }
   const c = hooks.inspect(CLAUDE_SETTINGS, bridgeInfo);
   let claudeNote = c.error ? `Could not read ~/.claude/settings.json: ${c.error}` : '';
@@ -355,13 +380,21 @@ function connectionStates(): { claude: ConnectionState; codex: ConnectionState }
   let codexNote = '';
   if (codexInstalled) codexNote = 'In Codex, run /hooks once and trust the Helo hooks, or they will not run.';
   else if (!fs.existsSync(CODEX_DIR)) codexNote = 'Codex CLI does not seem to be installed (no ~/.codex folder).';
-  return { claude: { connected: c.installed, note: claudeNote }, codex: { connected: codexInstalled, note: codexNote } };
+  const geminiInstalled = hooks.isGeminiInstalled(GEMINI_SETTINGS, bridgeInfo);
+  const geminiNote = !geminiInstalled && !fs.existsSync(GEMINI_DIR) ? 'Gemini CLI does not seem to be installed (no ~/.gemini folder).' : '';
+  const cursorInstalled = hooks.isCursorInstalled(CURSOR_HOOKS, bridgeInfo);
+  const cursorNote = !cursorInstalled && !fs.existsSync(CURSOR_DIR) ? 'Cursor does not seem to be installed (no ~/.cursor folder).' : '';
+  return {
+    claude: { connected: c.installed, note: claudeNote },
+    codex: { connected: codexInstalled, note: codexNote },
+    gemini: { connected: geminiInstalled, note: geminiNote },
+    cursor: { connected: cursorInstalled, note: cursorNote },
+  };
 }
 
 function refreshConnections() {
   const conn = connectionStates();
-  state.agents.claude = conn.claude;
-  state.agents.codex = conn.codex;
+  Object.assign(state.agents, conn);
   pushAgents();
   refreshTray();
 }
@@ -371,10 +404,22 @@ function connectAgent(agent: AgentName, on: boolean) {
   if (agent === 'claude') {
     if (on) hooks.install(CLAUDE_SETTINGS, { ...bridgeInfo, statusLine: settings.features.usage, map: settings.features.map });
     else hooks.uninstall(CLAUDE_SETTINGS);
-  } else if (on) hooks.installCodex(CODEX_HOOKS, bridgeInfo);
-  else hooks.uninstallCodex(CODEX_HOOKS);
+  } else if (agent === 'codex') {
+    if (on) hooks.installCodex(CODEX_HOOKS, bridgeInfo);
+    else hooks.uninstallCodex(CODEX_HOOKS);
+  } else if (agent === 'gemini') {
+    if (on) hooks.installGemini(GEMINI_SETTINGS, bridgeInfo);
+    else hooks.uninstallGemini(GEMINI_SETTINGS);
+  } else if (on) hooks.installCursor(CURSOR_HOOKS, bridgeInfo);
+  else hooks.uninstallCursor(CURSOR_HOOKS);
+  const connectedText: Record<AgentName, string> = {
+    claude: 'New sessions will ask here.',
+    codex: 'Run /hooks in Codex to trust the hooks.',
+    gemini: 'New sessions will show up here.',
+    cursor: 'New chats will show up here.',
+  };
   showBanner(on
-    ? { kind: 'done', title: `${AGENT_LABEL[agent]} connected`, text: agent === 'codex' ? 'Run /hooks in Codex to trust the hooks.' : 'New sessions will ask here.' }
+    ? { kind: 'done', title: `${AGENT_LABEL[agent]} connected`, text: connectedText[agent] }
     : { kind: 'info', title: `${AGENT_LABEL[agent]} disconnected`, text: `${config.appName} hooks were removed.` });
   refreshConnections();
 }
@@ -1389,9 +1434,9 @@ function registerIpc() {
     return settingsInfo();
   });
   handle('agents:connect', isSettings, (_e, agent, v) => {
-    if (agent !== 'claude' && agent !== 'codex') return { ok: false, error: 'Unknown agent.', info: settingsInfo() };
+    if (!(AGENT_NAMES as readonly unknown[]).includes(agent)) return { ok: false, error: 'Unknown agent.', info: settingsInfo() };
     try {
-      connectAgent(agent, v === true);
+      connectAgent(agent as AgentName, v === true);
       return { ok: true, info: settingsInfo() };
     } catch (err) {
       return { ok: false, error: (err as Error).message, info: settingsInfo() };
@@ -1558,8 +1603,7 @@ app.whenReady().then(async () => {
 
   createIsland();
   const conn = connectionStates();
-  state.agents.claude = conn.claude;
-  state.agents.codex = conn.codex;
+  Object.assign(state.agents, conn);
 
   if (smokeDir) {
     runSmoke({ dir: smokeDir, island: island!, push, state, openSettings, isReady: () => islandReady, quit: (code) => app.exit(code) });
@@ -1585,6 +1629,8 @@ app.whenReady().then(async () => {
       bridgeOpts: { port: bridgePort, token: bridgeInfo.token },
       claudeSettings: CLAUDE_SETTINGS,
       codexHooks: CODEX_HOOKS,
+      geminiSettings: GEMINI_SETTINGS,
+      cursorHooks: CURSOR_HOOKS,
       convertImage,
       setPanelOpen,
       captureClipboard,
