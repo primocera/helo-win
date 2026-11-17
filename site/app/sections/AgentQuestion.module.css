@@ -150,9 +150,9 @@
 
 .statusRow {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 8px 14px;
+  gap: 14px;
   /* Room for the "Ask again" button in every state, so the text below does not move. */
   box-sizing: border-box;
   min-height: 52px;
@@ -163,7 +163,9 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
+  flex: 0 1 auto;
   min-width: 0;
+  overflow: hidden;
   margin: 0;
   font-size: 15px;
   line-height: 1.4;
@@ -212,6 +214,14 @@
 .again:focus-visible {
   outline: 2px solid #2f6fed;
   outline-offset: 2px;
+}
+
+/* One line in every state, so the text under the picture never moves; a long typed answer ends in an ellipsis. */
+.statusText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hidden {

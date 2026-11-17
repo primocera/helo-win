@@ -242,25 +242,24 @@ export default function AgentQuestion({ className }: { className?: string }) {
 
       <div className={q.statusRow}>
         <p ref={status} className={q.status} tabIndex={-1} aria-live="polite">
-          {phase.kind === "ask" &&
-            (writing ? "Enter sends. Shift+Enter is a new line. Esc cancels." : "Try it: pick an answer, or type your own.")}
+          {phase.kind === "ask" && <span className={q.statusText}>Try it: pick an answer, or type your own.</span>}
           {phase.kind === "working" && (
             <>
               <span className={q.pulse} aria-hidden="true" />
-              Working on “{phase.picked}”
+              <span className={q.statusText}>Working on “{phase.picked}”</span>
               <span className={q.hidden}>. Claude Code is working in {PROJECT}.</span>
             </>
           )}
           {phase.kind === "done" && (
             <>
               <span className={`${q.pulse} ${q.pulseDone}`} aria-hidden="true" />
-              Finished
+              <span className={q.statusText}>Finished</span>
               <span className={q.hidden}>
                 {" "}in {PROJECT} after {TOOK}. {phase.reply}
               </span>
             </>
           )}
-          {phase.kind === "terminal" && "Sent back to the terminal, to answer there."}
+          {phase.kind === "terminal" && <span className={q.statusText}>Sent back to the terminal.</span>}
         </p>
         {(phase.kind === "done" || phase.kind === "terminal") && (
           <button ref={again} type="button" className={q.again} onClick={reset}>

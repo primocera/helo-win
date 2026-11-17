@@ -33,16 +33,21 @@
   color: #86868b;
 }
 
-/* The desktop: wide, with the island larger than life so the banner reads; squarer on phones. */
+/* The desktop, as halo-mac.com's .desk.desk-lg (v2.css): 2.4 to 1, 70px below the text, the same shadow, and the
+   island 35.7% of the desktop's width (their island-notification image, --w: 35.7%; the banner is 440 app pixels).
+   On phones it is squarer, with the island larger than that, so the banner can still be read. */
 .desk {
-  --desk-aspect: 16 / 8;
-  --island-max: 1.35px;
-  margin-top: clamp(48px, 7vw, 72px);
+  --desk-aspect: 2.4 / 1;
+  --island-max: calc(0.357 * 100cqw / 440);
+  margin-top: 70px;
+  box-shadow: 0 40px 100px -40px rgba(0, 0, 0, 0.6);
   text-align: left;
 }
 @media (max-width: 640px) {
   .desk {
     --desk-aspect: 4 / 3;
+    --island-max: 1.35px;
+    margin-top: clamp(48px, 7vw, 72px);
   }
 }
 
