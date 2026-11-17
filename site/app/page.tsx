@@ -70,23 +70,23 @@ export default function Home() {
 
         <NotificationsSection />
 
-        <IntroSection />
-
-        <AgentsSection />
-
         <MeetBlinkSection />
 
         <WorkMapSection />
 
         <SmallThingsSection />
 
-        <MonitorSection />
+        <AgentsSection />
+
+        <IntroSection />
 
         <OutOfTheWaySection />
 
         <NumbersSection />
 
         <CloserLookSection />
+
+        <MonitorSection />
 
         <PrivacySection />
 

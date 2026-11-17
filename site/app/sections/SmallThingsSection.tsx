@@ -1,8 +1,7 @@
 // The other features, laid out like halo-mac.com's "All new" list (v2.css .allnew, .an-grid): a filled icon, a bold
 // title and one grey sentence each, three across. The features and their wording come from site/lib/product.ts.
-import { utilities, type Feature } from "@/lib/product";
+import { product, utilities, type Feature } from "@/lib/product";
 import { featureIcons } from "@/lib/featureIcons";
-import shared from "./shared.module.css";
 import styles from "./SmallThingsSection.module.css";
 
 // The public build lists only what the app really does today.
@@ -29,7 +28,7 @@ export default function SmallThingsSection() {
     <section className={styles.section} aria-labelledby="small-things">
       <div className={styles.wrap}>
         <h2 id="small-things" className={styles.title}>
-          And the <span className={shared.gradientDark}>small things.</span>
+          All new in {product.name} 1.0.
         </h2>
         <ul className={styles.grid}>
           {list.map((f) => (
