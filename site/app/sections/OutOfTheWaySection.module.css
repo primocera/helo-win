@@ -28,7 +28,8 @@
   --desk-aspect: 16 / 10;
   /* The section shows the rose accent: the user's own, and what "your accent colour" looks like. */
   --accent: #ff8fb4;
-  box-shadow: 0 40px 60px -40px rgba(29, 29, 31, 0.45);
+  /* The section is black, so the picture needs no drop shadow; a faint ring keeps its edge. */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 @media (max-width: 560px) {
   .figure .desk {
@@ -384,7 +385,7 @@
   margin-top: 22px;
   font-size: clamp(15px, 2.4vw, 17px);
   line-height: 1.4;
-  color: #6e6e73;
+  color: #86868b;
 }
 .step {
   grid-area: 1 / 1;
@@ -404,6 +405,10 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 32px;
   text-align: left;
+}
+/* The section is black: the points' sentences in the same lighter grey as the lead. */
+.points p {
+  color: #a1a1a8;
 }
 @media (min-width: 760px) {
   .points {

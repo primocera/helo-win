@@ -1,0 +1,13 @@
+/* The viewBox is cropped to the four squares, so the icon's height is the glyph's: about the cap height of the line's
+   type, sitting on its baseline. */
+.mark {
+  white-space: nowrap;
+}
+
+.icon {
+  display: inline-block;
+  width: 0.68em;
+  height: 0.68em;
+  margin-right: 0.32em;
+  vertical-align: baseline;
+}

@@ -1,7 +1,9 @@
 // "Built for AI agents": three cards with the island answering, reporting and listing agent work, then four short
-// points. Everything here is drawn by IslandMocks; no state, so this stays a server component.
+// points. The islands are drawn by IslandMocks; the question card is AgentQuestion, a client component the visitor
+// can answer. This section itself has no state, so it stays a server component.
 import { product } from "@/lib/product";
-import { Desktop, MockAgentsTab, MockDoneBanner, MockQuestion } from "./IslandMocks";
+import AgentQuestion from "./AgentQuestion";
+import { Desktop, MockAgentsTab, MockDoneBanner } from "./IslandMocks";
 import shared from "./shared.module.css";
 import styles from "./AgentsSection.module.css";
 
@@ -80,15 +82,13 @@ export default function AgentsSection() {
         </div>
 
         <div className={styles.cards}>
-          <article className={styles.card}>
-            <Desktop className={styles.shot}>
-              <MockQuestion />
-            </Desktop>
+          <article className={`${styles.card} ${styles.ask}`}>
+            <AgentQuestion className={styles.shot} />
             <div className={styles.text}>
               <h3 className={styles.cardTitle}>Answer without switching windows.</h3>
               <p className={styles.cardText}>
                 Requests from Claude Code and Codex open in the island, and so do Claude Code&apos;s questions and plans.
-                Pick an answer there, or send it back to the terminal to type your own.
+                Pick an answer or type your own there, and the agent gets back to work.
               </p>
             </div>
           </article>

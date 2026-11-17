@@ -3,6 +3,7 @@ import styles from "./page.module.css";
 import shared from "./sections/shared.module.css";
 import { faq, product } from "@/lib/product";
 import HighlightsSection from "./sections/HighlightsSection";
+import NotificationsSection from "./sections/NotificationsSection";
 import AgentsSection from "./sections/AgentsSection";
 import CloserLookSection from "./sections/CloserLookSection";
 import ScrollEffects from "./sections/ScrollEffects";
@@ -17,6 +18,7 @@ import PrivacySection from "./sections/PrivacySection";
 import TechSpecsSection from "./sections/TechSpecsSection";
 import SmallThingsSection from "./sections/SmallThingsSection";
 import EndSection from "./sections/EndSection";
+import WindowsMark from "./sections/WindowsMark";
 
 export default function Home() {
   return (
@@ -60,15 +62,15 @@ export default function Home() {
             Buy for {product.price}
           </a>
           <p className={styles.small}>
-            One-time purchase · {product.trialDays}-day free trial · {product.requirements}
+            One-time purchase · {product.trialDays}-day free trial · <WindowsMark>{product.requirements}</WindowsMark>
           </p>
         </section>
 
         <HighlightsSection />
 
-        <IntroSection />
+        <NotificationsSection />
 
-        <OutOfTheWaySection />
+        <IntroSection />
 
         <AgentsSection />
 
@@ -79,6 +81,8 @@ export default function Home() {
         <MonitorSection />
 
         <SmallThingsSection />
+
+        <OutOfTheWaySection />
 
         <NumbersSection />
 

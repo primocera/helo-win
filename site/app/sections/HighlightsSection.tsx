@@ -144,10 +144,14 @@ export default function HighlightsSection() {
 
   return (
     <section className={`${shared.section} ${shared.white} ${styles.section}`} aria-labelledby="highlights-title">
-      <div className={shared.wrap}>
+      <div className={`${shared.wrap} ${styles.head}`}>
         <h2 id="highlights-title" className={`${shared.headline} ${styles.title}`}>
-          Get the highlights.
+          Get the <span className={shared.gradientDark}>highlights.</span>
         </h2>
+        {/* As on halo-mac.com: a link beside the heading to the film, here the "Out of the way" animation. */}
+        <a className={styles.film} href="#film">
+          Watch the film
+        </a>
       </div>
 
       <div

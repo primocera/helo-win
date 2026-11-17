@@ -1,5 +1,6 @@
 // The tech specs table. The lines live in lib/product.ts (`specs`), each beside the app file that proves it.
-import { specs } from "@/lib/product";
+import { product, specs } from "@/lib/product";
+import WindowsMark from "./WindowsMark";
 import shared from "./shared.module.css";
 import styles from "./TechSpecsSection.module.css";
 
@@ -18,7 +19,7 @@ export default function TechSpecsSection() {
               <dd className={styles.lines}>
                 {spec.lines.map((line) => (
                   <span key={line} className={styles.line}>
-                    {line}
+                    {line === product.requirements ? <WindowsMark>{line}</WindowsMark> : line}
                   </span>
                 ))}
               </dd>

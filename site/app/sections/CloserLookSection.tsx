@@ -21,6 +21,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Desktop } from "./IslandMocks";
 import { MockAgents, MockCalendar, MockGlance, MockHud, MockLyricLine, MockMusic, MockResting, MockTimer } from "./CloserLookMocks";
+import shared from "./shared.module.css";
 import styles from "./CloserLookSection.module.css";
 
 type Item = {
@@ -104,7 +105,7 @@ export default function CloserLookSection() {
     <section className={styles.section} aria-labelledby="closer-title">
       <div className={styles.wrap}>
         <h2 id="closer-title" className={styles.title}>
-          Take a closer look.
+          Take a <span className={shared.gradientDark}>closer look.</span>
         </h2>
       </div>
       <div className={`${styles.wrap} ${styles.layout}`}>

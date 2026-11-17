@@ -131,6 +131,21 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* Thinking: the eyes drift from side to side, as the app's do while an agent works. */
+@media (prefers-reduced-motion: no-preference) {
+  .face[data-face="thinking"] .eyes {
+    animation: drift 3.2s ease-in-out infinite;
+  }
+}
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateX(-1.4px);
+  }
+  50% {
+    transform: translateX(1.4px);
+  }
+}
 
 /* ---- idle ---- */
 
@@ -526,8 +541,9 @@
   stroke-width: 6;
   stroke-linecap: round;
 }
+/* The filled arc is green (the app's .ring-fill.ok), amber past 70% and red past 90%. */
 .ok {
-  stroke: var(--accent);
+  stroke: #30d158;
 }
 .warm {
   stroke: #ffb547;
@@ -583,6 +599,22 @@
   flex: none;
   font-size: calc(11 * var(--u));
   color: #8e8e96;
+}
+/* Open, and Answer for a session waiting for you: orange with dark text (the app's .session-go.answer). */
+.go {
+  flex: none;
+  height: calc(22 * var(--u));
+  display: inline-flex;
+  align-items: center;
+  padding: 0 calc(10 * var(--u));
+  border-radius: calc(7 * var(--u));
+  background: #232327;
+  font-size: calc(11 * var(--u));
+  font-weight: 600;
+}
+.goAnswer {
+  background: #ff9f0a;
+  color: #1d1d1f;
 }
 @container desk (max-width: 640px) {
   .n640 .agentsRow {

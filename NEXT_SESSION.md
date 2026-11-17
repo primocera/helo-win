@@ -1,6 +1,27 @@
 # Next session
 
-Written 2026-11-16, after the fourth session. Read this first, then `TODO.md` (the full list, with tick boxes). The reasoning behind the finding IDs (S1, B3, R2, ...) is in `audit/`.
+Written 2026-11-16, after the fourth session, and topped up on 2026-11-17 after the landing page session (the section right below). Read this first, then `TODO.md` (the full list, with tick boxes). The reasoning behind the finding IDs (S1, B3, R2, ...) is in `audit/`.
+
+## Landing page session (2026-11-17, evening): where it stopped
+
+The user worked on the site from a phone over remote control, comparing it with halo-mac.com screenshot by screenshot. All of it is pushed to `main` (the last commit of the session). Checks at the end: `npm run lint` and `npm run build` pass in `site/`; `npm run typecheck` and `npm test` (205 tests) pass in `app/`. The usage limit cut five Opus 5.5 agents off near the end (it resets 23:50 Europe/Ljubljana); what they had written was checked to build and is in the commit, but some of it was **not looked at**:
+
+- **App icons (not seen yet).** `app/src/renderer/src/common/icons.tsx` was switched to Phosphor Icons, fill weight (inlined SVG paths, same component API). The agent stopped before its `--smoke` screenshots. Run `node_modules/electron/dist/electron.exe . --smoke=<folder>` in `app/` and look at every tab, card and banner; fix any icon that reads badly at small sizes (use Phosphor "bold" there). The app also got Halo's colours: the Agents tab's **Answer** button is orange `#ff9f0a` with dark text, the usage rings' "ok" arc is green `#30d158` (`island.css`).
+- **Site agent card (not seen yet).** `site/app/sections/AgentQuestion.tsx` (new, client component) makes the question card in "Built for AI agents" typeable: pick an answer or type one, and the island goes to "working" and then a Finished banner. The agent stopped before checking it in a browser; try it on a phone and at desktop width. The site's mock islands (IslandMocks, CloserLookMocks) were moved to the same filled icons, the orange Answer and the green rings, to match the app. Check they all render.
+- **Windows icon (mostly done).** `site/app/sections/WindowsMark.tsx` puts Phosphor "squares-four" (the page's Windows symbol) before every "Windows 10 or 11" (hero, numbers, tech specs, end card), and the "Startup apps" item uses it. Not checked in screenshots.
+- **Notifications section (new, built, not seen).** `NotificationsSection.tsx`, right after the highlights, as on halo-mac.com: "Your messages. Right where you look.", a banner mock, and three gold-icon points (Click to open; Your apps, your call; Shown, not saved). Halo's "Never twice" is not claimed (gap 7 is not built).
+
+Done and looked at in this session:
+- **Type and sizes copied from halo-mac.com's own CSS** (their stylesheets were downloaded and read): the font stack (Apple system font, then Inter via `next/font`), letter-spacing -0.022em, the closer-look pills (17px/600, 28px ring, 12px 20px 12px 14px padding), the numbers section, the "All new" style icon list for "And the small things" (Phosphor fill icons in `site/lib/featureIcons.ts`), the nav island (282 x 32, drawn at 0.62 at 760px and under), the gold-to-purple gradient (`#f4dcae, #d6ae73, #ab9fcd, #7f84cc` on black; `#9c7132, #7a6aa8, #4f5ba9` on light), now on most headlines.
+- **Section order:** hero, highlights (with "Watch the film" linking to `#film`), notifications, intro, agents, Meet Blink, work map, monitor, small things, Out of the way (`#film`, now black), numbers (with "Under 125 MB download"; the installer is 122 MB), take a closer look, privacy, tech specs, questions, end.
+- **The ending (EndSection):** halo-mac.com's finale with their exact springs (SwiftUI `spring(response, damping)`: 0.5/0.86 for the scale, 0.44/0.8 for the size): when the end section is 40% on screen the nav island springs open over the screen, 0.6s later the page jumps to the black card and the island springs back with an overshoot, then stays plain black. On the card Blink sits in the Meet Blink tile (same size), **winks**, smiles with pink cheeks and plays the app's done sound (`site/lib/blink.ts`; browsers allow sound only after a tap), then splashes into a pink line. The "Helo" word is Halo's size (600, clamp(80px, 12vw, 160px)). This exact-springs finale was written last and **only typechecked and built, not watched**: check it on a phone first.
+- **Saved endings (git tags on GitHub):** `ending-fly-top` (the pink line flies up to the top edge and replaces the island; open with `?ending=top`) is **kept for marketing**; `ending-tile` is an earlier tile version. Commit `8bf531f` has the line going round an invisible square with white sparks.
+- Product name on the site: **Helo** (Blink is the face). Default accent: **rose** (pink).
+
+What the user still wants (from their messages, not done):
+1. Look at the finale, the wink, the agent card, the notifications section and the app icons, and fix what is off. The user judges pixel by pixel against halo-mac.com screenshots; copy Halo's CSS values rather than guessing.
+2. Use the new filled icons in as many places in the app as possible (the agent covered `icons.tsx`; check Settings and other windows for icons drawn elsewhere).
+3. Then carry on with "Do next, in this order" below.
 
 ## Where things stand
 

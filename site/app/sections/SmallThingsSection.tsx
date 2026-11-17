@@ -2,6 +2,7 @@
 // title and one grey sentence each, three across. The features and their wording come from site/lib/product.ts.
 import { utilities, type Feature } from "@/lib/product";
 import { featureIcons } from "@/lib/featureIcons";
+import shared from "./shared.module.css";
 import styles from "./SmallThingsSection.module.css";
 
 // The public build lists only what the app really does today.
@@ -28,7 +29,7 @@ export default function SmallThingsSection() {
     <section className={styles.section} aria-labelledby="small-things">
       <div className={styles.wrap}>
         <h2 id="small-things" className={styles.title}>
-          And the small things.
+          And the <span className={shared.gradientDark}>small things.</span>
         </h2>
         <ul className={styles.grid}>
           {list.map((f) => (

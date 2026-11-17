@@ -2,63 +2,13 @@
 // - the closed island (IdleView), with the song or lyric line (.idle-song) and the timer, mic and keep-awake marks;
 // - the volume HUD (HudView; mode 'hud', 300 by 40 px, radius 16 in App.tsx and island.css);
 // - Now Playing with shuffle and repeat, the Calendar, Focus timer and Agents tabs (Panel.tsx).
+// Icons come from IslandMocks.tsx (Phosphor fill, as the app draws them).
 // Sizes are the app's pixels times --u. No role or label here: the section's picture carries the description.
 // No hooks and no handlers, so these render the same on the server and in the browser.
 import type { CSSProperties, ReactNode } from "react";
 import { Bars, Blink, Icon, Mark, Panel, Ring } from "./IslandMocks";
 import s from "./IslandMocks.module.css";
 import c from "./CloserLookMocks.module.css";
-
-// ---- icons the shared mocks do not have (app/src/renderer/src/common/icons.tsx) --------------------------------
-
-const GLYPHS = {
-  shuffle: (
-    <path d="M3.5 7.5h2.6c1.5 0 2.9.8 3.7 2l3.4 5c.8 1.2 2.2 2 3.7 2h3.6M18 13.5l3 3-3 3M3.5 16.5h2.6c1.1 0 2.2-.4 3-1.2M20.5 7.5h-3.6c-1.1 0-2.2.4-3 1.2M18 4.5l3 3-3 3" />
-  ),
-  repeat: <path d="M4.5 11.5V10a3 3 0 0 1 3-3h11.5M16 4l3 3-3 3M19.5 12.5V14a3 3 0 0 1-3 3H5M8 20l-3-3 3-3" />,
-  speaker: (
-    <>
-      <path d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3Z" fill="currentColor" stroke="none" />
-      <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
-    </>
-  ),
-  cup: (
-    <>
-      <path d="M5 9.5h11v5a4.5 4.5 0 0 1-4.5 4.5h-2A4.5 4.5 0 0 1 5 14.5Z" />
-      <path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16M8.5 3.5v3M12 3.5v3" />
-    </>
-  ),
-  reset: (
-    <>
-      <path d="M5.5 12a6.5 6.5 0 1 0 2-4.7" />
-      <path d="M5 4.5v3.5h3.5" />
-    </>
-  ),
-  skip: (
-    <>
-      <path d="M6 6.5v11l8-5.5Z" fill="currentColor" stroke="none" />
-      <path d="M17.5 6.5v11" />
-    </>
-  ),
-};
-
-function Glyph({ name, size, className }: { name: keyof typeof GLYPHS; size: number; className?: string }) {
-  return (
-    <svg
-      className={`${s.icon} ${className ?? ""}`}
-      style={{ width: `calc(${size} * var(--u))`, height: `calc(${size} * var(--u))` }}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {GLYPHS[name]}
-    </svg>
-  );
-}
 
 // ---- the frame: the island at the top of the desktop, with Blink beside it ----------------------------------------
 
@@ -138,7 +88,7 @@ export function MockGlance({ timer = "18:42" }: { timer?: string }) {
           </span>
         </span>
         <span className={c.micDot} />
-        <Glyph name="cup" size={13} className={c.awake} />
+        <Icon name="cup" size={13} className={c.awake} />
         <Bars />
       </div>
     </Frame>
@@ -151,7 +101,7 @@ export function MockHud({ level = 64 }: { level?: number }) {
   return (
     <Frame mode="hud" size={{ w: [300, 300], h: [40, 40] }} max={SMALL_MAX}>
       <div className={c.hud}>
-        <Glyph name="speaker" size={16} />
+        <Icon name="speaker" size={16} />
         <span className={c.hudTrack}>
           <span className={c.hudFill} style={{ width: `${level}%` }} />
         </span>
@@ -211,7 +161,7 @@ export function MockMusic({
           </div>
           <div className={s.controls}>
             <span className={`${s.ctl} ${c.mode} ${c.modeOn}`}>
-              <Glyph name="shuffle" size={15} />
+              <Icon name="shuffle" size={15} />
             </span>
             <span className={s.ctl}>
               <Icon name="previous" size={16} />
@@ -223,7 +173,7 @@ export function MockMusic({
               <Icon name="next" size={16} />
             </span>
             <span className={`${s.ctl} ${c.mode}`}>
-              <Glyph name="repeat" size={15} />
+              <Icon name="repeat" size={15} />
             </span>
           </div>
         </div>
@@ -299,13 +249,13 @@ export function MockTimer({ left = "18:42", progress = 25, done = 3 }: { left?: 
             </div>
             <div className={s.controls}>
               <span className={s.ctl}>
-                <Glyph name="reset" size={16} />
+                <Icon name="reset" size={16} />
               </span>
               <span className={`${s.ctl} ${s.ctlBig}`}>
                 <Icon name="pause" size={18} />
               </span>
               <span className={s.ctl}>
-                <Glyph name="skip" size={16} />
+                <Icon name="next" size={16} />
               </span>
             </div>
           </div>
@@ -375,7 +325,7 @@ export function MockAgents({
                     {MOOD_TEXT[x.mood]} · {x.since}
                   </span>
                   {x.jump && (
-                    <span className={`${c.go} ${x.mood === "waiting" ? c.goAnswer : ""}`}>
+                    <span className={`${s.go} ${x.mood === "waiting" ? s.goAnswer : ""}`}>
                       {x.mood === "waiting" ? "Answer" : "Open"}
                     </span>
                   )}

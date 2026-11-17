@@ -55,7 +55,8 @@
 }
 
 .name {
-  background: linear-gradient(90deg, #e8d3b0, #b9a9df);
+  /* The same gold into lavender as `.gradient` in shared.module.css. */
+  background: linear-gradient(100deg, #f4dcae 0%, #d6ae73 34%, #ab9fcd 68%, #7f84cc 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

@@ -37,16 +37,17 @@
   text-wrap: balance;
 }
 
-/* The words of a headline that carry the colour: warm sand to muted lavender, as in "Meet Blink." */
+/* The words of a headline that carry the colour, on a black ground: pale gold into gold, then lavender into periwinkle,
+   as in "Meet Blink." */
 .gradient {
-  background: linear-gradient(90deg, #e8d3b0, #b9a9df);
+  background: linear-gradient(100deg, #f4dcae 0%, #d6ae73 34%, #ab9fcd 68%, #7f84cc 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-/* The same on a light ground, darker so it still reads. */
+/* The same on a light ground, darker so it still reads: bronze into violet into indigo. */
 .gradientDark {
-  background: linear-gradient(90deg, #9a7b4f, #5f58a8);
+  background: linear-gradient(100deg, #9c7132 0%, #7a6aa8 62%, #4f5ba9 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

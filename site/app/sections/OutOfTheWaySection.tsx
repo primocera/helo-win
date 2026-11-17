@@ -145,11 +145,11 @@ function TuckedIsland() {
 
 export default function OutOfTheWaySection() {
   return (
-    <section className={`${shared.grey} ${shared.section}`} aria-labelledby="tuck-title">
+    <section id="film" className={`${shared.black} ${shared.section}`} aria-labelledby="tuck-title">
       <div className={`${shared.wrap} ${shared.center}`}>
         <p className={shared.eyebrow}>Out of the way</p>
         <h2 id="tuck-title" className={shared.headline}>
-          Over your tabs. <span className={shared.gradientDark}>Never on them.</span>
+          Over your tabs. <span className={shared.gradient}>Never on them.</span>
         </h2>
         <p className={shared.lead}>
           The top of the screen is where your browser keeps its tabs. So when the window you are working in reaches

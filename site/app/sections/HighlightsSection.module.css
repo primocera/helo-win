@@ -9,6 +9,27 @@
   margin-bottom: clamp(28px, 5vw, 48px);
 }
 
+/* The heading with "Watch the film" beside it (halo-mac.com .gal-head .more). */
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: 24px;
+}
+.film {
+  margin-bottom: clamp(28px, 5vw, 48px);
+  font-size: 17px;
+  color: #0066cc;
+  white-space: nowrap;
+}
+.film::after {
+  content: " \203A";
+}
+.film:hover {
+  text-decoration: underline;
+}
+
 /* ---- the track: full width, with the first card lined up with the column above ---- */
 
 .track {

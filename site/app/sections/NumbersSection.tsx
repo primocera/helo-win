@@ -2,12 +2,14 @@
 // switches in Settings (product.featureSwitches, counted from DEFAULT_FEATURES in app/src/main/settings.ts), no account
 // (licensing is a key only, app/src/main/license.ts), and the installer's size (product.downloadMax).
 import { product } from "@/lib/product";
+import WindowsMark from "./WindowsMark";
+import shared from "./shared.module.css";
 import styles from "./NumbersSection.module.css";
 
 const figures = [
   { before: "More than", figure: "20 features", after: "each with its own switch" },
   { before: "Exactly", figure: "0 accounts", after: "a license key is all it asks" },
-  { before: "Under", figure: product.downloadMax, after: `download, for ${product.requirements}` },
+  { before: "Under", figure: product.downloadMax, after: <>download, for <WindowsMark>{product.requirements}</WindowsMark></> },
 ];
 
 export default function NumbersSection() {
@@ -16,7 +18,7 @@ export default function NumbersSection() {
       <p className={styles.eyebrow}>By the numbers</p>
       <h2 id="numbers-title" className={styles.statement}>
         A lot in a<br />
-        little space.
+        <span className={shared.gradient}>little space.</span>
       </h2>
       <div className={styles.stats}>
         {figures.map((f) => (

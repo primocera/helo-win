@@ -10,6 +10,7 @@ import { foldRows, nowParts } from "@/lib/map/feed";
 import { classify, clean, formatMs, shortModel } from "@/lib/map/classify";
 import { setupFrom, type Setup } from "@/lib/map/setup";
 import type { Board, Entry, StationId, Status } from "@/lib/map/types";
+import shared from "./shared.module.css";
 import styles from "./WorkMapSection.module.css";
 
 const GROUND = "#0a0d14";
@@ -253,7 +254,9 @@ export default function WorkMapSection() {
     <section className={styles.section} aria-labelledby="work-map-title">
       <div className={styles.inner}>
         <div className={styles.head}>
-          <h2 id="work-map-title">See what your agent is touching</h2>
+          <h2 id="work-map-title">
+            See <span className={shared.gradient}>what your agent is touching</span>
+          </h2>
           <p>
             The work map in {product.name} is a live picture of what Claude Code is using right now: files, the shell,
             the network, memory and subagents. It is fed by Claude Code&apos;s own hooks and never leaves your PC.

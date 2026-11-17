@@ -226,17 +226,4 @@
   background: #232327;
   color: #f5f5f7;
 }
-.go {
-  flex: none;
-  height: calc(22 * var(--u));
-  display: inline-flex;
-  align-items: center;
-  padding: 0 calc(10 * var(--u));
-  border-radius: calc(7 * var(--u));
-  background: #232327;
-  font-size: calc(11 * var(--u));
-  font-weight: 600;
-}
-.goAnswer {
-  background: #2f6fed;
-}
+/* The Open and Answer buttons on a session row are .go and .goAnswer in IslandMocks.module.css. */
