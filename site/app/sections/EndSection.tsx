@@ -10,9 +10,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { product } from "@/lib/product";
 import { CALM, DONE, FINALE_EVENT, playDone } from "@/lib/blink";
+import meet from "./MeetBlinkSection.module.css";
 import styles from "./EndSection.module.css";
 
-type Stage = "hidden" | "shown" | "blink" | "done" | "splash" | "travel" | "burst";
+type Stage = "hidden" | "shown" | "blink" | "done" | "splash";
 
 /** Where each drop of the splash flies, as a share of Blink's width (x) and height (y, up is negative). */
 const DROPS = [
@@ -35,15 +36,15 @@ export default function EndSection() {
     const end = ref.current;
     const card = cardRef.current;
     if (!end || !card) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     const timers: number[] = [];
-    const later = (ms: number, fn: () => void) => timers.push(window.setTimeout(fn, ms));
+    const later = (ms: number, fn: () => void) =>
+      timers.push(window.setTimeout(fn, ms));
 
-    // The card rises in once you have scrolled through the dark to it. Then: a blink, the smile and the sound; he
-    // melts with a splash into a pink line; the line goes round an invisible square around him (to its right side,
-    // standing up, then to its top, lying down, as the island sits on a screen's edge); white sparks burst out of it
-    // and stays on top of the square. The page stays black. (A version where the line flies on up to the top edge
-    // of the screen and takes the island's place is kept for marketing as the git tag ending-fly-top.)
+    // The card rises in once you have scrolled through the dark to it. Then: a blink, the smile and the sound, and
+    // he melts with a splash into a pink line.
     const io = new IntersectionObserver(
       ([e]) => {
         if (!e.isIntersecting) return;
@@ -59,8 +60,6 @@ export default function EndSection() {
           playDone();
         });
         later(3000, () => setStage("splash"));
-        later(4200, () => setStage("travel"));
-        later(5750, () => setStage("burst"));
       },
       { threshold: 0.5 },
     );
@@ -87,7 +86,10 @@ export default function EndSection() {
       frame = 0;
       const vw = document.documentElement.clientWidth;
       const vh = window.innerHeight;
-      const p = Math.min(1, Math.max(0, (vh - end.getBoundingClientRect().top) / vh));
+      const p = Math.min(
+        1,
+        Math.max(0, (vh - end.getBoundingClientRect().top) / vh),
+      );
       if (p <= 0 || p >= 1) {
         cover.style.display = "none";
         if (p >= 1 && !told) {
@@ -123,10 +125,7 @@ export default function EndSection() {
     };
   }, []);
 
-  const melted = stage === "splash" || stage === "travel" || stage === "burst";
-  const moving = stage === "travel" || stage === "burst";
-  const bursting = stage === "burst";
-  const smiling = stage === "done" || melted;
+  const smiling = stage === "done" || stage === "splash";
   const face = smiling ? DONE : CALM;
   return (
     <section
@@ -136,45 +135,46 @@ export default function EndSection() {
       aria-labelledby="end-title"
     >
       <div ref={cardRef} className={styles.inner}>
-        <div
-          className={`${styles.blink} ${melted ? styles.splash : ""} ${moving ? styles.travel : ""} ${bursting ? styles.burst : ""}`}
-          role="img"
-          aria-label={melted ? `${product.mascot}, now a pink line` : `${product.mascot}, ${smiling ? "smiling" : "calm"}`}
-        >
-          <svg
-            className={`${styles.face} ${stage === "blink" ? styles.blinking : ""} ${smiling ? styles.happy : ""}`}
-            viewBox="4 3 32 24"
-            aria-hidden="true"
-          >
-            <g className={styles.blush}>
-              <rect x="5.4" y="16.2" width="5" height="1.8" rx="0.9" />
-              <rect x="29.6" y="16.2" width="5" height="1.8" rx="0.9" />
-            </g>
-            <g className={styles.eyes}>
-              <path d={face.eyes[0]} />
-              <path d={face.eyes[1]} />
-            </g>
-            <path d={face.mouth} />
-          </svg>
-          {DROPS.map((d, i) => (
-            <i
-              key={i}
-              className={styles.drop}
-              style={{ "--dx": d.x, "--dy": d.y, "--ds": d.s } as CSSProperties}
-              aria-hidden="true"
-            />
-          ))}
-          <span className={styles.line} aria-hidden="true" />
-          {/* The line on its way round the square, and the splash out of it when it lands on top. */}
-          <span className={styles.runner} aria-hidden="true" />
-          {DROPS.map((d, i) => (
-            <i
-              key={`out-${i}`}
-              className={styles.drop2}
-              style={{ "--dx": d.x * 1.5, "--dy": d.y * 1.3, "--ds": d.s } as CSSProperties}
-              aria-hidden="true"
-            />
-          ))}
+        {/* The same square tile, glow and border as in "Meet Blink" (MeetBlinkSection.module.css), only smaller. */}
+        <div className={`${meet.stage} ${styles.stage}`}>
+          <div className={meet.tile}>
+            <div
+              className={`${styles.blink} ${stage === "splash" ? styles.splash : ""}`}
+              role="img"
+              aria-label={
+                stage === "splash"
+                  ? `${product.mascot}, now a pink line`
+                  : `${product.mascot}, ${smiling ? "smiling" : "calm"}`
+              }
+            >
+              <svg
+                className={`${styles.face} ${stage === "blink" ? styles.blinking : ""} ${smiling ? styles.happy : ""}`}
+                viewBox="4 3 32 24"
+                aria-hidden="true"
+              >
+                <g className={styles.blush}>
+                  <rect x="5.4" y="16.2" width="5" height="1.8" rx="0.9" />
+                  <rect x="29.6" y="16.2" width="5" height="1.8" rx="0.9" />
+                </g>
+                <g className={styles.eyes}>
+                  <path d={face.eyes[0]} />
+                  <path d={face.eyes[1]} />
+                </g>
+                <path d={face.mouth} />
+              </svg>
+              {DROPS.map((d, i) => (
+                <i
+                  key={i}
+                  className={styles.drop}
+                  style={
+                    { "--dx": d.x, "--dy": d.y, "--ds": d.s } as CSSProperties
+                  }
+                  aria-hidden="true"
+                />
+              ))}
+              <span className={styles.line} aria-hidden="true" />
+            </div>
+          </div>
         </div>
         <p id="end-title" className={styles.word}>
           {product.name}
@@ -187,7 +187,8 @@ export default function EndSection() {
           Buy
         </a>
         <p className={styles.fine}>
-          One-time purchase. {product.trialDays}-day free trial. {product.requirements}.
+          One-time purchase. {product.trialDays}-day free trial.{" "}
+          {product.requirements}.
         </p>
       </div>
     </section>
