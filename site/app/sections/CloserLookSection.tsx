@@ -89,6 +89,16 @@ const LAYERS = [RESTING, ...ITEMS];
 const IDLE_CYCLE = ["resting", "glance", "volume", "lyrics"];
 
 
+function Sign() {
+  return (
+    <span className={styles.sign} aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 4.5v15M4.5 12h15" />
+      </svg>
+    </span>
+  );
+}
+
 export default function CloserLookSection() {
   const [open, setOpen] = useState<string | null>(null);
   // Nothing pressed: the picture steps through the closed island's looks by itself.
@@ -130,6 +140,7 @@ export default function CloserLookSection() {
                     aria-pressed={isOpen}
                     onClick={() => setOpen(isOpen ? null : item.id)}
                   >
+                    <Sign />
                     {item.title}
                   </button>
                 </li>
