@@ -70,3 +70,6 @@ export function playDone() {
 
 /** Sent on window by the end card once the island has swallowed the page; the nav island then stays plain black. */
 export const FINALE_EVENT = "helo-finale";
+
+/** Sent once Blink's pink line has flown up to the top edge: it takes the island's place, so the island steps away. */
+export const DOCKED_EVENT = "helo-docked";
