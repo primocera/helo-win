@@ -1,7 +1,7 @@
 "use client";
 
 // The small island that hangs from the top of the page, in the middle of the nav bar: Blink's calm face and the
-// playing bars. Clicking it switches the page's accent between the app's two colours, mint and rose.
+// playing bars. Clicking it switches the page's accent between the app's two colours, rose (first) and mint.
 import { useEffect, useState } from "react";
 import { product } from "@/lib/product";
 import styles from "./NavIsland.module.css";
@@ -9,7 +9,7 @@ import styles from "./NavIsland.module.css";
 type Accent = "mint" | "rose";
 
 export default function NavIsland() {
-  const [accent, setAccent] = useState<Accent>("mint");
+  const [accent, setAccent] = useState<Accent>("rose");
   useEffect(() => {
     document.documentElement.dataset.accent = accent;
   }, [accent]);

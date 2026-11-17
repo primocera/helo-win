@@ -2,7 +2,7 @@
 // Keep it in step with the app's config: name, price, trial, checkout link (app/src/main/config.ts),
 // and the feature switches (DEFAULT_FEATURES in app/src/main/settings.ts).
 export const product = {
-  name: "Blink", // for now; the final name is still to be chosen (the app itself still says Helo)
+  name: "Helo", // placeholder until the final name is chosen
   mascot: "Blink",
   tagline: "The island for your Windows screen",
   price: "$9.99",

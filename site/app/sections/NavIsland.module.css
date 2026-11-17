@@ -3,8 +3,10 @@
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: clamp(150px, 42vw, 230px);
-  height: 30px;
+  transform-origin: 50% 0;
+  /* halo-mac.com's closed notch: 282 x 32, drawn at 0.62 on screens 760 px wide and under (site.css #notch). */
+  width: 282px;
+  height: 32px;
   padding: 0 14px;
   display: flex;
   align-items: center;
@@ -35,8 +37,8 @@
 }
 
 .face {
-  width: 24px;
-  height: 18px;
+  width: 32px;
+  height: 24px;
   fill: #f5f5f7;
 }
 .face path {
@@ -49,12 +51,12 @@
 .bars {
   display: inline-flex;
   align-items: center;
-  gap: 2.5px;
-  height: 14px;
+  gap: 3px;
+  height: 18px;
 }
 .bars i {
-  width: 2.5px;
-  height: 13px;
+  width: 3px;
+  height: 17px;
   border-radius: 2px;
   background: var(--accent);
   transform: scaleY(0.4);
@@ -71,6 +73,12 @@
   40% { transform: scaleY(0.9); }
   70% { transform: scaleY(0.45); }
   100% { transform: scaleY(1); }
+}
+
+@media (max-width: 760px) {
+  .island {
+    transform: translateX(-50%) scale(0.62);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
