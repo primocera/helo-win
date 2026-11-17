@@ -245,6 +245,9 @@ function General({ info, update, setInfo }: { info: SettingsInfo; update: (p: Pa
         <Row label="Hide in fullscreen" hint="Steps aside for games and fullscreen video. A waiting Allow/Deny request still shows.">
           <Switch label="Hide in fullscreen" on={d.hideInFullscreen} onChange={(v) => update({ display: { hideInFullscreen: v } })} />
         </Row>
+        <Row label="Shrink to a line over windows" hint="While the window in front reaches under the island, it becomes a thin line at the edge, and clicks go through it to the tabs or title bar below. It comes back for a banner or a request. Rest the pointer on the line to open the panel.">
+          <Switch label="Shrink to a line over windows" on={d.tuck} onChange={(v) => update({ display: { tuck: v } })} />
+        </Row>
         <Row label="Show only the face" hint="Hides the pill until something happens, so it stays out of the way of browser tabs. Rest the pointer on the face to open the panel.">
           <div className="segmented">
             {([['never', 'Never'], ['browsers', 'In browsers'], ['always', 'Always']] as const).map(([value, label]) => (

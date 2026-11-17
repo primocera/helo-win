@@ -42,6 +42,24 @@ export function faceOnly(mode: CompactMode, foregroundApp: string): boolean {
   return mode === 'browsers' && BROWSERS.has(foregroundApp.toLowerCase().replace(/\.exe$/, ''));
 }
 
+export interface Box { left: number; top: number; right: number; bottom: number }
+
+/**
+ * Whether a window lies under the closed island. The window and its monitor are in one unit (Windows'),
+ * the island's pill and its display in another (Electron's), so each pair is compared as a share of its screen.
+ */
+export function windowUnder(win: Box, monitor: Box, pill: Box, display: Box): boolean {
+  const mw = monitor.right - monitor.left;
+  const mh = monitor.bottom - monitor.top;
+  const dw = display.right - display.left;
+  const dh = display.bottom - display.top;
+  if (![mw, mh, dw, dh].every((n) => Number.isFinite(n) && n > 0)) return false;
+  const w = { left: (win.left - monitor.left) / mw, right: (win.right - monitor.left) / mw, top: (win.top - monitor.top) / mh, bottom: (win.bottom - monitor.top) / mh };
+  const p = { left: (pill.left - display.left) / dw, right: (pill.right - display.left) / dw, top: (pill.top - display.top) / dh, bottom: (pill.bottom - display.top) / dh };
+  if (![w.left, w.right, w.top, w.bottom, p.left, p.right, p.top, p.bottom].every(Number.isFinite)) return false;
+  return w.left < p.right && w.right > p.left && w.top < p.bottom && w.bottom > p.top;
+}
+
 const PRIORITY: Record<Mood, number> = { waiting: 3, working: 2, done: 1, idle: 0 };
 
 /** The most urgent of several moods (waiting > working > done > idle). */

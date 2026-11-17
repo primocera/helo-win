@@ -14,6 +14,8 @@ const WIDTH: Record<Mode, number> = { idle: 214, banner: 440, card: 488, hud: 30
 const FIXED_HEIGHT: Partial<Record<Mode, number>> = { idle: 34, banner: 62, hud: 40, menu: 44 };
 /** The closed island with a song title in it. */
 const SONG_WIDTH = 320;
+/** The island as a thin line, while a window lies under it. */
+const TUCKED = { width: 76, height: 5 };
 const OPEN_DELAY = 220;
 // While idle and locked in place the island lets clicks through to what is under it
 // (browser tabs, title bars). Resting the pointer on it this long opens the panel instead.
@@ -168,7 +170,8 @@ export function App() {
     // Click-to-open, or free to move: the island catches the pointer at once.
     const clickToOpen = state.settings.display.open === 'click';
     const resting = mode === 'idle' && !panelOpen && !clickToOpen;
-    const peeking = resting && state.settings.display.locked;
+    // As a line it is never in the way: clicks go through it, and only resting on it opens the panel.
+    const peeking = resting && (state.settings.display.locked || state.tucked);
     if (!peeking) window.helo.hover(true);
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
     closeTimer.current = null;
@@ -267,18 +270,20 @@ export function App() {
   };
 
   const decide = (id: string, b: Behavior) => window.helo.decide(id, b);
+  // A thin line while idle, when the window in front lies under the island.
+  const tucked = state.tucked && mode === 'idle' && !smoke?.hover;
   // While music plays the closed island is wider, to fit the song's title.
   const song = mode === 'idle' ? idleSong(state, now) : '';
-  const width = mode === 'panel' && activeTab === 'map' ? MAP_WIDTH : song ? SONG_WIDTH : WIDTH[mode];
-  const height = FIXED_HEIGHT[mode] ?? Math.max(60, contentHeight);
+  const width = tucked ? TUCKED.width : mode === 'panel' && activeTab === 'map' ? MAP_WIDTH : song ? SONG_WIDTH : WIDTH[mode];
+  const height = tucked ? TUCKED.height : FIXED_HEIGHT[mode] ?? Math.max(60, contentHeight);
   const bottom = state.place.edge === 'bottom';
   const isHover = hovered || Boolean(smoke?.hover);
   // The pointer is close to the face (about 150 px): it looks happy to see you.
   const near = Math.abs(look.x) < 0.38 && Math.abs(look.y) < 0.5;
   // Just the face while idle, when a browser is in front or the user chose it.
-  const compact = state.faceOnly && mode === 'idle';
+  const compact = state.faceOnly && mode === 'idle' && !tucked;
   // Joined, the face is the island's left end. Alone in the middle (face only) there is nothing to join.
-  const joined = state.settings.display.joined && state.settings.features.mascot && !compact;
+  const joined = state.settings.display.joined && state.settings.features.mascot && !compact && !tucked;
   const brokenNote = state.agents.claude.note.startsWith('Port ');
   const face: Face = faceFor({
     mood: strongestMood(state.agents.mood, watchMood(Boolean(state.finished.watch), state.finished.doneAt, now)),
@@ -292,7 +297,7 @@ export function App() {
   });
 
   return (
-    <div className={`stage ${bottom ? 'edge-bottom' : 'edge-top'} ${smoke?.backdrop ? 'backdrop' : ''} ${state.place.floating ? 'floating' : ''} ${dragging ? 'dragging' : ''} ${compact ? 'face-only' : ''} ${joined ? 'joined' : ''}`}>
+    <div className={`stage ${bottom ? 'edge-bottom' : 'edge-top'} ${smoke?.backdrop ? 'backdrop' : ''} ${state.place.floating ? 'floating' : ''} ${dragging ? 'dragging' : ''} ${compact ? 'face-only' : ''} ${tucked ? 'tucked' : ''} ${tucked && state.agents.mood === 'working' ? 'busy' : ''} ${joined ? 'joined' : ''}`}>
       {smoke?.faces ? <FaceSheet /> : (
         <>
           {state.settings.features.mascot && (

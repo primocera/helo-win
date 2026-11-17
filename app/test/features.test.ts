@@ -14,7 +14,7 @@ import { Shelf, convertedName } from '../src/main/shelf';
 import { LineSplitter, WinHelper, parseDdcList, parseDdcValues } from '../src/main/winhelper';
 import { parseBluetoothBatteries } from '../src/main/bluetooth';
 import { newImages } from '../src/main/finished-watch';
-import { faceFor, faceOnly, NAP_AFTER_MS } from '../src/shared/face';
+import { faceFor, faceOnly, windowUnder, NAP_AFTER_MS } from '../src/shared/face';
 import { formatClock, formatDuration, formatRemaining, relativeTime } from '../src/shared/time';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'helo-test-'));
@@ -28,7 +28,7 @@ test('settings: garbage falls back to defaults field by field', () => {
   expect(s.features.agents).toBe(true);
   expect('bogus' in s.features).toBe(false);
   expect(s.timer.focusMin).toBe(180);
-  expect(s.display).toEqual({ monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true, joined: false });
+  expect(s.display).toEqual({ monitor: 'primary', edge: 'top', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true, joined: false, tuck: true });
 });
 
 test('settings: partial updates merge and are validated', () => {
@@ -36,7 +36,7 @@ test('settings: partial updates merge and are validated', () => {
   expect(s.features.lyrics).toBe(true);
   expect(s.features.media).toBe(true);
   expect(s.clipboard.maxItems).toBe(5);
-  expect(s.display).toEqual({ monitor: 7, edge: 'bottom', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true, joined: false });
+  expect(s.display).toEqual({ monitor: 7, edge: 'bottom', compact: 'browsers', hideInFullscreen: true, open: 'hover', position: null, locked: false, accent: 'mint', title: true, joined: false, tuck: true });
 });
 
 test('settings: calendar URL must be http(s); webcal is rewritten', () => {
@@ -337,6 +337,35 @@ test('face: music, focus sessions and finished things change the face; agents st
   expect(faceFor({ ...base, mood: 'waiting', music: true, celebrating: true })).toBe('needsYou');
   expect(faceFor({ ...base, idleForMs: NAP_AFTER_MS })).toBe('napping');
   expect(faceFor({ ...base, idleForMs: NAP_AFTER_MS, music: true })).toBe('listening');
+});
+
+test('tucked: a window under the island, in either unit, and not one beside or below it', () => {
+  const display = { left: 0, top: 0, right: 1920, bottom: 1080 };
+  const pill = { left: 780, top: 0, right: 1140, bottom: 36 };
+  // A maximised window (Windows gives it an 8 px overhang).
+  expect(windowUnder({ left: -8, top: -8, right: 1928, bottom: 1048 }, display, pill, display)).toBe(true);
+  // Snapped to the left half: its edge reaches under the pill.
+  expect(windowUnder({ left: 0, top: 0, right: 960, bottom: 1040 }, display, pill, display)).toBe(true);
+  // A small window in a corner, and one lower down the screen.
+  expect(windowUnder({ left: 0, top: 0, right: 600, bottom: 500 }, display, pill, display)).toBe(false);
+  expect(windowUnder({ left: 400, top: 200, right: 1500, bottom: 900 }, display, pill, display)).toBe(false);
+  // The island at the bottom edge.
+  const low = { left: 780, top: 1044, right: 1140, bottom: 1080 };
+  expect(windowUnder({ left: 400, top: 200, right: 1500, bottom: 900 }, display, low, display)).toBe(false);
+  expect(windowUnder({ left: 0, top: 0, right: 1920, bottom: 1080 }, display, low, display)).toBe(true);
+  // Windows reports a scaled screen in its own pixels (150%): the same window, the same answer.
+  const monitor = { left: 0, top: 0, right: 2880, bottom: 1620 };
+  expect(windowUnder({ left: -12, top: -12, right: 2892, bottom: 1572 }, monitor, pill, display)).toBe(true);
+  expect(windowUnder({ left: 0, top: 0, right: 900, bottom: 750 }, monitor, pill, display)).toBe(false);
+  // Nonsense in, no answer.
+  expect(windowUnder({ left: 0, top: 0, right: 10, bottom: 10 }, { left: 0, top: 0, right: 0, bottom: 0 }, pill, display)).toBe(false);
+  expect(windowUnder({ left: NaN, top: 0, right: 10, bottom: 10 }, display, pill, display)).toBe(false);
+});
+
+test('tucked: the setting is on at first and can be switched off', () => {
+  expect(DEFAULT_SETTINGS.display.tuck).toBe(true);
+  expect(updateSettings(DEFAULT_SETTINGS, { display: { tuck: false } }).display.tuck).toBe(false);
+  expect(updateSettings(DEFAULT_SETTINGS, { display: { tuck: 'no' } }).display.tuck).toBe(true);
 });
 
 test('face-only: on in browsers by default choice, never or always when set', () => {

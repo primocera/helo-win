@@ -556,6 +556,13 @@ input[type="range"]:disabled::-webkit-slider-runnable-track { background: linear
 /* Face only: the idle pill is hidden and the face sits alone in the middle. */
 .stage.face-only .island { opacity: 0; pointer-events: none; }
 
+/* Tucked: a window lies under the island, so it is a thin line at the edge until something happens. */
+.stage.tucked .island { --r: 4px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22); }
+.stage.tucked .island::before, .stage.tucked .island::after { display: none; }
+.stage.tucked .island-content { opacity: 0; pointer-events: none; }
+.stage.tucked .blink { opacity: 0; pointer-events: none; }
+.stage.tucked.busy .island { background: var(--mint); box-shadow: none; }
+
 /* ---- Joined: the face is the left end of the island, in one piece ----------- */
 .stage.joined .blink { border-radius: 0 0 0 var(--r); z-index: 1; }
 .stage.joined .blink::after { display: none; }

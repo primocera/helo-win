@@ -105,7 +105,7 @@ export const faq: { q: string; a: string }[] = [
   },
   {
     q: "Where on the screen does it sit?",
-    a: `At the top or the bottom of the display you choose, or anywhere you drag it. It can shrink to just ${product.mascot}'s face so it stays out of the way of browser tabs.`,
+    a: `At the top or the bottom of the display you choose, or anywhere you drag it. When the window you are working in reaches under it, ${product.name} shrinks to a thin line at the edge and lets your clicks through to the tabs or title bar below. It comes back for a banner or a request, or when you rest the pointer on the line.`,
   },
   {
     q: "Which languages is it in?",
@@ -176,7 +176,8 @@ export const specs: { name: string; lines: string[] }[] = [
   {
     name: "Placement",
     // settings.ts display
-    lines: ["Top or bottom edge, or dragged anywhere", "Any display", "Hides in fullscreen"],
+    // windowUnder in app/src/shared/face.ts; settings.display.tuck
+    lines: ["Top or bottom edge, or dragged anywhere", "Any display", "A thin line while a window is under it", "Hides in fullscreen"],
   },
   {
     name: "Network",
@@ -219,6 +220,7 @@ export const changelog: { version: string; date: string | null; summary: string;
         title: "The island",
         items: [
           `${product.mascot}, a face that follows your pointer and shows what your agents are doing. It sits beside the island, or joined to it as one piece.`,
+          "Out of the way: while the window in front reaches under the island, it is a thin line that clicks pass through.",
           "Right-click the island for Settings, Hide and Quit, or to have it step aside for a minute.",
           "Music controls with artwork, shuffle and repeat, the song's title beside the closed island, and synced lyrics if you turn them on.",
           "Notifications from other apps, with a switch for each app. Click one to open the app.",

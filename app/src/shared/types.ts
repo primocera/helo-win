@@ -312,6 +312,8 @@ export interface Settings {
     title: boolean;
     /** The face is the left end of the island, one shape, instead of sitting beside it with a gap. */
     joined: boolean;
+    /** The idle island shrinks to a thin line while the window in front lies under it. */
+    tuck: boolean;
   };
   /** `expireHours`: unpinned copies are forgotten after this long (0 = never). `paused`: nothing new is saved. */
   clipboard: { maxItems: number; images: boolean; expireHours: number; paused: boolean };
@@ -388,6 +390,8 @@ export interface IslandState {
   helper: 'starting' | 'running' | 'failed' | 'off';
   /** The idle island shows only the face right now (e.g. a browser is in front). */
   faceOnly: boolean;
+  /** The idle island is a thin line right now, because the window in front lies under it. */
+  tucked: boolean;
   /** Where the island sits now: which way it opens, and whether it is away from the screen edge. */
   place: { edge: Edge; floating: boolean };
 }

@@ -162,7 +162,9 @@ export async function runSmoke(ctx: SmokeCtx) {
     smoke({});
     push({ faceOnly: true });
     await shot('02b-idle-face-only');
-    push({ faceOnly: false });
+    push({ faceOnly: false, tucked: true });
+    await shot('02c-idle-tucked');
+    push({ tucked: false });
     push({ banner: { kind: 'done', title: 'Finished in shop-api', text: 'All 42 tests pass. I also updated the README.', at: Date.now() } });
     await shot('03-banner-done');
     push({ banner: { kind: 'input', title: 'Claude needs your answer', text: 'Open the terminal for shop-api', at: Date.now() } });

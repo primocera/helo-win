@@ -26,6 +26,12 @@ Nine items, one commit each. All are unit-tested; what was and was not tried by 
 
 Also: `--smoke` now takes screenshots of the menu, of sessions with a file and an Answer button, of a call in the System tab, and of the Codex switch; the settings screenshots are taken in an order that no longer shows the wrong page.
 
+## Built in the fifth session (2026-11-17)
+
+- **Out of the way** (asked for by the user: "it does get in the way"). While the window in front reaches under the closed island, the idle island is a thin line (76 by 5 px) at the edge and the face is hidden. Clicks go through the line; resting the pointer on it for half a second opens the panel. A banner, a card or the volume shows as before. The line is in the accent colour while an agent works. The helper's `foreground-app` now also sends the window's place and its monitor's (`ForegroundRect` in `winhelper.ps1`); `windowUnder` in `src/shared/face.ts` compares them as shares of the screen, so display scaling does not matter. `display.tuck` is the setting (on by default), `state.tucked` the state. The helper was run on this PC (a maximised Edge is reported correctly) and the line was seen in a `--smoke` screenshot (`02c-idle-tucked`). Not tried by hand: the running app, a second monitor (the monitor is matched by its top-left corner, as fullscreen is), and how it feels with the island at the bottom edge over the taskbar.
+- **Not committed.** These changes are in the working tree; the user had not asked for a commit.
+- A marketing plan and the list of what the user still has to do are in a Claude doc: https://claude.ai/artifact/Wpp5WzhGoKcKVKXbiwKMyw
+
 ## Built earlier on 2026-11-16
 
 First session: Gemini CLI and Cursor connections (watch only), notifications from other apps, card safety (S1, S2, S3), lines changed, privacy page. Second session: banner queue (B3), port fallback (S7), log file and Copy diagnostics (T1), uninstall cleanup (B2, R4), typing on a card (A5), clipboard safety (S12), licence protection (S10, S11), calendar Join, long break, low disk space, tech specs and changelog on the site. Third session: click a banner to go to the session's window, click a notification to open its app. The details are in the git log and in `TODO.md`.

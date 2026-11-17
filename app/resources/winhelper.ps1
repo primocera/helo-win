@@ -271,6 +271,24 @@ namespace HeloHelper {
       return (covers ? "1" : "0") + "|" + mi.Monitor.L + "|" + mi.Monitor.T;
     }
 
+    // "left|top|right|bottom|monLeft|monTop|monRight|monBottom": where the window in front is, and the
+    // monitor it is on, in the same units. "" for the desktop, the taskbar or a minimised window.
+    // The app uses it to tell whether that window lies under the island.
+    public static string ForegroundRect() {
+      IntPtr w = GetForegroundWindow();
+      if (w == IntPtr.Zero || IsIconic(w)) return "";
+      StringBuilder sb = new StringBuilder(64);
+      GetClassName(w, sb, 64);
+      string c = sb.ToString();
+      if (c == "Progman" || c == "WorkerW" || c == "Shell_TrayWnd" || c == "Shell_SecondaryTrayWnd") return "";
+      FsRect r;
+      if (!GetWindowRect(w, out r)) return "";
+      FsMonitorInfo mi = new FsMonitorInfo();
+      mi.Size = Marshal.SizeOf(typeof(FsMonitorInfo));
+      if (!GetMonitorInfo(MonitorFromWindow(w, 2), ref mi)) return "";
+      return r.L + "|" + r.T + "|" + r.R + "|" + r.B + "|" + mi.Monitor.L + "|" + mi.Monitor.T + "|" + mi.Monitor.R + "|" + mi.Monitor.B;
+    }
+
     [StructLayout(LayoutKind.Sequential)] struct POINT { public int X; public int Y; }
     [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(POINT p);
     [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT p);
@@ -758,7 +776,7 @@ while ($true) {
         'foreground-app' {
           $fg = Get-Process -Id ([HeloHelper.Native]::ForegroundPid()) -ErrorAction SilentlyContinue
           $name = if ($fg) { $fg.ProcessName } else { '' }
-          $result = $name + '|' + [HeloHelper.Native]::ForegroundFullscreen()
+          $result = $name + '|' + [HeloHelper.Native]::ForegroundFullscreen() + '|' + [HeloHelper.Native]::ForegroundRect()
         }
         'foreground-window' { $result = [HeloHelper.Native]::ForegroundWindow() }
         'foreground-info' {

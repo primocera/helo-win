@@ -88,6 +88,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Music: shuffle and repeat (in apps that let Windows change them), and the title or lyric line beside the closed island
 - [ ] Show the island on more than one display
 - [x] Blink can be joined to the island as one piece (Settings, Features, Blink; off by default)
+- [x] Out of the way: the idle island is a thin line while the window in front reaches under it (Settings, General, "Shrink to a line over windows"; on by default). Not tried by hand yet
 - [ ] Look: more than two accent colours (Halo has glass, tint, corners, shadow)
 
 ## Site

@@ -31,7 +31,7 @@ import { runSmoke, runSelfTest } from './smoke';
 import { DownloadWatcher, SteamWatcher, ScreenshotWatcher } from './finished-watch';
 import { BusyIdleDetector } from './finished';
 import { listStartupApps, setStartupApp } from './startup-apps';
-import { faceOnly } from '../shared/face';
+import { faceOnly, windowUnder } from '../shared/face';
 import { ChangeTracker, changeText } from './changes';
 import { BannerQueue } from './banners';
 import { LogFile, diagnosticsText, redact } from './logfile';
@@ -178,6 +178,7 @@ const state: IslandState = {
   finished: { watch: null, recent: [], doneAt: 0, steamFound: false },
   helper: 'off',
   faceOnly: false,
+  tucked: false,
   place: { edge: 'top', floating: false },
 };
 
@@ -527,6 +528,7 @@ function loadSettings() {
 function applySettings(prev: Settings | null) {
   push({ settings });
   applyFaceOnly();
+  applyTucked();
   if (!settings.display.hideInFullscreen) fullscreenAhead = false;
   applyFullscreen();
   placeIsland();
@@ -1916,6 +1918,22 @@ function applyFaceOnly() {
   if (next !== state.faceOnly) push({ faceOnly: next });
 }
 
+/** The window in front lies under the closed island: while idle the island is a thin line. */
+let windowAhead = false;
+
+function applyTucked() {
+  const next = settings.display.tuck && windowAhead;
+  if (next !== state.tucked) push({ tucked: next });
+}
+
+/** Where the closed island (the pill and the face) is on the screen. */
+function pillBox() {
+  const b = island && !island.isDestroyed() ? island.getBounds() : { x: 0, y: 0, width: 0, height: 0 };
+  const mid = b.x + b.width / 2;
+  const top = state.place.edge === 'top';
+  return { left: mid - 180, right: mid + 180, top: top ? b.y : b.y + b.height - 36, bottom: top ? b.y + 36 : b.y + b.height };
+}
+
 /** A game or fullscreen video covers the island's screen: the island steps aside. */
 let fullscreenAhead = false;
 
@@ -1946,19 +1964,28 @@ function applyFullscreen() {
 }
 
 async function pollForeground() {
-  const wanted = settings.display.compact === 'browsers' || settings.display.hideInFullscreen;
+  const wanted = settings.display.compact === 'browsers' || settings.display.hideInFullscreen || settings.display.tuck;
   if (foregroundBusy || testMode || !helper || helper.status !== 'running' || !wanted) return;
   foregroundBusy = true;
   try {
-    const [name, full, left, top] = String(await helper.request('foreground-app', {}, 1500) || '').split('|');
+    const [name, full, left, top, ...rect] = String(await helper.request('foreground-app', {}, 1500) || '').split('|');
     // Our own windows (the island, settings) do not count as "the app in front".
     if (name && !/^(electron|helo)$/i.test(name)) {
       foregroundApp = name;
       const d = targetDisplay().bounds;
       fullscreenAhead = full === '1' && Number(left) === d.x && Number(top) === d.y;
+      // The desktop and the taskbar send no place, and nothing of theirs is under the island.
+      const [wl, wt, wr, wb, ml, mt, mr, mb] = rect.map(Number);
+      windowAhead = rect.length === 8 && ml === d.x && mt === d.y && windowUnder(
+        { left: wl, top: wt, right: wr, bottom: wb },
+        { left: ml, top: mt, right: mr, bottom: mb },
+        pillBox(),
+        { left: d.x, top: d.y, right: d.x + d.width, bottom: d.y + d.height },
+      );
     }
     applyFullscreen();
     applyFaceOnly();
+    applyTucked();
   } catch { /* try again on the next tick */ } finally {
     foregroundBusy = false;
   }
