@@ -16,6 +16,7 @@ import NumbersSection from "./sections/NumbersSection";
 import PrivacySection from "./sections/PrivacySection";
 import TechSpecsSection from "./sections/TechSpecsSection";
 import SmallThingsSection from "./sections/SmallThingsSection";
+import EndSection from "./sections/EndSection";
 
 export default function Home() {
   return (
@@ -101,17 +102,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className={styles.closing}>
-          <h2 className={styles.closingTitle}>
-            {product.price}. <span className={shared.gradientDark}>Once.</span>
-          </h2>
-          <p className={styles.closingText}>
-            Try it free for {product.trialDays} days. One key for up to {product.maxPcs} PCs.
-          </p>
-          <a className={styles.buy} href={product.buyUrl}>
-            Buy {product.name}
-          </a>
-        </section>
+        <EndSection />
       </main>
       <ScrollEffects />
 

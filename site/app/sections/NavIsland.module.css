@@ -39,13 +39,20 @@
 .face {
   width: 32px;
   height: 24px;
-  fill: #f5f5f7;
+  overflow: visible;
 }
 .face path {
-  fill: none;
+  fill: #f5f5f7;
   stroke: #f5f5f7;
-  stroke-width: 2.4;
+  stroke-width: 2.1;
   stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* After the finale: like Halo's island at the end of its page, plain black until the page is loaded again. */
+.finale .face,
+.finale .bars {
+  visibility: hidden;
 }
 
 .bars {

@@ -254,23 +254,6 @@
 
 /* ---- Closing ---- */
 
-.closing {
-  background: #fff;
-  padding: clamp(48px, 8vw, 80px) 24px clamp(80px, 12vw, 140px);
-  text-align: center;
-}
-
-.closingTitle {
-  margin-bottom: 12px;
-  font-size: clamp(44px, 9vw, 80px);
-}
-
-.closingText {
-  margin: 0 0 28px;
-  font-size: clamp(17px, 3vw, 21px);
-  color: var(--grey);
-}
-
 /* ---- Footer ---- */
 
 .footerLinks {
