@@ -1,10 +1,12 @@
 /* The end card, after halo-mac.com (site.css .end, .end-in, .end-word, .end-tag, .offer; apple.css .pill.lg, .fine). */
 
+/* Black from its first pixel: the island's black meets it as you scroll in, then there is a stretch of plain dark to
+   scroll through (the top padding) before the card. */
 .end {
   min-height: 100svh;
   display: grid;
   place-items: center;
-  padding: 120px 22px;
+  padding: 90svh 22px 120px;
   background: #000;
   color: #f5f5f7;
   text-align: center;
@@ -44,13 +46,113 @@
   transition-delay: 1.1s;
 }
 
-/* Blink, big: white strokes on the black card. */
+/* Blink, big: white strokes on the black card. The box keeps his size when he has become the line. */
+.blink {
+  --w: clamp(130px, 14vw, 200px);
+  position: relative;
+  width: var(--w);
+  aspect-ratio: 4 / 3;
+  margin: 0 auto;
+}
 .face {
   display: block;
-  width: clamp(130px, 14vw, 200px);
+  width: 100%;
   height: auto;
-  margin: 0 auto;
   overflow: visible;
+  transform-origin: 50% 80%;
+}
+
+/* ---- the splash: he squashes, goes pink, bursts into drops, and a short pink line is left where he sat ---- */
+
+.drop,
+.line {
+  position: absolute;
+  left: 50%;
+  background: var(--accent);
+  pointer-events: none;
+  opacity: 0;
+}
+.drop {
+  top: 66%;
+  width: calc(var(--ds) * var(--w));
+  aspect-ratio: 1;
+  margin-left: calc(var(--ds) * var(--w) / -2);
+  border-radius: 50%;
+}
+/* The line in "Out of the way": 76 by 5, drawn here at Blink's width. */
+.line {
+  top: 66%;
+  width: 62%;
+  height: calc(var(--w) * 0.05);
+  margin-left: -31%;
+  border-radius: 999px;
+  transform: scaleX(0);
+}
+
+.splash .face {
+  animation: melt 0.55s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+.splash .face path {
+  fill: var(--accent);
+  stroke: var(--accent);
+  transition: fill 0.25s ease, stroke 0.25s ease;
+}
+.splash .blush {
+  opacity: 0;
+}
+.splash .drop {
+  animation: drop 0.75s cubic-bezier(0.2, 0.7, 0.4, 1) 0.42s forwards;
+}
+.splash .line {
+  animation: line 0.6s cubic-bezier(0.32, 1.4, 0.5, 1) 0.4s forwards;
+}
+
+@keyframes melt {
+  0% {
+    transform: none;
+    opacity: 1;
+  }
+  30% {
+    transform: translateY(-6%) scale(0.92, 1.12);
+  }
+  65% {
+    transform: translateY(14%) scale(1.35, 0.35);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(18%) scale(1.6, 0.04);
+    opacity: 0;
+  }
+}
+
+@keyframes drop {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * var(--w)), calc(var(--dy) * var(--w))) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * var(--w) * 1.25), calc(var(--dy) * var(--w) * 0.2 + var(--w) * 0.12)) scale(0.4);
+  }
+}
+
+@keyframes line {
+  0% {
+    opacity: 1;
+    transform: scaleX(0.15) scaleY(2.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scaleX(1.08) scaleY(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1) scaleY(1);
+  }
 }
 .face path {
   fill: #f5f5f7;
