@@ -46,10 +46,9 @@
 }
 
 /* Blink, big: white strokes on the black card. The box keeps his size when he has become the line. */
-/* The tile from "Meet Blink", at the same size as there (min(320px, 100%); here 100% is the screen less the card's
-   22px sides). Blink fills 76% of it, as there. */
+/* The tile from "Meet Blink", smaller here. Blink fills 76% of it, as there. */
 .stage {
-  --tile: min(320px, calc(100vw - 44px));
+  --tile: clamp(180px, 22vw, 260px);
   width: var(--tile);
 }
 .blink {
