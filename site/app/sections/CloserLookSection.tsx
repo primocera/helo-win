@@ -21,7 +21,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Desktop } from "./IslandMocks";
 import { MockAgents, MockCalendar, MockGlance, MockHud, MockLyricLine, MockMusic, MockResting, MockTimer } from "./CloserLookMocks";
-import shared from "./shared.module.css";
 import styles from "./CloserLookSection.module.css";
 
 type Item = {
@@ -89,16 +88,6 @@ const LAYERS = [RESTING, ...ITEMS];
 const IDLE_CYCLE = ["resting", "glance", "volume", "lyrics"];
 
 
-function Sign() {
-  return (
-    <span className={styles.sign} aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <path d="M12 4.5v15M4.5 12h15" />
-      </svg>
-    </span>
-  );
-}
-
 export default function CloserLookSection() {
   const [open, setOpen] = useState<string | null>(null);
   // Nothing pressed: the picture steps through the closed island's looks by itself.
@@ -112,42 +101,36 @@ export default function CloserLookSection() {
   const shown = ITEMS.find((item) => item.id === open) ?? LAYERS.find((layer) => layer.id === idle) ?? RESTING;
 
   return (
-    <section className={`${shared.grey} ${shared.section}`} aria-labelledby="closer-title">
-      <div className={shared.wrap}>
-        <h2 id="closer-title" className={`${shared.headline} ${styles.title}`}>
+    <section className={styles.section} aria-labelledby="closer-title">
+      <div className={styles.wrap}>
+        <h2 id="closer-title" className={styles.title}>
           Take a closer look.
         </h2>
+      </div>
+      <div className={`${styles.wrap} ${styles.layout}`}>
+        <ul className={styles.pills}>
+          {ITEMS.map((item) => {
+            const isOpen = item.id === open;
+            return (
+              <li key={item.id}>
+                <button type="button" aria-pressed={isOpen} onClick={() => setOpen(isOpen ? null : item.id)}>
+                  <i aria-hidden="true" />
+                  <span>{item.title}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
 
-        <div className={styles.layout}>
-          <Desktop className={styles.picture}>
-            <div className={styles.scene} role="img" aria-label={shown.picture}>
-              {LAYERS.map((layer) => (
-                <div key={layer.id} className={`${styles.layer} ${layer.id === shown.id ? styles.shown : ""}`}>
-                  {layer.mock}
-                </div>
-              ))}
-            </div>
-          </Desktop>
-
-          <ul className={styles.list}>
-            {ITEMS.map((item) => {
-              const isOpen = item.id === open;
-              return (
-                <li key={item.id} className={`${styles.item} ${isOpen ? styles.open : ""}`}>
-                  <button
-                    type="button"
-                    className={styles.button}
-                    aria-pressed={isOpen}
-                    onClick={() => setOpen(isOpen ? null : item.id)}
-                  >
-                    <Sign />
-                    {item.title}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <Desktop className={styles.picture}>
+          <div className={styles.scene} role="img" aria-label={shown.picture}>
+            {LAYERS.map((layer) => (
+              <div key={layer.id} className={`${styles.layer} ${layer.id === shown.id ? styles.shown : ""}`}>
+                {layer.mock}
+              </div>
+            ))}
+          </div>
+        </Desktop>
       </div>
     </section>
   );

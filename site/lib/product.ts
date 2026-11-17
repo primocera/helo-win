@@ -10,6 +10,9 @@ export const product = {
   maxPcs: 3,
   buyUrl: "https://example.com/buy", // checkout page (not set up yet)
   requirements: "Windows 10 or 11",
+  // The installer's size, rounded up: app/dist/Helo-Setup-0.1.0.exe was 122,297,542 bytes on 2026-11-17.
+  // Change it when the installer grows past it.
+  downloadMax: "125 MB",
   // The link scheme the app registers (app/src/main/links.ts). It keeps the old name until the app is renamed.
   scheme: "helo",
   // Where the site is served. Used for the sitemap and the share image; change it when the real domain is set.

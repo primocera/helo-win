@@ -1,7 +1,7 @@
 import Link from "next/link";
 import styles from "./page.module.css";
 import shared from "./sections/shared.module.css";
-import { faq, product, utilities, type Feature } from "@/lib/product";
+import { faq, product } from "@/lib/product";
 import HighlightsSection from "./sections/HighlightsSection";
 import AgentsSection from "./sections/AgentsSection";
 import CloserLookSection from "./sections/CloserLookSection";
@@ -15,18 +15,9 @@ import MonitorSection from "./sections/MonitorSection";
 import NumbersSection from "./sections/NumbersSection";
 import PrivacySection from "./sections/PrivacySection";
 import TechSpecsSection from "./sections/TechSpecsSection";
-
-// The public build lists only what the app really does today.
-const showAll = process.env.NODE_ENV !== "production";
-const visible = (list: Feature[]) => list.filter((f) => showAll || f.shipped);
-
-function Tag({ feature }: { feature: Feature }) {
-  return feature.shipped ? null : <span className={styles.tag}>not built yet</span>;
-}
+import SmallThingsSection from "./sections/SmallThingsSection";
 
 export default function Home() {
-  const extra = visible(utilities);
-
   return (
     <>
       <header className={styles.nav}>
@@ -80,35 +71,17 @@ export default function Home() {
 
         <AgentsSection />
 
-        <CloserLookSection />
-
         <MeetBlinkSection />
 
         <WorkMapSection />
 
         <MonitorSection />
 
+        <SmallThingsSection />
+
         <NumbersSection />
 
-        {extra.length > 0 && (
-          <section className={styles.dark} aria-labelledby="small-things">
-            <div className={shared.wrap}>
-              <h2 id="small-things" className={styles.darkTitle}>
-                And the small things.
-              </h2>
-              <ul className={styles.grid}>
-                {extra.map((f) => (
-                  <li key={f.title} className={styles.tile}>
-                    <h3>
-                      {f.title} <Tag feature={f} />
-                    </h3>
-                    <p>{f.text}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-        )}
+        <CloserLookSection />
 
         <PrivacySection />
 
