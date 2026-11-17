@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { product } from "@/lib/product";
 import { CALM, DONE, FINALE_EVENT, playDone, shape } from "@/lib/blink";
+import { spring } from "@/lib/spring";
 import meet from "./MeetBlinkSection.module.css";
 import WindowsMark from "./WindowsMark";
 import styles from "./EndSection.module.css";
@@ -32,20 +33,6 @@ const DROPS = [
   { x: -0.8, y: -0.2, s: 0.04 },
   { x: 0.84, y: -0.18, s: 0.04 },
 ];
-
-/**
- * SwiftUI's .spring(response:dampingFraction:) as an easing, the same helper as halo-mac.com's sp(): `duration` in
- * seconds, `ease(p)` for p from 0 to 1 (it overshoots past 1 and settles, which is the island's bounce).
- */
-function spring(response: number, damping: number) {
-  const w = (2 * Math.PI) / response;
-  const z = damping;
-  const wd = w * Math.sqrt(1 - z * z);
-  const duration = Math.log(500) / (z * w);
-  const ease = (p: number) =>
-    p >= 1 ? 1 : 1 - Math.exp(-z * w * p * duration) * (Math.cos(wd * p * duration) + ((z * w) / wd) * Math.sin(wd * p * duration));
-  return { duration, ease };
-}
 
 export default function EndSection() {
   const ref = useRef<HTMLElement>(null);
@@ -100,7 +87,15 @@ export default function EndSection() {
         const scale = spring(0.5, 0.86);
         const c = document.createElement("div");
         c.className = styles.cover;
+        // It starts as the island itself: its face and bars, which fade out as it grows, the way Halo's island
+        // content goes (opacity to 0, scale 0.94, blur 6px, 0.2 s, power2.out; js/island.js "to").
+        const content = document.createElement("div");
+        content.className = styles.coverContent;
+        content.innerHTML = island.innerHTML;
+        c.append(content);
         document.body.append(c);
+        void content.offsetWidth;
+        content.classList.add(styles.coverGone);
         cover = c;
         const draw = (dims: number[], s: number) => {
           c.style.width = `${dims[0]}px`;

@@ -247,6 +247,49 @@
   pointer-events: none;
 }
 
+/* The concave corners where it meets the top edge, as the nav island's (NavIsland.module.css). */
+.cover::before,
+.cover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 9px;
+  height: 9px;
+}
+.cover::before {
+  left: -9px;
+  background: radial-gradient(circle at 0 100%, transparent 8.5px, #000 9px);
+}
+.cover::after {
+  right: -9px;
+  background: radial-gradient(circle at 100% 100%, transparent 8.5px, #000 9px);
+}
+
+/* The island's face and bars, at the island's size, in the middle of the top. */
+.coverContent {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  box-sizing: border-box;
+  width: 282px;
+  height: 32px;
+  margin-left: -141px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transform-origin: 50% 50%;
+  transition:
+    opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    filter 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.coverGone {
+  opacity: 0;
+  transform: scale(0.94);
+  filter: blur(6px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .inner > *,
   .face,
