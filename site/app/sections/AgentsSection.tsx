@@ -1,69 +1,10 @@
-// "Built for AI agents": three cards with the island answering, reporting and listing agent work, then four short
-// points. The islands are drawn by IslandMocks; the question card is AgentQuestion, a client component the visitor
+// "Built for AI agents": three cards with the island answering, reporting and listing agent work. The islands are drawn by IslandMocks; the question card is AgentQuestion, a client component the visitor
 // can answer. This section itself has no state, so it stays a server component.
 import { product } from "@/lib/product";
 import AgentQuestion from "./AgentQuestion";
 import { Desktop, MockAgentsTab, MockDoneBanner } from "./IslandMocks";
 import shared from "./shared.module.css";
 import styles from "./AgentsSection.module.css";
-
-const ICON = {
-  // Two changed lines: one taken out (red), one put in (green).
-  diff: (
-    <>
-      <rect x="3.5" y="4" width="17" height="16" rx="3" />
-      <path d="M7 9.5h4" stroke="#ff7b72" />
-      <path d="M7 14.5h4M9 12.5v4" stroke="#5fd38d" />
-      <path d="M14 9.5h3M14 14.5h3" />
-    </>
-  ),
-  // A small keyboard.
-  keys: (
-    <>
-      <rect x="2.5" y="6" width="19" height="12" rx="2.5" />
-      <path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14.2h8" />
-    </>
-  ),
-  // A list of steps, the first two ticked.
-  plan: (
-    <>
-      <path d="m3.8 6.8 1.6 1.6 2.9-3.1M11 7h9.5" />
-      <path d="m3.8 12.3 1.6 1.6 2.9-3.1M11 12.5h9.5" />
-      <path d="M5.6 18h.01M11 18h9.5" />
-    </>
-  ),
-  // A tick inside a circle that comes back round on itself.
-  always: (
-    <>
-      <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
-      <path d="M19.8 4.2v3.6h-3.6" />
-      <path d="m8.8 12.2 2.2 2.2 4.3-4.6" />
-    </>
-  ),
-};
-
-const POINTS: { icon: keyof typeof ICON; title: string; text: string }[] = [
-  {
-    icon: "diff",
-    title: "See the change first",
-    text: "Edit and Write requests from Claude Code show the changed lines in red and green before you allow them.",
-  },
-  {
-    icon: "keys",
-    title: "Yes or no from the keyboard",
-    text: "Alt+Shift+Y allows and Alt+Shift+N denies the request on the island, from any app, while one is waiting.",
-  },
-  {
-    icon: "plan",
-    title: "Approve the plan",
-    text: "Read Claude Code's plan on the island and approve it, or reject it and it keeps planning.",
-  },
-  {
-    icon: "always",
-    title: "Always allow",
-    text: "When Claude Code offers a rule for the request, one click allows it and saves the rule.",
-  },
-];
 
 export default function AgentsSection() {
   return (
@@ -121,26 +62,6 @@ export default function AgentsSection() {
           </article>
         </div>
 
-        <ul className={styles.points}>
-          {POINTS.map((p) => (
-            <li key={p.title} className={styles.point}>
-              <svg
-                className={styles.pointIcon}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                {ICON[p.icon]}
-              </svg>
-              <h3 className={`${shared.pointTitle} ${styles.pointTitle}`}>{p.title}</h3>
-              <p className={`${shared.pointText} ${styles.pointText}`}>{p.text}</p>
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   );
