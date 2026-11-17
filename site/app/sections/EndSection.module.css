@@ -231,18 +231,6 @@
   animation: drop 0.8s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
 }
 
-/* With ?ending=top: the line flying up to the top edge of the screen, then docked in its middle (added to <body>). */
-.flyer {
-  position: fixed;
-  z-index: 101;
-  background: var(--accent);
-  pointer-events: none;
-}
-.docked {
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
-}
 
 .face path {
   fill: #f5f5f7;

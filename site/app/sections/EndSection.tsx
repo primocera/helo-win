@@ -9,7 +9,7 @@
 // without the sound or the splash.
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { product } from "@/lib/product";
-import { CALM, DOCKED_EVENT, DONE, FINALE_EVENT, playDone } from "@/lib/blink";
+import { CALM, DONE, FINALE_EVENT, playDone } from "@/lib/blink";
 import styles from "./EndSection.module.css";
 
 type Stage = "hidden" | "shown" | "blink" | "done" | "splash" | "travel" | "burst";
@@ -29,7 +29,6 @@ const DROPS = [
 export default function EndSection() {
   const ref = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const runnerRef = useRef<HTMLSpanElement>(null);
   const [stage, setStage] = useState<Stage>("hidden");
 
   useEffect(() => {
@@ -37,53 +36,14 @@ export default function EndSection() {
     const card = cardRef.current;
     if (!end || !card) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // Two endings while we choose: the line stays on top of the square, or (?ending=top) flies on up to the top edge
-    // of the screen and takes the island's place.
-    const flyTop = new URLSearchParams(window.location.search).get("ending") === "top";
     const timers: number[] = [];
     const later = (ms: number, fn: () => void) => timers.push(window.setTimeout(fn, ms));
-    let flyer: HTMLElement | null = null;
-
-    const flyUp = () => {
-      const runner = runnerRef.current;
-      if (!runner) return;
-      const r = runner.getBoundingClientRect();
-      const vw = document.documentElement.clientWidth;
-      const f = document.createElement("div");
-      f.className = styles.flyer;
-      document.body.append(f);
-      flyer = f;
-      runner.style.visibility = "hidden";
-      const round = `${r.height}px`;
-      const anim = f.animate(
-        [
-          { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, borderRadius: round },
-          // Up it goes, stretched long by the speed, then it lands flat against the top edge.
-          {
-            left: `${vw / 2 - r.height / 2}px`,
-            top: `${r.top * 0.35}px`,
-            width: `${r.height}px`,
-            height: `${r.width * 1.1}px`,
-            borderRadius: round,
-            offset: 0.55,
-          },
-          { left: `${vw / 2 - r.width / 2}px`, top: "0px", width: `${r.width}px`, height: `${r.height}px`, borderRadius: `0 0 ${round} ${round}` },
-        ],
-        { duration: 700, easing: "cubic-bezier(0.5, 0, 0.2, 1)", fill: "forwards" },
-      );
-      anim.onfinish = () => {
-        // Docked in the middle of the top edge, whatever the window's width.
-        f.classList.add(styles.docked);
-        f.style.cssText = `width:${r.width}px;height:${r.height}px;border-radius:0 0 ${round} ${round}`;
-        anim.cancel();
-        window.dispatchEvent(new CustomEvent(DOCKED_EVENT));
-      };
-    };
 
     // The card rises in once you have scrolled through the dark to it. Then: a blink, the smile and the sound; he
     // melts with a splash into a pink line; the line goes round an invisible square around him (to its right side,
     // standing up, then to its top, lying down, as the island sits on a screen's edge); white sparks burst out of it
-    // (and, with ?ending=top, it flies on up to the top of the screen). The page stays black.
+    // and stays on top of the square. The page stays black. (A version where the line flies on up to the top edge
+    // of the screen and takes the island's place is kept for marketing as the git tag ending-fly-top.)
     const io = new IntersectionObserver(
       ([e]) => {
         if (!e.isIntersecting) return;
@@ -100,10 +60,7 @@ export default function EndSection() {
         });
         later(3000, () => setStage("splash"));
         later(4200, () => setStage("travel"));
-        later(5750, () => {
-          setStage("burst");
-          if (flyTop) flyUp();
-        });
+        later(5750, () => setStage("burst"));
       },
       { threshold: 0.5 },
     );
@@ -163,7 +120,6 @@ export default function EndSection() {
       window.removeEventListener("resize", onScroll);
       if (frame) cancelAnimationFrame(frame);
       cover.remove();
-      flyer?.remove();
     };
   }, []);
 
@@ -210,7 +166,7 @@ export default function EndSection() {
           ))}
           <span className={styles.line} aria-hidden="true" />
           {/* The line on its way round the square, and the splash out of it when it lands on top. */}
-          <span ref={runnerRef} className={styles.runner} aria-hidden="true" />
+          <span className={styles.runner} aria-hidden="true" />
           {DROPS.map((d, i) => (
             <i
               key={`out-${i}`}

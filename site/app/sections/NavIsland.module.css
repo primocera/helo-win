@@ -55,15 +55,6 @@
   visibility: hidden;
 }
 
-/* Blink's pink line has flown up and taken its place at the top edge. */
-.island {
-  transition: opacity 0.4s ease;
-}
-.docked {
-  opacity: 0;
-  pointer-events: none;
-}
-
 .bars {
   display: inline-flex;
   align-items: center;
