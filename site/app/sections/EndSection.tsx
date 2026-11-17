@@ -12,7 +12,7 @@ import { product } from "@/lib/product";
 import { CALM, DOCKED_EVENT, DONE, FINALE_EVENT, playDone } from "@/lib/blink";
 import styles from "./EndSection.module.css";
 
-type Stage = "hidden" | "shown" | "blink" | "done" | "splash" | "travel" | "burst" | "white";
+type Stage = "hidden" | "shown" | "blink" | "done" | "splash" | "travel" | "burst";
 
 /** Where each drop of the splash flies, as a share of Blink's width (x) and height (y, up is negative). */
 const DROPS = [
@@ -83,7 +83,7 @@ export default function EndSection() {
     // The card rises in once you have scrolled through the dark to it. Then: a blink, the smile and the sound; he
     // melts with a splash into a pink line; the line goes round an invisible square around him (to its right side,
     // standing up, then to its top, lying down, as the island sits on a screen's edge); white sparks burst out of it
-    // (and, with ?ending=top, it flies on up to the top of the screen); and the page turns white.
+    // (and, with ?ending=top, it flies on up to the top of the screen). The page stays black.
     const io = new IntersectionObserver(
       ([e]) => {
         if (!e.isIntersecting) return;
@@ -104,7 +104,6 @@ export default function EndSection() {
           setStage("burst");
           if (flyTop) flyUp();
         });
-        later(6500, () => setStage("white"));
       },
       { threshold: 0.5 },
     );
@@ -168,16 +167,16 @@ export default function EndSection() {
     };
   }, []);
 
-  const melted = stage === "splash" || stage === "travel" || stage === "burst" || stage === "white";
-  const moving = stage === "travel" || stage === "burst" || stage === "white";
-  const bursting = stage === "burst" || stage === "white";
+  const melted = stage === "splash" || stage === "travel" || stage === "burst";
+  const moving = stage === "travel" || stage === "burst";
+  const bursting = stage === "burst";
   const smiling = stage === "done" || melted;
   const face = smiling ? DONE : CALM;
   return (
     <section
       ref={ref}
       id="buy"
-      className={`${styles.end} ${stage !== "hidden" ? styles.shown : ""} ${stage === "white" ? styles.white : ""}`}
+      className={`${styles.end} ${stage !== "hidden" ? styles.shown : ""}`}
       aria-labelledby="end-title"
     >
       <div ref={cardRef} className={styles.inner}>
