@@ -141,7 +141,7 @@ type IconName = keyof typeof PATHS;
 /** A size in the app's pixels, scaled with the island. */
 const px = (n: number) => `calc(${n} * var(--u))`;
 
-function Icon({ name, size }: { name: IconName; size: number }) {
+export function Icon({ name, size }: { name: IconName; size: number }) {
   return (
     <svg
       className={s.icon}
@@ -160,7 +160,7 @@ function Icon({ name, size }: { name: IconName; size: number }) {
 }
 
 /** The app's mark: a mint tile with the island-face glyph cut out. */
-function Mark() {
+export function Mark() {
   return (
     <svg className={s.icon} style={{ width: px(15), height: px(15) }} viewBox="0 0 16 16" aria-hidden="true">
       <rect x="0" y="0" width="16" height="16" rx="4.4" fill="var(--accent)" />
@@ -194,11 +194,11 @@ const FACES: Record<Face, { eye: [number, number, number]; eyeY: number; mouth: 
   done: { eye: [3.3, 2.4, -2.4], eyeY: 12.6, mouth: [20, 18.8, 3.4, 0, 3.4], blush: 0.75 },
 };
 
-function Blink({ face }: { face: Face }) {
+export function Blink({ face, className }: { face: Face; className?: string }) {
   const p = FACES[face];
   const [rx, top, bottom] = p.eye;
   return (
-    <span className={s.blink}>
+    <span className={`${s.blink} ${className ?? ""}`}>
       <svg className={s.face} viewBox="0 0 40 30" aria-hidden="true">
         {p.blush > 0 && (
           <g opacity={p.blush} fill="var(--accent)">
@@ -286,7 +286,7 @@ function Island({
 }
 
 /** The level meter beside a playing track (still heights; it moves gently unless motion is reduced). */
-function Bars() {
+export function Bars() {
   return (
     <span className={s.bars} aria-hidden="true">
       <i />
@@ -466,7 +466,7 @@ export function MockQuestion({
 
 const TABS: IconName[] = ["home", "agents", "map", "timer", "clipboard", "notes", "shelf", "calendar", "bell", "system"];
 
-function Panel({ active, busy, children }: { active: IconName; busy?: boolean; children: ReactNode }) {
+export function Panel({ active, busy, children }: { active: IconName; busy?: boolean; children: ReactNode }) {
   return (
     <div className={s.panel}>
       <div className={s.toolbar}>
@@ -489,7 +489,7 @@ function Panel({ active, busy, children }: { active: IconName; busy?: boolean; c
   );
 }
 
-function Ring({ value, label, sub }: { value: number; label: string; sub: string }) {
+export function Ring({ value, label, sub }: { value: number; label: string; sub: string }) {
   const r = 22;
   const c = 2 * Math.PI * r;
   const tone = value >= 90 ? s.hot : value >= 70 ? s.warm : s.ok;

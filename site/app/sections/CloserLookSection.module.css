@@ -1,0 +1,135 @@
+/* "Take a closer look": the desktop picture and the list of features. On a phone and a small tablet the picture is
+   on top with the list under it; from 900 px the list sits on the left and the picture on the right. */
+
+.title {
+  font-size: clamp(32px, 6vw, 56px);
+  margin-bottom: clamp(28px, 5vw, 48px);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+}
+
+/* ---- the picture: a close-up of the top of the screen, the island as large as fits ---- */
+
+/* Two classes, so the corners win over the shared wallpaper's. */
+.layout .picture {
+  --desk-aspect: 2 / 1;
+  --island-max: 4px;
+  --island-fit: 0.94;
+  --island-hfit: 0.86;
+  border-radius: 28px;
+  box-shadow: 0 34px 60px -30px rgba(84, 66, 140, 0.38);
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+/* Every feature's island is drawn, one over the other; the shown one fades in as the last fades out. */
+.layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.97);
+  transform-origin: 50% 0;
+  transition:
+    opacity 0.35s ease,
+    transform 0.45s cubic-bezier(0.32, 1.22, 0.5, 1),
+    visibility 0s linear 0.35s;
+}
+.shown {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.35s ease 0.08s,
+    transform 0.45s cubic-bezier(0.32, 1.22, 0.5, 1) 0.08s,
+    visibility 0s;
+}
+
+/* ---- the list ---- */
+
+/* The list looks like the Questions list at the foot of the page (page.module.css .faq): full-width rows between
+   hairlines, the title on the left and a blue + on the right, which turns to a minus while that item is shown. */
+.list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.item {
+  border-top: 1px solid var(--line);
+}
+.item:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.button {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  width: 100%;
+  padding: 20px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: clamp(18px, 3vw, 21px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #1d1d1f;
+  text-align: left;
+  cursor: pointer;
+}
+.button::after {
+  content: "+";
+  flex: none;
+  color: var(--blue);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1;
+}
+.open .button::after {
+  content: "\2212";
+}
+.button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ---- side by side ---- */
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: 360px minmax(0, 1fr);
+    align-items: start;
+    gap: 48px;
+  }
+  .list {
+    grid-row: 1;
+    grid-column: 1;
+    margin-top: 0;
+  }
+  .layout .picture {
+    grid-row: 1;
+    grid-column: 2;
+    position: sticky;
+    top: 96px;
+    --desk-aspect: 16 / 10;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer,
+  .shown {
+    transition: none;
+  }
+  .layer {
+    transform: none;
+  }
+}

@@ -4,9 +4,11 @@ import shared from "./sections/shared.module.css";
 import { faq, product, utilities, type Feature } from "@/lib/product";
 import HighlightsSection from "./sections/HighlightsSection";
 import AgentsSection from "./sections/AgentsSection";
+import CloserLookSection from "./sections/CloserLookSection";
 import ScrollEffects from "./sections/ScrollEffects";
 import NavIsland from "./sections/NavIsland";
 import IntroSection from "./sections/IntroSection";
+import OutOfTheWaySection from "./sections/OutOfTheWaySection";
 import MeetBlinkSection from "./sections/MeetBlinkSection";
 import WorkMapSection from "./sections/WorkMapSection";
 import MonitorSection from "./sections/MonitorSection";
@@ -74,7 +76,11 @@ export default function Home() {
 
         <IntroSection />
 
+        <OutOfTheWaySection />
+
         <AgentsSection />
+
+        <CloserLookSection />
 
         <MeetBlinkSection />
 
@@ -143,7 +149,7 @@ export default function Home() {
           <Link href="/changelog">Changelog</Link>
           <Link href="/privacy">Privacy</Link>
         </nav>
-        © {product.name}. Made by an independent developer.
+        © {product.name}
       </footer>
     </>
   );

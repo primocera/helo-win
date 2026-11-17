@@ -2,7 +2,7 @@
 // Keep it in step with the app's config: name, price, trial, checkout link (app/src/main/config.ts),
 // and the feature switches (DEFAULT_FEATURES in app/src/main/settings.ts).
 export const product = {
-  name: "Helo", // placeholder until the final name is chosen
+  name: "Blink", // for now; the final name is still to be chosen (the app itself still says Helo)
   mascot: "Blink",
   tagline: "The island for your Windows screen",
   price: "$9.99",
@@ -10,6 +10,8 @@ export const product = {
   maxPcs: 3,
   buyUrl: "https://example.com/buy", // checkout page (not set up yet)
   requirements: "Windows 10 or 11",
+  // The link scheme the app registers (app/src/main/links.ts). It keeps the old name until the app is renamed.
+  scheme: "helo",
   // Where the site is served. Used for the sitemap and the share image; change it when the real domain is set.
   siteUrl: "https://helo-win.vercel.app",
   // How many features have their own on/off switch in Settings: the keys of DEFAULT_FEATURES in
@@ -105,7 +107,11 @@ export const faq: { q: string; a: string }[] = [
   },
   {
     q: "Where on the screen does it sit?",
-    a: `At the top or the bottom of the display you choose, or anywhere you drag it. When the window you are working in reaches under it, ${product.name} shrinks to a thin line at the edge and lets your clicks through to the tabs or title bar below. It comes back for a banner or a request, or when you rest the pointer on the line.`,
+    a: `At the top or the bottom of the display you choose, or anywhere you drag it.`,
+  },
+  {
+    q: "Won't it cover my browser tabs?",
+    a: `No. When the window you are working in reaches under the island, ${product.name} shrinks to a thin line at the edge and lets your clicks through to the tabs or title bar below. The line is black, or your accent colour while an agent works. It comes back at full size for a banner or a request, and resting the pointer on the line for half a second opens the panel. Settings, General, "Shrink to a line over windows" turns this off.`,
   },
   {
     q: "Which languages is it in?",
@@ -168,7 +174,7 @@ export const specs: { name: string; lines: string[] }[] = [
     name: "Links for scripts",
     // links.ts: the five actions a helo:// link can ask for
     lines: [
-      `${product.name.toLowerCase()}://banner, timer, awake, shelf and open`,
+      `${product.scheme}://banner, timer, awake, shelf and open`,
       "A file is added to the shelf only after you click",
       "Can be switched off",
     ],
@@ -220,14 +226,14 @@ export const changelog: { version: string; date: string | null; summary: string;
         title: "The island",
         items: [
           `${product.mascot}, a face that follows your pointer and shows what your agents are doing. It sits beside the island, or joined to it as one piece.`,
-          "Out of the way: while the window in front reaches under the island, it is a thin line that clicks pass through.",
+          "Out of the way: while the window in front reaches under the island, it is a thin line that clicks pass through, in your accent colour while an agent works.",
           "Right-click the island for Settings, Hide and Quit, or to have it step aside for a minute.",
           "Music controls with artwork, shuffle and repeat, the song's title beside the closed island, and synced lyrics if you turn them on.",
           "Notifications from other apps, with a switch for each app. Click one to open the app.",
           "Focus timer with a long break, clipboard history, notes and file shelf.",
           "A converter on the shelf: images to PNG, JPG or WebP, and Markdown, Word, HTML and text files to HTML or PDF.",
           "Calendar from an iCal address, with a Join button for Zoom, Meet, Teams and Webex.",
-          `Links for scripts: ${product.name.toLowerCase()}://banner, timer, awake, shelf and open.`,
+          `Links for scripts: ${product.scheme}://banner, timer, awake, shelf and open.`,
           "Alerts for finished downloads, Steam games ready to play, battery, low disk space, microphone and camera.",
           "During a call: how long an app has had the microphone or camera, a button to go back to it, and a microphone mute.",
           "Brightness, contrast and input for monitors that support DDC/CI.",

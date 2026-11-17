@@ -212,7 +212,7 @@ export default function MeetBlinkSection() {
       </div>
 
       <p className={styles.kicker}>
-        {product.name} {product.mascot}
+        Helo {product.mascot}
       </p>
       <h2 className={styles.title}>
         Meet <span className={styles.name}>{product.mascot}.</span>
