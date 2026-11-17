@@ -78,9 +78,9 @@ export default function Home() {
 
         <WorkMapSection />
 
-        <MonitorSection />
-
         <SmallThingsSection />
+
+        <MonitorSection />
 
         <OutOfTheWaySection />
 
