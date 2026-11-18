@@ -5,6 +5,7 @@
 // Icons come from IslandMocks.tsx (Phosphor fill, as the app draws them).
 // Sizes are the app's pixels times --u. No role or label here: the section's picture carries the description.
 // No hooks and no handlers, so these render the same on the server and in the browser.
+import { useWorkMap } from "./WorkMapSection";
 import type { CSSProperties, ReactNode } from "react";
 import { Bars, Blink, Icon, Mark, Panel, Ring } from "./IslandMocks";
 import s from "./IslandMocks.module.css";
@@ -333,6 +334,21 @@ export function MockAgents({
               ))}
             </div>
           </div>
+        </div>
+      </Panel>
+    </Frame>
+  );
+}
+
+/** The work map tab: the app's own map drawing, playing the same session as the work map section. */
+export function MockMap() {
+  const view = useWorkMap();
+  return (
+    <Frame mode="panel" size={{ w: [648, 400], h: [470, 470] }}>
+      <Panel active="map" busy>
+        <div className={`${s.tile} ${c.mapTile}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- a data URL that animates by itself */}
+          <img className={c.mapImage} src={view.src} alt="" width={460} height={430} draggable={false} />
         </div>
       </Panel>
     </Frame>

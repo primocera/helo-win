@@ -14,13 +14,12 @@
 // - At a glance: IdleView in app/src/renderer/src/island/Views.tsx (song, timer chip, mic dot, keep-awake cup).
 // - Volume and brightness: showHud (1.6 s) in app/src/main/index.ts; HudView in Views.tsx; Get-Brightness reads the
 //   built-in panel through WmiMonitorBrightness in app/resources/winhelper.ps1.
-// - Focus timer: timer defaults in settings.ts; tick and isLongBreak in app/src/main/timer.ts; the banner in
-//   timerTick (index.ts); the lengths in Settings (SettingsApp.tsx).
 // - Coding agents: Agents in Panel.tsx (sessions, moods, rings, the Claude/Codex pick); parseUsage in
 //   app/src/main/agents.ts; app/src/main/codex-usage.ts.
+// - Work map: the Map tab (WorkMap.tsx in the app), drawn by the same code as the work map section (lib/map).
 import { useEffect, useState, type ReactNode } from "react";
 import { Desktop } from "./IslandMocks";
-import { MockAgents, MockCalendar, MockGlance, MockHud, MockLyricLine, MockMusic, MockResting, MockTimer } from "./CloserLookMocks";
+import { MockAgents, MockCalendar, MockGlance, MockHud, MockLyricLine, MockMap, MockMusic, MockResting } from "./CloserLookMocks";
 import shared from "./shared.module.css";
 import styles from "./CloserLookSection.module.css";
 
@@ -64,16 +63,16 @@ const ITEMS: Item[] = [
     mock: <MockHud />,
   },
   {
-    id: "timer",
-    title: "Focus timer",
-    picture: "The island open on the focus timer: 18:42 left to focus, and 3 focus sessions today.",
-    mock: <MockTimer />,
-  },
-  {
     id: "agents",
     title: "Coding agents",
     picture: "The island open on Agents: Claude usage at 27% of 5 hours and 54% of the week, and four sessions, one working, one waiting for you and two done.",
     mock: <MockAgents />,
+  },
+  {
+    id: "map",
+    title: "Work map",
+    picture: "The island open on the work map: Claude in the centre, joined to the stations it is using, which light up as it works.",
+    mock: <MockMap />,
   },
 ];
 

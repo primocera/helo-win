@@ -55,20 +55,21 @@ export const headline: Feature[] = [
 ];
 
 export const utilities: Feature[] = [
-  { title: "Notifications", text: "Other apps' Windows notifications show in the island, with a switch for each app. Click one to open the app.", shipped: true },
-  { title: "Focus timer", text: "Work and break sessions that count down in the island, with a long break every few rounds.", shipped: true },
-  { title: "Clipboard history", text: "Text and images you copied, one click to copy again. Search it, pin what you reuse, pause it when you like.", shipped: true },
-  { title: "Notes", text: "A scratchpad that saves as you type.", shipped: true },
-  { title: "File shelf", text: "Park files on the island and drag them out where you need them. Saved screenshots land there too.", shipped: true },
-  { title: "Converter", text: "Turn an image on the shelf into PNG, JPG or WebP, and a Markdown, Word, HTML or text file into HTML or PDF.", shipped: true },
-  { title: "Calendar", text: "Your next events from a private iCal address, with a reminder five minutes before and a Join button for Zoom, Meet, Teams and Webex.", shipped: true },
-  { title: "Finished alerts", text: "Told when a download ends, a Steam game is ready, or an app you picked goes quiet.", shipped: true },
-  { title: "Keep awake", text: "One switch stops the screen from sleeping while something long runs.", shipped: true },
-  { title: "Battery alerts", text: "Plugged in, unplugged, full and low, shown in the island.", shipped: true },
-  { title: "Low disk space", text: "A warning before the Windows drive fills up, at the limit you set.", shipped: true },
-  { title: "Microphone and camera", text: "See when an app starts using either one and how long it has been on, go back to that app with a click, and mute the microphone.", shipped: true },
-  { title: "Volume", text: "Volume changes show in the island, with a slider to set it.", shipped: true },
-  { title: "Startup apps", text: "See what opens when you sign in to Windows, and switch your own apps on or off.", shipped: true },
+  { title: "Answer your agents", text: "Allow, Deny or Always allow, pick an answer or type your own, approve a plan. Claude Code and Codex.", shipped: true },
+  { title: "See the change first", text: "Edit and Write cards show the file, with removed lines in red and added ones in green.", shipped: true },
+  { title: "Know when it's done", text: "A banner names the project, how long it worked, the lines changed and how its last message begins.", shipped: true },
+  { title: "Two usage rings", text: "Your Claude 5-hour and weekly limits, and Codex's, in the Agents tab.", shipped: true },
+  { title: "Four agents", text: "Claude Code and Codex ask in the island; Gemini CLI and Cursor show working and finished.", shipped: true },
+  { title: "Yes or no from the keyboard", text: "Alt+Shift+Y allows and Alt+Shift+N denies, from any app, while a request waits.", shipped: true },
+  { title: "A live work map", text: "The files, commands and sites your agent is touching, as it works. It never leaves your PC.", shipped: true },
+  { title: "Dictation", text: "Hold Right Ctrl and talk, and the words land where your cursor is.", shipped: true },
+  { title: "Out of the way", text: "When a window reaches under it, it shrinks to a line and your clicks go through.", shipped: true },
+  { title: "Notifications", text: "Other apps' notifications in the island, with a switch for each app. Click one to open it.", shipped: true },
+  { title: "A smarter clipboard", text: "Search, pins and a pause, and the history is encrypted on your PC.", shipped: true },
+  { title: "File shelf", text: "Park files on the island and drag them out. Saved screenshots land there too.", shipped: true },
+  { title: "Convert files", text: "Images to PNG, JPG or WebP, and Markdown, Word, HTML or text to HTML or PDF, from the shelf.", shipped: true },
+  { title: "Your day", text: "Your next meetings, a reminder five minutes before, and a Join button for Zoom, Meet, Teams and Webex.", shipped: true },
+  { title: "Calls", text: "Which app has the microphone or camera and for how long, back to it in a click, and a mute.", shipped: true },
 ];
 
 export const faq: { q: string; a: string }[] = [

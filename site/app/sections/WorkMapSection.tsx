@@ -172,7 +172,11 @@ const useReducedMotion = () =>
 
 type View = { index: number; src: string };
 
-export default function WorkMapSection() {
+/**
+ * The map's picture, playing the scripted session on a loop (a still picture with reduced motion). Used by this
+ * section and by the work map in "Take a closer look" (CloserLookMocks.tsx).
+ */
+export function useWorkMap(): View {
   const reduced = useReducedMotion();
   // Drawn the same on the server and in the browser: the drawing depends only on the board and the given moment.
   const [view, setView] = useState<View>(() => ({ index: FIRST, src: toUrl(drawMap(FRAMES[FIRST].board, FIRST_NOW, STILL)) }));
@@ -213,6 +217,11 @@ export default function WorkMapSection() {
       clearTimeout(timer);
     };
   }, [reduced]);
+  return view;
+}
+
+export default function WorkMapSection() {
+  const view = useWorkMap();
 
   const board = FRAMES[view.index].board;
   const { t } = MOTION;
