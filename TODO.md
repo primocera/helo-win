@@ -28,6 +28,8 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
   - The song's title shows in the closed island while music plays (a switch turns that off).
   - Documents convert to HTML and PDF only. Nothing is written as Word.
   - Two new dependencies: `marked` (Markdown) and `mammoth` (Word files).
+- [ ] **Try dictation with a microphone**, both ways: Windows' own, and Whisper with a Groq key (make one free at console.groq.com, paste it in Settings, Features, Dictation). Neither a microphone nor a key was available here.
+- [ ] **Check the site's phone note is true once the shop is set up:** "the download link and license key arrive by email" (Lemon Squeezy's receipt email must carry both). The end card also says "Coming soon for Mac", as you asked.
 - [ ] **Camera check before a meeting:** build it? It would turn the camera on by itself a minute before a meeting, so I would ship it switched off. Not built; there is also no camera on this PC to try it with.
 - [ ] **Install on a clean Windows account** and run the release checklist (R6).
 - [ ] **Film, testimonials** for the site.
