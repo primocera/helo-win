@@ -19,8 +19,8 @@ export const product = {
   siteUrl: "https://helo-win.vercel.app",
   // How many features have their own on/off switch in Settings: the keys of DEFAULT_FEATURES in
   // app/src/main/settings.ts (agents, map, usage, mascot, media, lyrics, timer, clipboard, notes, shelf, keepAwake,
-  // battery, privacy, hud, displays, calendar, converter, downloads, steam, watchApp, notifications, disk). Recount when that list changes.
-  featureSwitches: 22,
+  // battery, privacy, hud, displays, calendar, converter, downloads, steam, watchApp, notifications, disk, dictation). Recount when that list changes.
+  featureSwitches: 23,
   // The version in app/package.json.
   version: "0.1",
 };

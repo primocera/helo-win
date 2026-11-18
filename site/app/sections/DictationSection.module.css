@@ -1,0 +1,252 @@
+/* Dictation: a light band, centred heading, a wide desktop with the island listening and a Notepad window, and a fine
+   line. Sizes follow halo-mac.com's chapter (v2.css .ch-light, .desk-lg, .note-win, .nw-bar, .nw-text, .caret; js/v2.js:
+   3.2 s listening, then the words paste in and stay 3.8 s, round and round). */
+
+.wrap {
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  font-size: clamp(19px, 1.7vw, 21px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.011em;
+  color: #6e6e73;
+}
+
+.headline {
+  margin: 0;
+  font-size: clamp(40px, 7vw, 80px);
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: -0.015em;
+  color: #1d1d1f;
+  text-wrap: balance;
+}
+
+.lead {
+  max-width: 700px;
+  margin: 24px auto 0;
+  font-size: clamp(19px, 1.7vw, 21px);
+  line-height: 1.38;
+  letter-spacing: 0.011em;
+  color: #6e6e73;
+}
+
+/* The desktop, as .desk.desk-lg on a light band: 2.4 to 1, 70px below, its warm shadow, and the island 33% of the
+   desktop's width (their island-dictation image, --w: 33.0%; the island here is 440 app pixels). Squarer on phones. */
+.desk {
+  --desk-aspect: 2.4 / 1;
+  --island-max: calc(0.33 * 100cqw / 440);
+  --loop: 7s;
+  margin-top: 70px;
+  box-shadow: 0 40px 100px -40px rgba(60, 40, 20, 0.45);
+  text-align: left;
+}
+@media (max-width: 640px) {
+  .desk {
+    --desk-aspect: 4 / 3;
+    --island-max: 1.35px;
+    margin-top: clamp(48px, 7vw, 72px);
+  }
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+/* The island listens for 3.2 s of the 7 s loop, then steps back as the words land. */
+.listen > :last-child {
+  animation: listening var(--loop) infinite;
+}
+@keyframes listening {
+  0%, 44% { opacity: 1; transform: none; }
+  48%, 96% { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: none; }
+}
+
+.micTile {
+  background: #ff8fb4;
+}
+
+.bars {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(2 * var(--u));
+  height: calc(16 * var(--u));
+}
+.bars i {
+  width: calc(2.5 * var(--u));
+  height: calc(15 * var(--u));
+  border-radius: calc(2 * var(--u));
+  background: #ff8fb4;
+  transform: scaleY(0.35);
+  animation: level 0.9s ease-in-out infinite alternate;
+}
+.bars i:nth-child(2) { animation-duration: 0.7s; animation-delay: -0.3s; }
+.bars i:nth-child(3) { animation-duration: 1.05s; animation-delay: -0.5s; }
+.bars i:nth-child(4) { animation-duration: 0.8s; animation-delay: -0.2s; }
+@keyframes level {
+  0% { transform: scaleY(0.3); }
+  50% { transform: scaleY(0.95); }
+  100% { transform: scaleY(0.5); }
+}
+
+/* Notepad, as .note-win: 27% down, min(580px, 58%) wide, frosted white, rounded 14px (Windows 11's own windows are
+   rounded too), with Windows' title bar: the title on the left, minimise, maximise and close on the right. */
+.note {
+  position: absolute;
+  left: 50%;
+  top: 27%;
+  width: min(580px, 58%);
+  transform: translateX(-50%);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  box-shadow:
+    0 30px 70px -20px rgba(40, 30, 20, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+@media (max-width: 640px) {
+  .note {
+    top: 30%;
+    width: 84%;
+  }
+}
+
+.noteBar {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 13px;
+  font-weight: 600;
+  color: #6e6e73;
+}
+.noteTitle {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.noteButtons {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+.noteButtons i {
+  position: relative;
+  width: 10px;
+  height: 10px;
+}
+/* Minimise: a line. Maximise: a square. Close: a cross. */
+.noteButtons i:nth-child(1)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: #6e6e73;
+}
+.noteButtons i:nth-child(2) {
+  border: 1px solid #6e6e73;
+  border-radius: 2px;
+}
+.noteButtons i:nth-child(3)::before,
+.noteButtons i:nth-child(3)::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  width: 1px;
+  height: 14px;
+  background: #6e6e73;
+  transform: rotate(45deg);
+}
+.noteButtons i:nth-child(3)::after {
+  transform: rotate(-45deg);
+}
+
+.noteText {
+  position: relative;
+  margin: 0;
+  min-height: 4.4em;
+  padding: 22px 24px 26px;
+  font-size: clamp(14px, 1.6vw, 22px);
+  line-height: 1.45;
+  color: #1d1d1f;
+}
+
+/* The words land when the key is let go: Halo's "paste" (opacity and blur, 0.5 s), then stay. */
+.typed {
+  animation: paste var(--loop) infinite;
+}
+@keyframes paste {
+  0%, 45.7% { opacity: 0; filter: blur(4px); }
+  52.8%, 97% { opacity: 1; filter: none; }
+  100% { opacity: 0; filter: blur(4px); }
+}
+
+/* The cursor waits at the start while the words are being said, and sits after them once they land. */
+.caretStart {
+  position: absolute;
+  left: 24px;
+  top: 22px;
+  animation: before-words var(--loop) infinite;
+}
+.caretEnd {
+  animation: after-words var(--loop) infinite;
+}
+@keyframes before-words {
+  0%, 45.7% { opacity: 1; }
+  45.8%, 99.9% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes after-words {
+  0%, 45.7% { opacity: 0; }
+  45.8%, 97% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: #0071e3;
+  animation: caret 1s steps(1) infinite;
+}
+@keyframes caret {
+  50% { opacity: 0; }
+}
+
+.fine {
+  max-width: 640px;
+  margin: 40px auto 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #6e6e73;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listen > :last-child,
+  .bars i,
+  .typed,
+  .caret,
+  .caretEnd {
+    animation: none;
+  }
+  .caretStart {
+    animation: none;
+    opacity: 0;
+  }
+}

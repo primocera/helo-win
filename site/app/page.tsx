@@ -4,6 +4,7 @@ import shared from "./sections/shared.module.css";
 import { faq, product } from "@/lib/product";
 import HighlightsSection from "./sections/HighlightsSection";
 import NotificationsSection from "./sections/NotificationsSection";
+import DictationSection from "./sections/DictationSection";
 import AgentsSection from "./sections/AgentsSection";
 import CloserLookSection from "./sections/CloserLookSection";
 import ScrollEffects from "./sections/ScrollEffects";
@@ -75,6 +76,8 @@ export default function Home() {
         <HighlightsSection />
 
         <NotificationsSection />
+
+        <DictationSection />
 
         <MeetBlinkSection />
 

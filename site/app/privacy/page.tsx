@@ -55,6 +55,10 @@ export default function PrivacyPage() {
           Notifications from other apps. {n} reads them from Windows to show them in the island. It shows each one
           once and does not save it. It remembers only the names of the apps, for the per-app switches.
         </li>
+        <li>
+          Dictation, if you turn it on. While you hold the key, Windows&apos; own speech recognition listens on your PC
+          and {n} types the words where your cursor is. The sound and the words are not sent anywhere or kept.
+        </li>
       </ul>
 
       <h2>What {n} sends</h2>

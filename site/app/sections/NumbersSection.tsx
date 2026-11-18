@@ -8,7 +8,7 @@ import shared from "./shared.module.css";
 import styles from "./NumbersSection.module.css";
 
 // As halo-mac.com's: only the first figure counts up (with the page's gold-to-indigo gradient, .stat-t .num); the
-// other two are plain. "More than 20": the app has product.featureSwitches (22) features with their own switch.
+// other two are plain. "More than 20": the app has product.featureSwitches (23) features with their own switch.
 const figures = [
   { key: "features", before: "More than", figure: <><CountUp to={20} className={`${shared.gradient} ${styles.num}`} /> features</>, after: "in one island" },
   { key: "accounts", before: "Exactly", figure: "0 accounts", after: "a license key is all it asks" },
