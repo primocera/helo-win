@@ -44,18 +44,24 @@ export default function Home() {
             everything you are waiting on in it.
           </p>
 
-          <div className={`${shared.desktop} ${styles.screen}`} aria-hidden="true">
-            <div className={styles.island}>
-              <div className={styles.cardHead}>
-                <span className={styles.tool}>Bash</span>
-                <span className={styles.project}>my-project</span>
-              </div>
-              <code className={styles.command}>npm install &amp;&amp; npm run build</code>
-              <div className={styles.actions}>
-                <span className={styles.deny}>Deny</span>
-                <span className={styles.allow}>Allow</span>
+          {/* A laptop, as halo-mac.com's hero (.mac, .mac-screen, .mac-base). */}
+          <div className={styles.mac} aria-hidden="true">
+            <div className={styles.macScreen}>
+              <div className={`${shared.desktop} ${styles.screen}`}>
+                <div className={styles.island}>
+                  <div className={styles.cardHead}>
+                    <span className={styles.tool}>Bash</span>
+                    <span className={styles.project}>my-project</span>
+                  </div>
+                  <code className={styles.command}>npm install &amp;&amp; npm run build</code>
+                  <div className={styles.actions}>
+                    <span className={styles.deny}>Deny</span>
+                    <span className={styles.allow}>Allow</span>
+                  </div>
+                </div>
               </div>
             </div>
+            <div className={styles.macBase} />
           </div>
 
           <a className={styles.buy} href={product.buyUrl}>

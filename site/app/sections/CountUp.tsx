@@ -7,7 +7,7 @@
 import { useEffect, useRef } from "react";
 import { spring } from "@/lib/spring";
 
-export default function CountUp({ to }: { to: number }) {
+export default function CountUp({ to, className }: { to: number; className?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const n = ref.current;
@@ -48,7 +48,7 @@ export default function CountUp({ to }: { to: number }) {
     };
   }, [to]);
   return (
-    <span ref={ref} style={{ display: "inline-block" }}>
+    <span ref={ref} className={className} style={{ display: "inline-block" }}>
       {to}
     </span>
   );
