@@ -217,7 +217,7 @@ export default function EndSection() {
           One-time purchase. {product.trialDays}-day free trial.{" "}
           <WindowsMark>{product.requirements}.</WindowsMark>
           <br />
-          Coming soon for Mac: macOS 15 or later, Apple silicon and Intel.
+          Coming to Mac in 2027: macOS 15 or later, Apple silicon and Intel.
         </p>
       </div>
     </section>
