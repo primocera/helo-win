@@ -59,6 +59,11 @@ export default function PrivacyPage() {
           Dictation, if you turn it on. While you hold the key, Windows&apos; own speech recognition listens on your PC
           and {n} types the words where your cursor is. The sound and the words are not sent anywhere or kept.
         </li>
+        <li>
+          If you choose Whisper for dictation and add your own Groq key, what you say while holding the key is recorded
+          and sent to Groq (api.groq.com) to be written out, under your Groq account. {n} deletes the recording right
+          after. Your key is kept on your PC, encrypted by Windows.
+        </li>
       </ul>
 
       <h2>What {n} sends</h2>

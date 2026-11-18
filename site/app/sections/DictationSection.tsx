@@ -5,7 +5,8 @@
 //   where the cursor is, as key presses into the window that has the keyboard. Another key while holding cancels.
 // - The keys: Right Ctrl (default), Right Shift or Right Alt (DICTATION_KEY_NAMES in app/src/shared/dictation.ts).
 // - The island shows "Listening" and the end of the words so far (DictationView in app/src/renderer/src/island/Views.tsx).
-// - Off until turned on in Settings, Features, Dictation (DEFAULT_FEATURES in app/src/main/settings.ts).
+// - Off until turned on in Settings, Features, Dictation (DEFAULT_FEATURES in app/src/main/settings.ts). There,
+//   "Whisper, with your Groq key" records while the key is held and sends it to Groq (app/src/main/groq.ts).
 import type { CSSProperties } from "react";
 import { Blink, Desktop, Icon } from "./IslandMocks";
 import mock from "./IslandMocks.module.css";
@@ -14,9 +15,10 @@ import styles from "./DictationSection.module.css";
 
 const WORDS = "Ship the new landing page tonight and send the film to the team.";
 
-// The languages Windows' own speech recognition comes in (Windows Speech Recognition: English, French, German,
-// Japanese, Simplified and Traditional Chinese, Spanish). Each needs Windows' speech pack for it.
-const LANGUAGES = ["English", "Español", "Deutsch", "Français", "日本語", "简体中文", "繁體中文"];
+// The languages, as halo-mac.com's pills, and Slovenian. Windows' own speech recognition covers English, Spanish,
+// German and French (and Japanese and Chinese); the rest come with Whisper on Groq, with the user's own key
+// (app/src/main/groq.ts), which writes out dozens of languages.
+const LANGUAGES = ["English", "Español", "Deutsch", "Français", "Italiano", "Português", "Русский", "Oʻzbekcha", "Slovenščina"];
 
 /**
  * The island while you talk, as the app draws it (DictationView): Blink joined at the left, a mic and level bars in
@@ -90,14 +92,14 @@ export default function DictationSection() {
           </div>
         </Desktop>
 
-        <ul className={styles.langs} aria-label="Languages Windows' speech recognition comes in">
+        <ul className={styles.langs} aria-label="Some of the languages it writes">
           {LANGUAGES.map((l) => (
             <li key={l}>{l}</li>
           ))}
         </ul>
         <p className={styles.fine}>
           Free, with Windows&apos; own speech recognition, on your PC once Windows has the speech pack for your
-          language. Nothing is sent anywhere. Off until you turn it on in Settings.
+          language. Or add your own Groq key for Whisper and dozens more languages.
         </p>
       </div>
     </section>

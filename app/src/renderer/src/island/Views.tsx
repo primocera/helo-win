@@ -393,9 +393,9 @@ export function DictationView({ dictation }: { dictation: DictationState }) {
     <div className={`dictation${error ? ' error' : ''}`}>
       <span className="dict-row">
         <span className="dict-icon"><Icon name={error ? 'alert' : 'mic'} size={14} /></span>
-        {error ? <span className="dict-label">Dictation</span> : <span className="dict-bars" aria-hidden="true"><i /><i /><i /><i /></span>}
+        {error ? <span className="dict-label">Dictation</span> : <span className={`dict-bars${dictation.phase === 'writing' ? ' still' : ''}`} aria-hidden="true"><i /><i /><i /><i /></span>}
       </span>
-      <span className="dict-text">{dictation.text || 'Say what you want to write.'}</span>
+      <span className="dict-text">{dictation.text || (dictation.phase === 'writing' ? 'Writing it out…' : 'Say what you want to write.')}</span>
     </div>
   );
 }

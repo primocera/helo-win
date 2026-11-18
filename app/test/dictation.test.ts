@@ -38,3 +38,12 @@ test('dictation: listen, words, then typed, empty or cancelled closes it; errors
   expect(nextDictation(null, 'error', 'No microphone found.')).toEqual({ phase: 'error', text: 'No microphone found.' });
   expect(nextDictation(s, 'something-else', '')).toBe(s);
 });
+
+test('dictation: Whisper is a choice, Windows the default; a recording sent to it shows "writing"', () => {
+  expect(DEFAULT_SETTINGS.dictation.engine).toBe('windows');
+  expect(updateSettings(DEFAULT_SETTINGS, { dictation: { engine: 'whisper' } }).dictation).toEqual({ key: 'rctrl', engine: 'whisper' });
+  expect(updateSettings(DEFAULT_SETTINGS, { dictation: { engine: 'cloud' } }).dictation.engine).toBe('windows');
+  const listening = nextDictation(null, 'listen', '');
+  expect(nextDictation(listening, 'audio', '')).toEqual({ phase: 'writing', text: '' });
+  expect(nextDictation(null, 'audio', '')).toBeNull();
+});

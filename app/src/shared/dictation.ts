@@ -20,13 +20,17 @@ export function liveText(text: string, max = LIVE_MAX): string {
 }
 
 /**
- * The island's dictation state after one helper event ("listen", "partial", "typed", "empty", "cancel", "error").
+ * The island's dictation state after one helper event ("listen", "partial", "audio", "typed", "empty", "cancel",
+ * "error").
  * Unknown kinds leave it as it is.
  */
 export function nextDictation(current: DictationState | null, kind: string, text: string): DictationState | null {
   switch (kind) {
     case 'listen':
       return { phase: 'listening', text: '' };
+    case 'audio':
+      // The recording is on its way to Whisper.
+      return current?.phase === 'listening' ? { phase: 'writing', text: '' } : current;
     case 'partial':
       return current?.phase === 'listening' ? { phase: 'listening', text: liveText(text) } : current;
     case 'typed':

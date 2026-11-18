@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Icon, Mark } from '../common/icons';
 import { MASCOT_NAME } from '../../../shared/brand';
-import type { AgentName, DictationKey, FeatureFlags, SettingsInfo, StartupApp } from '../../../shared/types';
+import type { AgentName, DictationEngine, DictationKey, FeatureFlags, SettingsInfo, StartupApp } from '../../../shared/types';
 import { DICTATION_KEY_NAMES } from '../../../shared/dictation';
 
 type Section = 'general' | 'features' | 'startup' | 'agents' | 'license';
@@ -294,6 +294,26 @@ function FeatureRow({ info, update, k, label, hint, children }: { info: Settings
   );
 }
 
+/** The Groq key for Whisper dictation: typed here, saved encrypted by the main process, never shown again. */
+function GroqKeyRow({ info }: { info: SettingsInfo }) {
+  const [key, setKey] = useState('');
+  const [msg, setMsg] = useState('');
+  const [saved, setSaved] = useState(info.groqKeySaved);
+  const save = async (value: string) => {
+    const r = await window.helo.setGroqKey(value);
+    setSaved(r.info.groqKeySaved);
+    setMsg(r.ok ? (value ? 'Saved.' : 'Removed.') : r.error ?? 'Not saved.');
+    if (r.ok) setKey('');
+  };
+  return (
+    <Row label="Groq key" hint={<>{saved ? 'A key is saved, encrypted on this PC.' : "Without a key, Windows' own speech recognition is used."} Make one at console.groq.com. {msg}</>}>
+      <input type="password" value={key} placeholder={saved ? '••••••••' : 'gsk_…'} autoComplete="off" spellCheck={false} onChange={(e) => setKey(e.target.value)} />
+      <button type="button" className="button" disabled={!key.trim()} onClick={() => save(key)}>Save</button>
+      {saved && <button type="button" className="button" onClick={() => save('')}>Remove</button>}
+    </Row>
+  );
+}
+
 function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => void }) {
   const s = info.settings;
   const [ics, setIcs] = useState(s.calendar.icsUrl);
@@ -326,7 +346,7 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
           <Row label="Long break length"><NumberField label="Long break minutes" value={s.timer.longBreakMin} min={1} max={120} suffix="min" onChange={(n) => update({ timer: { longBreakMin: n } })} /></Row>
           <Row label="Long break after" hint="0 turns the long break off."><NumberField label="Focus sessions before a long break" value={s.timer.longEvery} min={0} max={12} suffix="sessions" onChange={(n) => update({ timer: { longEvery: n } })} /></Row>
         </FeatureRow>
-        <FeatureRow {...p} k="dictation" label="Dictation" hint="Hold the key and say what you want to write. Your words show in the island as you speak, and when you let go they are typed wherever the cursor is. It uses Windows' own speech recognition on this PC; nothing is sent anywhere. Pressing another key while you hold it cancels, so shortcuts still work.">
+        <FeatureRow {...p} k="dictation" label="Dictation" hint="Hold the key and say what you want to write. When you let go, the words are typed wherever the cursor is. Pressing another key while you hold it cancels, so shortcuts still work.">
           <Row label="Hold to talk" hint="Right Alt is AltGr on many keyboards.">
             <select value={s.dictation.key} onChange={(e) => update({ dictation: { key: e.target.value as DictationKey } })}>
               {(Object.keys(DICTATION_KEY_NAMES) as DictationKey[]).map((k) => (
@@ -334,6 +354,13 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
               ))}
             </select>
           </Row>
+          <Row label="Speech recognition" hint={s.dictation.engine === 'whisper' ? 'What you say is recorded while you hold the key and sent to Groq, with your key, to be written out. Dozens of languages. The recording is deleted after.' : "Windows' own, on this PC: nothing is sent anywhere. In the languages Windows has a speech pack for; your words show in the island as you speak."}>
+            <select value={s.dictation.engine} onChange={(e) => update({ dictation: { engine: e.target.value as DictationEngine } })}>
+              <option value="windows">Windows, on this PC</option>
+              <option value="whisper">Whisper, with your Groq key</option>
+            </select>
+          </Row>
+          {s.dictation.engine === 'whisper' && <GroqKeyRow info={info} />}
         </FeatureRow>
         <FeatureRow {...p} k="clipboard" label="Clipboard history" hint="Keeps recent copies on this PC only, encrypted on disk. Password managers that mark their copies as private are skipped. A password copied from a web page is not marked, so pause before copying one, or remove it from the list.">
           <Row label="Pause" hint="Nothing new is saved while this is on.">

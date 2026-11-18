@@ -44,10 +44,11 @@ import { parseLink, findLink, shownPath, LinkLimiter, LINK_SCHEME } from './link
 import { formatDuration } from '../shared/time';
 import { nextRepeat } from '../shared/playback';
 import { DICTATION_VK, nextDictation } from '../shared/dictation';
+import { transcribe, cleanGroqKey, GroqError } from './groq';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
 import type {
   AgentName, Banner, Behavior, ConnectionState, ConvertFormat, FinishedItem, IslandState, PermissionView, Settings, SettingsInfo,
-  StartupApp, WatchCondition, WatchTarget, DocFormat,
+  StartupApp, WatchCondition, WatchTarget, DocFormat, DictationState,
 } from '../shared/types';
 import { AGENT_NAMES } from '../shared/types';
 
@@ -571,7 +572,7 @@ function syncHelperFeatures() {
   const f = settings.features;
   const wantHelper = f.media || f.hud || f.privacy || f.battery || f.clipboard || f.displays || f.notifications || f.dictation;
   if (!helper) return;
-  helper.setFeatures({ media: f.media, volume: f.hud, privacy: f.privacy, power: f.battery, clipboard: f.clipboard, brightness: f.hud, notifications: f.notifications, dictationKey: f.dictation ? DICTATION_VK[settings.dictation.key] : 0 });
+  helper.setFeatures({ media: f.media, volume: f.hud, privacy: f.privacy, power: f.battery, clipboard: f.clipboard, brightness: f.hud, notifications: f.notifications, dictationKey: f.dictation ? DICTATION_VK[settings.dictation.key] : 0, dictationMode: f.dictation && settings.dictation.engine === 'whisper' && groqKey() ? 1 : 0 });
   if (!f.dictation && state.dictation) push({ dictation: null });
   if (wantHelper && helper.status === 'off') helper.start();
   if (!wantHelper && helper.status !== 'off') helper.stop();
@@ -595,6 +596,7 @@ function settingsInfo(): SettingsInfo {
     version: app.getVersion(),
     agents: connectionStates(),
     webPairingCode: pairingCode(livePort || bridgeInfo.port, bridgeInfo.webToken),
+    groqKeySaved: Boolean(groqKey()),
   };
 }
 
@@ -1017,7 +1019,8 @@ function onHelperMessage(msg: HelperMessage) {
       if (dictationTimer) clearTimeout(dictationTimer);
       dictationTimer = null;
       if (kind === 'error') log(`dictation: ${text}`);
-      const next = nextDictation(state.dictation, kind, text);
+      if (kind === 'audio') void writeOut(text);
+      const next = nextDictation(state.dictation, kind, kind === 'audio' ? '' : text);
       if (next !== state.dictation) push({ dictation: next });
       // A problem stays up for a few seconds.
       if (next?.phase === 'error') dictationTimer = setTimeout(() => push({ dictation: null }), 4000);
@@ -1093,6 +1096,61 @@ function returnToCall(name: string) {
 }
 
 let dictationTimer: NodeJS.Timeout | null = null;
+
+// ---- Whisper on Groq: the user's own key, encrypted on this PC with safeStorage ----------------------------------
+
+let groqKeyCache: string | null = null;
+
+function groqKey(): string {
+  if (groqKeyCache !== null) return groqKeyCache;
+  groqKeyCache = '';
+  try {
+    const file = userFile('groq.key');
+    if (fs.existsSync(file) && safeStorage.isEncryptionAvailable()) groqKeyCache = cleanGroqKey(safeStorage.decryptString(fs.readFileSync(file)));
+  } catch (err) {
+    log(`groq key: ${(err as Error).message}`);
+  }
+  return groqKeyCache;
+}
+
+function saveGroqKey(key: string): string | null {
+  const file = userFile('groq.key');
+  if (!key) {
+    fs.rmSync(file, { force: true });
+    groqKeyCache = '';
+    return null;
+  }
+  if (!safeStorage.isEncryptionAvailable()) return 'Windows could not encrypt the key, so it was not saved.';
+  fs.writeFileSync(file, safeStorage.encryptString(key));
+  groqKeyCache = key;
+  return null;
+}
+
+/** A recording from the helper: send it to Whisper, type what comes back, and delete the file. */
+async function writeOut(file: string) {
+  // Only the helper's own files in the temp folder.
+  const dir = path.resolve(os.tmpdir());
+  const full = path.resolve(file);
+  if (path.dirname(full) !== dir || !/^helo-dictation-[0-9a-f]{32}\.wav$/.test(path.basename(full))) return;
+  const done = (next: DictationState | null) => {
+    push({ dictation: next });
+    if (next?.phase === 'error') {
+      if (dictationTimer) clearTimeout(dictationTimer);
+      dictationTimer = setTimeout(() => push({ dictation: null }), 4000);
+    }
+  };
+  try {
+    const text = await transcribe(fs.readFileSync(full), groqKey());
+    if (text && helper) await helper.request('dictation-type', { text });
+    done(null);
+  } catch (err) {
+    const message = err instanceof GroqError ? err.message : 'Dictation stopped.';
+    log(`dictation (whisper): ${(err as Error).message}`);
+    done({ phase: 'error', text: message });
+  } finally {
+    fs.rmSync(full, { force: true });
+  }
+}
 
 function showHud(kind: 'volume' | 'brightness', level: number, muted: boolean) {
   if (hudTimer) clearTimeout(hudTimer);
@@ -1860,6 +1918,14 @@ function registerIpc() {
     } catch (err) {
       return { ok: false, error: (err as Error).message, apps: await startupApps() };
     }
+  });
+  handle('dictation:groqKey', isSettings, (_e, raw) => {
+    const typed = typeof raw === 'string' ? raw.trim() : '';
+    const key = cleanGroqKey(typed);
+    if (typed && !key) return { ok: false, error: 'That does not look like a Groq key.', info: settingsInfo() };
+    const error = saveGroqKey(key);
+    syncHelperFeatures();
+    return error ? { ok: false, error, info: settingsInfo() } : { ok: true, info: settingsInfo() };
   });
   handle('settings:startWithWindows', isSettings, (_e, v) => {
     if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: v === true });

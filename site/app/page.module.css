@@ -145,6 +145,13 @@
   gap: calc(8 * var(--k));
 }
 
+/* A little larger on phones, so it can still be read. */
+@media (max-width: 640px) {
+  .island {
+    --k: 0.13cqw;
+  }
+}
+
 /* The two small inward curves where the island meets the top edge. */
 .island::before,
 .island::after {

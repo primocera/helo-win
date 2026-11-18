@@ -68,6 +68,7 @@ const api: HeloApi = {
   openLogFolder: () => ipcRenderer.send('diagnostics:openLog'),
   testSound: () => ipcRenderer.send('sound:test'),
   updateSettings: (patch) => ipcRenderer.invoke('settings:update', patch),
+  setGroqKey: (key) => ipcRenderer.invoke('dictation:groqKey', String(key)),
   setStartWithWindows: (on) => ipcRenderer.invoke('settings:startWithWindows', Boolean(on)),
   connectAgent: (agent, on) => ipcRenderer.invoke('agents:connect', agent, Boolean(on)),
   activateLicense: (key) => ipcRenderer.invoke('license:activate', String(key)),

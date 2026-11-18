@@ -506,6 +506,7 @@ try {
 $dictationCs = @'
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -529,8 +530,107 @@ namespace HeloHelper {
     static volatile bool listening;
     static readonly ManualResetEvent stopped = new ManualResetEvent(true);
 
+    // How the words are written: 0 Windows' speech recognition here, 1 a recording the app sends to Whisper on Groq.
+    static volatile int mode;
+
+    // ---- Recording (mode 1): 16 kHz, mono, 16-bit, through Windows' waveIn ------------------------------------------
+    [StructLayout(LayoutKind.Sequential)] struct WAVEFORMATEX { public ushort wFormatTag; public ushort nChannels; public uint nSamplesPerSec; public uint nAvgBytesPerSec; public ushort nBlockAlign; public ushort wBitsPerSample; public ushort cbSize; }
+    [StructLayout(LayoutKind.Sequential)] struct WAVEHDR { public IntPtr lpData; public uint dwBufferLength; public uint dwBytesRecorded; public IntPtr dwUser; public uint dwFlags; public uint dwLoops; public IntPtr lpNext; public IntPtr reserved; }
+    [DllImport("winmm.dll")] static extern int waveInOpen(out IntPtr h, int device, ref WAVEFORMATEX format, IntPtr callback, IntPtr instance, int flags);
+    [DllImport("winmm.dll")] static extern int waveInPrepareHeader(IntPtr h, IntPtr hdr, int size);
+    [DllImport("winmm.dll")] static extern int waveInUnprepareHeader(IntPtr h, IntPtr hdr, int size);
+    [DllImport("winmm.dll")] static extern int waveInAddBuffer(IntPtr h, IntPtr hdr, int size);
+    [DllImport("winmm.dll")] static extern int waveInStart(IntPtr h);
+    [DllImport("winmm.dll")] static extern int waveInStop(IntPtr h);
+    [DllImport("winmm.dll")] static extern int waveInReset(IntPtr h);
+    [DllImport("winmm.dll")] static extern int waveInClose(IntPtr h);
+    const int RATE = 16000;
+    const int CHUNK = 8000; // a quarter of a second
+    static IntPtr wave = IntPtr.Zero;
+    static IntPtr[] headers;
+    static MemoryStream pcm;
+    static Thread recorder;
+    static volatile bool recording;
+
+    static bool StartRecording() {
+      WAVEFORMATEX f = new WAVEFORMATEX();
+      f.wFormatTag = 1; f.nChannels = 1; f.nSamplesPerSec = RATE; f.wBitsPerSample = 16; f.nBlockAlign = 2; f.nAvgBytesPerSec = RATE * 2; f.cbSize = 0;
+      if (waveInOpen(out wave, -1, ref f, IntPtr.Zero, IntPtr.Zero, 0) != 0) { wave = IntPtr.Zero; return false; }
+      pcm = new MemoryStream();
+      int size = Marshal.SizeOf(typeof(WAVEHDR));
+      headers = new IntPtr[4];
+      for (int i = 0; i < headers.Length; i++) {
+        WAVEHDR h = new WAVEHDR();
+        h.lpData = Marshal.AllocHGlobal(CHUNK);
+        h.dwBufferLength = CHUNK;
+        headers[i] = Marshal.AllocHGlobal(size);
+        Marshal.StructureToPtr(h, headers[i], false);
+        waveInPrepareHeader(wave, headers[i], size);
+        waveInAddBuffer(wave, headers[i], size);
+      }
+      recording = true;
+      waveInStart(wave);
+      recorder = new Thread(() => { while (recording) { Drain(true); Thread.Sleep(20); } });
+      recorder.IsBackground = true;
+      recorder.Start();
+      return true;
+    }
+
+    // Copies finished buffers into the recording, and gives them back to Windows while still recording.
+    static void Drain(bool requeue) {
+      int size = Marshal.SizeOf(typeof(WAVEHDR));
+      foreach (IntPtr p in headers) {
+        WAVEHDR h = (WAVEHDR)Marshal.PtrToStructure(p, typeof(WAVEHDR));
+        if ((h.dwFlags & 1) == 0) continue; // WHDR_DONE
+        if (h.dwBytesRecorded > 0) {
+          byte[] buf = new byte[h.dwBytesRecorded];
+          Marshal.Copy(h.lpData, buf, 0, buf.Length);
+          lock (gate) { pcm.Write(buf, 0, buf.Length); }
+        }
+        if (requeue && recording) {
+          h.dwBytesRecorded = 0;
+          h.dwFlags &= ~1u;
+          Marshal.StructureToPtr(h, p, false);
+          waveInAddBuffer(wave, p, size);
+        }
+      }
+    }
+
+    // Stops recording and returns the sound as a WAV file's bytes.
+    static byte[] StopRecording() {
+      recording = false;
+      if (recorder != null) recorder.Join(500);
+      waveInStop(wave);
+      waveInReset(wave);
+      Drain(false);
+      int size = Marshal.SizeOf(typeof(WAVEHDR));
+      foreach (IntPtr p in headers) {
+        waveInUnprepareHeader(wave, p, size);
+        WAVEHDR h = (WAVEHDR)Marshal.PtrToStructure(p, typeof(WAVEHDR));
+        Marshal.FreeHGlobal(h.lpData);
+        Marshal.FreeHGlobal(p);
+      }
+      waveInClose(wave);
+      wave = IntPtr.Zero;
+      byte[] data;
+      lock (gate) { data = pcm.ToArray(); pcm = null; }
+      return Wav(data);
+    }
+
+    // A WAV file around 16 kHz mono 16-bit samples. Public for the self-test.
+    public static byte[] Wav(byte[] data) {
+      MemoryStream m = new MemoryStream();
+      BinaryWriter w = new BinaryWriter(m);
+      w.Write(Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + data.Length); w.Write(Encoding.ASCII.GetBytes("WAVE"));
+      w.Write(Encoding.ASCII.GetBytes("fmt ")); w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(RATE); w.Write(RATE * 2); w.Write((short)2); w.Write((short)16);
+      w.Write(Encoding.ASCII.GetBytes("data")); w.Write(data.Length); w.Write(data);
+      w.Flush();
+      return m.ToArray();
+    }
+
     // 0 turns it off; otherwise the virtual key to hold (0xA3 right Ctrl, 0xA1 right Shift, 0xA5 right Alt).
-    public static void Configure(int vk) {
+    public static void Configure(int vk, int how) {
+      mode = how == 1 ? 1 : 0;
       key = vk;
       if (vk != 0 && watcher == null) {
         watcher = new Thread(Watch);
@@ -581,6 +681,11 @@ namespace HeloHelper {
     }
 
     static void Start() {
+      if (mode == 1) {
+        if (StartRecording()) { listening = true; events.Enqueue("listen|"); }
+        else events.Enqueue("error|No microphone found.");
+        return;
+      }
       lock (gate) {
         try {
           if (engine == null) {
@@ -612,6 +717,16 @@ namespace HeloHelper {
     }
 
     static void Finish(bool cancelled) {
+      if (mode == 1 || pcm != null) {
+        byte[] wav = StopRecording();
+        listening = false;
+        if (cancelled) { events.Enqueue("cancel|"); return; }
+        if (wav.Length < 44 + RATE * 2 * 3 / 10) { events.Enqueue("empty|"); return; } // under 0.3 s
+        string file = Path.Combine(Path.GetTempPath(), "helo-dictation-" + Guid.NewGuid().ToString("N") + ".wav");
+        File.WriteAllBytes(file, wav);
+        events.Enqueue("audio|" + file);
+        return;
+      }
       try {
         if (cancelled) engine.RecognizeAsyncCancel(); else engine.RecognizeAsyncStop();
       } catch { }
@@ -648,7 +763,11 @@ namespace HeloHelper {
         e.SetInputToWaveFile(path);
         StringBuilder sb = new StringBuilder();
         RecognitionResult r;
-        while ((r = e.Recognize()) != null) sb.Append(r.Text).Append(' ');
+        while (true) {
+          try { r = e.Recognize(); } catch (InvalidOperationException) { break; } // the file has run out
+          if (r == null) break;
+          sb.Append(r.Text).Append(' ');
+        }
         return sb.ToString().Trim();
       }
     }
@@ -924,7 +1043,7 @@ while ($true) {
       $id = $msg.id
       $result = $null
       switch ($msg.cmd) {
-        'enable' { foreach ($p in $msg.features.PSObject.Properties) { $features[$p.Name] = [bool]$p.Value }; if ($dictationReady) { [HeloHelper.Dictation]::Configure([int]$msg.features.dictationKey) }; $lastMediaJson = ''; $lastVolume = ''; $lastMic = $null; $lastCam = $null; $lastMicMuted = $null; $lastPower = ''; $lastBrightness = -1; $result = $true }
+        'enable' { foreach ($p in $msg.features.PSObject.Properties) { $features[$p.Name] = [bool]$p.Value }; if ($dictationReady) { [HeloHelper.Dictation]::Configure([int]$msg.features.dictationKey, [int]$msg.features.dictationMode) }; $lastMediaJson = ''; $lastVolume = ''; $lastMic = $null; $lastCam = $null; $lastMicMuted = $null; $lastPower = ''; $lastBrightness = -1; $result = $true }
         'media' { $result = Invoke-Media $msg.action $msg.value; Poll-Media $true }
         'volume' { $result = [HeloHelper.Audio]::Set([int]$msg.value) }
         'mute' { $result = [HeloHelper.Audio]::Mute([bool]$msg.value) }
@@ -961,6 +1080,7 @@ while ($true) {
         'move-cursor' { $result = [HeloHelper.Native]::MoveCursor([int]$msg.x, [int]$msg.y) }
         'windows' { $result = [HeloHelper.Procs]::Windows() }
         'proc-cpu' { $result = [HeloHelper.Procs]::TreeCpu([int]$msg.pid) }
+        'dictation-type' { $result = $dictationReady -and [HeloHelper.Dictation]::Type([string]$msg.text) }
         'ping' { $result = 'pong' }
         default { throw "unknown command $($msg.cmd)" }
       }

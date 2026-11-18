@@ -294,9 +294,12 @@ export interface FeatureFlags {
 /** The key held down to dictate. Right Alt is AltGr on many keyboards, so it is not the default. */
 export type DictationKey = 'rctrl' | 'rshift' | 'ralt';
 
+/** Who writes the words out: Windows' own speech recognition on the PC, or Whisper on Groq with the user's key. */
+export type DictationEngine = 'windows' | 'whisper';
+
 /** Dictation on the island: listening (with the words so far), or a problem to show. */
 export interface DictationState {
-  phase: 'listening' | 'error';
+  phase: 'listening' | 'writing' | 'error';
   text: string;
 }
 
@@ -334,7 +337,7 @@ export interface Settings {
   /** Warn when the Windows drive has less than this many GB free. */
   disk: { lowGb: number };
   calendar: { icsUrl: string };
-  dictation: { key: DictationKey };
+  dictation: { key: DictationKey; engine: DictationEngine };
   finished: { addToShelf: boolean };
   shelf: { screenshots: boolean };
   /** The sound when an agent needs the user. `volume`: 0-100. `fullscreen`: also over a game or a fullscreen video. */
@@ -439,6 +442,8 @@ export interface SettingsInfo {
   agents: Record<AgentName, ConnectionState>;
   /** Pasted into the browser extension so it can reach this app. */
   webPairingCode: string;
+  /** Whether a Groq key for Whisper dictation is saved (the key itself never leaves the main process). */
+  groqKeySaved: boolean;
 }
 
 /** An app that starts when the user signs in to Windows. */
@@ -552,6 +557,8 @@ export interface HeloApi {
   /** Plays the "an agent needs you" sound once, at the volume set. */
   testSound(): void;
   updateSettings(patch: unknown): Promise<SettingsInfo>;
+  /** Saves (or, with '', removes) the Groq key for Whisper dictation, encrypted on this PC. */
+  setGroqKey(key: string): Promise<ActionResult & { info: SettingsInfo }>;
   setStartWithWindows(on: boolean): Promise<SettingsInfo>;
   connectAgent(agent: AgentName, on: boolean): Promise<ActionResult & { info: SettingsInfo }>;
   activateLicense(key: string): Promise<ActionResult & { status: LicenseStatus }>;
