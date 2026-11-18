@@ -46,13 +46,8 @@
 }
 
 /* Blink, big: white strokes on the black card. The box keeps his size when he has become the line. */
-/* The tile from "Meet Blink", smaller here. Blink fills 76% of it, as there. */
-.stage {
-  --tile: clamp(180px, 22vw, 260px);
-  width: var(--tile);
-}
 .blink {
-  --w: calc(var(--tile) * 0.76);
+  --w: clamp(130px, 14vw, 200px);
   position: relative;
   width: var(--w);
   aspect-ratio: 4 / 3;
@@ -67,14 +62,14 @@
   transition: transform 0.4s cubic-bezier(0.32, 1.22, 0.5, 1);
 }
 
-/* The wink: his right eye (the first path) snaps shut into a short arch while his head tips a little towards it; it
-   springs open again with the eyes' usual transition. */
-.winking {
-  transform: rotate(-6deg);
-  transition-duration: 0.25s;
+/* The blink: both eyes shut for a moment and open again. */
+.eyes {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transition: transform 0.09s ease-in;
 }
-.winking .eyes path:first-child {
-  transition: d 0.12s ease-in;
+.blinking .eyes {
+  transform: scaleY(0.12);
 }
 
 /* ---- the splash: he squashes, goes pink, bursts into drops, and a short pink line is left where he sat ---- */

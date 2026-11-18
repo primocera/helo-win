@@ -4,24 +4,21 @@
 // screen, the island at the top springs open into a huge black shape that swallows the screen (SwiftUI-style springs,
 // sp(0.44, 0.8) for its size and sp(0.5, 0.86) for its scale); 0.6 s later the page jumps to this card, whose lines rise
 // in one by one, and the island springs back down to its resting size, overshooting a little as it lands, then scales
-// back into the nav. It stays plain black. Then Blink, big on the card, winks, smiles and plays the app's "done" sound
+// back into the nav. It stays plain black. Then Blink, big on the card, blinks, smiles and plays the app's "done" sound
 // (lib/blink.ts), and a moment later melts where he sits, with a splash, into a short pink line, the line the island
 // becomes over a window ("Out of the way"). Browsers only let a page make sound after the visitor has clicked or tapped
 // it, so without that it is silent. With reduced motion the card simply shows, and Blink smiles without the sound or
 // the splash.
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { product } from "@/lib/product";
-import { CALM, DONE, FINALE_EVENT, playDone, shape } from "@/lib/blink";
+import { CALM, DONE, FINALE_EVENT, playDone } from "@/lib/blink";
 import { spring } from "@/lib/spring";
-import meet from "./MeetBlinkSection.module.css";
 import WindowsMark from "./WindowsMark";
 import PhoneBuyNote from "./PhoneBuyNote";
 import styles from "./EndSection.module.css";
 
-type Stage = "hidden" | "shown" | "wink" | "done" | "splash";
+type Stage = "hidden" | "shown" | "blink" | "done" | "splash";
 
-/** His right eye (on the viewer's left) shut in a wink: a short line arching up, like his happy eyes but flatter. */
-const WINK_EYE = shape(14, 12.8, 3.3, 1.5, -1.5);
 
 /** Where each drop of the splash flies, as a share of Blink's width (x) and height (y, up is negative). */
 const DROPS = [
@@ -48,7 +45,7 @@ export default function EndSection() {
     let frame = 0;
     let cover: HTMLElement | null = null;
 
-    // The card is up: a wink (one eye shut for about 400 ms, with a little tilt of the head), the smile and the
+    // The card is up: a blink, the smile and the
     // sound, and he melts with a splash into a pink line.
     const show = () => {
       setStage("shown");
@@ -58,8 +55,8 @@ export default function EndSection() {
         later(600, () => setStage("done"));
         return;
       }
-      later(1500, () => setStage("wink"));
-      later(1920, () => setStage("shown"));
+      later(1500, () => setStage("blink"));
+      later(1680, () => setStage("shown"));
       later(2250, () => {
         setStage("done");
         playDone();
@@ -159,9 +156,6 @@ export default function EndSection() {
       aria-labelledby="end-title"
     >
       <div className={styles.inner}>
-        {/* The same square tile, glow and border as in "Meet Blink" (MeetBlinkSection.module.css), at the same size. */}
-        <div className={`${meet.stage} ${styles.stage}`}>
-          <div className={meet.tile}>
             <div
               className={`${styles.blink} ${stage === "splash" ? styles.splash : ""}`}
               role="img"
@@ -172,7 +166,7 @@ export default function EndSection() {
               }
             >
               <svg
-                className={`${styles.face} ${stage === "wink" ? styles.winking : ""} ${smiling ? styles.happy : ""}`}
+                className={`${styles.face} ${stage === "blink" ? styles.blinking : ""} ${smiling ? styles.happy : ""}`}
                 viewBox="4 3 32 24"
                 aria-hidden="true"
               >
@@ -181,7 +175,7 @@ export default function EndSection() {
                   <rect x="29.6" y="16.2" width="5" height="1.8" rx="0.9" />
                 </g>
                 <g className={styles.eyes}>
-                  <path d={stage === "wink" ? WINK_EYE : face.eyes[0]} />
+                  <path d={face.eyes[0]} />
                   <path d={face.eyes[1]} />
                 </g>
                 <path d={face.mouth} />
@@ -198,8 +192,6 @@ export default function EndSection() {
               ))}
               <span className={styles.line} aria-hidden="true" />
             </div>
-          </div>
-        </div>
         <p id="end-title" className={styles.word}>
           {product.name}
         </p>
