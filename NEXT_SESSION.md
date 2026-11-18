@@ -2,6 +2,13 @@
 
 Written 2026-11-16, after the fourth session, and topped up on 2026-11-17 after the landing page session (the section right below). Read this first, then `TODO.md` (the full list, with tick boxes). The reasoning behind the finding IDs (S1, B3, R2, ...) is in `audit/`.
 
+## Landing page session (2026-11-18, night)
+
+- **Site, all pushed:** Halo's section order (notifications, dictation, Meet Blink, the work map, "All new in Helo 1.0.", agents, intro, the film on a PC monitor, the numbers, take a closer look, monitors, privacy, tech specs, questions, the end). The hero sits in a laptop (Halo's .mac CSS). The numbers are Halo's: "More than 20 features", the 20 counting up (1.8 s, once well in view). The finale's black shape keeps the island's corners and fades the face out. The four points under the agents section are gone. No lock-screen section: Helo cannot do that on Windows.
+- **App: dictation (gap 12) built.** `HeloHelper.Dictation` in `winhelper.ps1` (System.Speech, offline): hold Right Ctrl 250 ms alone, talk, let go and the words are typed with Unicode key presses; another key cancels. `src/shared/dictation.ts`, `DictationView`, Settings, Features, Dictation (off by default). The site's feature count is 23. **Not tried with a microphone** (none on this PC); recognition was checked from a WAV.
+- **"Never twice" (gap 7), looked into:** Windows' per-app `ShowBanner` DWORD (HKCU\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings\<AUMID>) set to 0 hides the banner, and the toast still reaches the notification centre, where Helo reads it (checked with PowerShell's own toasts). Whether the banner really hides was not seen: Focus assist held all banners back during the test. Building it means Helo flips that switch per app and puts it back on uninstall.
+- The app icon check (filled icons, `--smoke`) was stopped at the user's request; the icons are as committed in ae869d4.
+
 ## Landing page session (2026-11-17, evening): where it stopped
 
 The user worked on the site from a phone over remote control, comparing it with halo-mac.com screenshot by screenshot. All of it is pushed to `main` (the last commit of the session). Checks at the end: `npm run lint` and `npm run build` pass in `site/`; `npm run typecheck` and `npm test` (205 tests) pass in `app/`. The usage limit cut five Opus 5.5 agents off near the end (it resets 23:50 Europe/Ljubljana); what they had written was checked to build and is in the commit, but some of it was **not looked at**:

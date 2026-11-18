@@ -17,7 +17,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] **Install the new installer, then uninstall it** (`app/dist/Helo-Setup-0.1.0.exe`). Check that the hooks leave `~/.claude/settings.json` and that it asks about your data. I did not run it on this PC because it would touch your real setup.
 - [ ] **Try on a live Claude Code session:** type an answer to a question, send feedback on a plan, and see "needs your answer" come back after another banner. The list is under "Not yet tried" in `NEXT_SESSION.md`.
 - [ ] **Two choices I made for you; say if you want them changed.** Deleting the licence file still restarts the trial. A licensed PC that stays offline keeps working (Halo stops after two weeks offline).
-- [ ] **Dictation:** build hold-to-talk, or leave it to Windows' own (Win+H)? I left it out.
+- [x] **Dictation:** you said build it (2026-11-18). Hold Right Ctrl (or Right Shift, Right Alt) and talk. Off by default. **Try it with a microphone**: this PC has none, so it was checked only with a WAV spoken by Windows' voice.
 - [ ] **Restart the app to see the fourth session's work.** A development copy has been running since 2026-11-15 evening; I did not close it. Quit it from the tray, then `npm start` in `app/`, or install `app/dist/Helo-Setup-0.1.0.exe`.
 - [ ] **Try the fourth session's features once:** the sound (Settings, AI agents, Play), right-click the island, a `helo://` link, shuffle and repeat with Spotify, a call (duration, Open, Mute microphone), Codex rings after a Codex run, a .docx to PDF. The list is under "Not yet tried" in `NEXT_SESSION.md`. This PC has no microphone or camera plugged in, so the call parts are untried.
 - [ ] **Choices I made for you in the fourth session; say if you want them changed.**
@@ -81,7 +81,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [x] Notifications: click the banner to open the app that sent it
 - [ ] Notifications: hide Windows' own banner while the island shows it, if Windows allows it
 - [ ] Notifications: try on Windows 11 and on a clean account (does Windows ask for permission there?)
-- [ ] Hold-to-talk dictation (see "Needs you")
+- [x] Hold-to-talk dictation (Windows' own speech recognition, offline; Settings, Features, Dictation). Not tried with a live microphone
 - [ ] More languages (Halo has eight)
 - [x] Right-click menu on the island (Settings, Step aside 1 min, Hide, Quit); the same in the tray menu, with "Show the island"
 - [ ] Timer: set the length by dragging, up to three hours
