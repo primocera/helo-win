@@ -15,10 +15,10 @@ import styles from "./DictationSection.module.css";
 
 const WORDS = "Ship the new landing page tonight and send the film to the team.";
 
-// The languages, as halo-mac.com's pills, and Slovenian. Windows' own speech recognition covers English, Spanish,
+// The languages, as halo-mac.com's pills, with Chinese and Slovenian. Windows' own speech recognition covers English, Spanish,
 // German and French (and Japanese and Chinese); the rest come with Whisper on Groq, with the user's own key
 // (app/src/main/groq.ts), which writes out dozens of languages.
-const LANGUAGES = ["English", "Español", "Deutsch", "Français", "Italiano", "Português", "Русский", "Oʻzbekcha", "Slovenščina"];
+const LANGUAGES = ["English", "Español", "Deutsch", "Français", "Italiano", "Português", "中文", "Slovenščina"];
 
 /**
  * The island while you talk, as the app draws it (DictationView): Blink joined at the left, a mic and level bars in
