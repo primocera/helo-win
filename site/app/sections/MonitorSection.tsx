@@ -22,16 +22,6 @@ export default function MonitorSection() {
           No more feeling for the buttons on the back of the screen.
         </p>
 
-        <div className={styles.monitor} aria-hidden="true">
-          <div className={styles.bezel}>
-            <div className={`${shared.desktop} ${styles.screen}`}>
-              <span className={styles.pill} />
-            </div>
-          </div>
-          <div className={styles.neck} />
-          <div className={styles.base} />
-        </div>
-
         <ul className={styles.points}>
           <li>
             <h3 className={shared.pointTitle}>Brightness and contrast</h3>

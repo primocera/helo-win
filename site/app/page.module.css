@@ -58,6 +58,7 @@
   max-width: 980px;
   margin: 0 auto;
   /* The laptop's base reaches past the sides on phones, as Halo's does, without a sideways scroll. */
+  overflow-x: hidden;
   overflow-x: clip;
   padding: clamp(56px, 10vw, 96px) 24px clamp(72px, 10vw, 112px);
   text-align: center;

@@ -158,6 +158,8 @@ export default function OutOfTheWaySection() {
         </p>
 
         <figure className={styles.figure}>
+          {/* A PC monitor on a stand around the picture. */}
+          <div className={styles.pcBezel}>
           <Desktop className={styles.desk}>
             <div
               className={styles.scene}
@@ -169,6 +171,9 @@ export default function OutOfTheWaySection() {
               <TuckedIsland />
             </div>
           </Desktop>
+          </div>
+          <div className={styles.pcNeck} aria-hidden="true" />
+          <div className={styles.pcBase} aria-hidden="true" />
           <figcaption className={styles.steps}>
             {STEPS.map((step, i) => (
               <span key={step} className={`${styles.step} ${styles[`step${i + 1}`] ?? ""}`}>
