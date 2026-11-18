@@ -59,7 +59,7 @@ export default function Image() {
         <div style={{ display: "flex", marginTop: 150, fontSize: 104, fontWeight: 700, letterSpacing: -3 }}>{product.name}</div>
         <div style={{ display: "flex", marginTop: 14, fontSize: 40, color: "#e9e9ee" }}>{product.tagline}</div>
         <div style={{ display: "flex", marginTop: 26, fontSize: 28, color: "#c9c9d2" }}>
-          {product.price} once · {product.trialDays}-day free trial · {product.requirements}
+          {product.price} once · {product.requirements}
         </div>
       </div>
     ),

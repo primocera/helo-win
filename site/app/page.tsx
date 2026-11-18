@@ -97,7 +97,7 @@ export default function Home() {
           </a>
           <PhoneBuyNote />
           <p className={styles.small}>
-            One-time purchase · {product.trialDays}-day free trial · <WindowsMark>{product.requirements}</WindowsMark>
+            One-time purchase · <WindowsMark>{product.requirements}</WindowsMark>
           </p>
         </section>
 

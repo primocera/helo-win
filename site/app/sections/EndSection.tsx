@@ -214,7 +214,7 @@ export default function EndSection() {
           <PhoneBuyNote dark />
         </div>
         <p className={styles.fine}>
-          One-time purchase. {product.trialDays}-day free trial.{" "}
+          One-time purchase.{" "}
           <WindowsMark>{product.requirements}.</WindowsMark>
           <br />
           Coming to Mac in 2027: macOS 15 or later, Apple silicon and Intel.

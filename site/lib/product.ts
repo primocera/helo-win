@@ -1,5 +1,6 @@
 // One place for everything the site says about the product.
 // Keep it in step with the app's config: name, price, trial, checkout link (app/src/main/config.ts),
+// The site does not mention the trial for now (the user's choice, 2026-11-18); trialDays stays for when it does.
 // and the feature switches (DEFAULT_FEATURES in app/src/main/settings.ts).
 export const product = {
   name: "Helo", // placeholder until the final name is chosen
@@ -80,10 +81,6 @@ export const faq: { q: string; a: string }[] = [
   {
     q: "Is it a subscription?",
     a: "No. You pay once and keep it.",
-  },
-  {
-    q: "Can I try it first?",
-    a: `Yes. ${product.name} runs free for ${product.trialDays} days, with everything unlocked.`,
   },
   {
     q: `Windows says it doesn't recognise ${product.name}. Is that normal?`,
@@ -196,7 +193,7 @@ export const specs: { name: string; lines: string[] }[] = [
   },
   {
     name: "License",
-    lines: [`${product.price}, once`, `Up to ${product.maxPcs} PCs per key`, `${product.trialDays}-day free trial`],
+    lines: [`${product.price}, once`, `Up to ${product.maxPcs} PCs per key`],
   },
   {
     name: "Language",

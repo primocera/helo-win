@@ -150,7 +150,7 @@ export default function HighlightsSection() {
         </h2>
         {/* As on halo-mac.com: a link beside the heading to the film, here the "Out of the way" animation. */}
         <a className={styles.film} href="#film">
-          Watch the film
+          Watch the film: Out of the way
         </a>
       </div>
 
