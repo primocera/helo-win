@@ -3,7 +3,7 @@
 // A number that counts up from 0 when it comes into view, after halo-mac.com's [data-count] (js/site.js): it counts,
 // easing out (1 - (1 - p)^3), then gives a small pop (scale 1.12 back to 1 on sp(0.35, 0.55)). Slower than Halo's
 // 700 ms, and only once the number is well inside the screen, so it is seen; it counts again each time it comes back
-// into view. With `pauseAt`, it counts to that number, stops there for half a second, then ticks up one at a time to
+// into view after leaving the screen. With `pauseAt`, it counts to that number, stops there for half a second, then ticks up one at a time to
 // `to`, as if there turned out to be more. The server renders the final number, so it reads right without scripts; with reduced motion it stays put.
 import { useEffect, useRef } from "react";
 import { spring } from "@/lib/spring";
@@ -47,21 +47,22 @@ export default function CountUp({ to, pauseAt, className }: { to: number; pauseA
       frame = requestAnimationFrame(count);
     };
     n.textContent = "0";
-    // In view: the number is inside the screen, away from its top and bottom tenth. The observer also reports while
-    // the number changes width as it counts, so a count starts only when it was out of view before.
-    let inView = false;
+    // It counts once 60% of its line is on screen, and goes back to 0 (to count again) only after the line has left
+    // the screen entirely, so scrolling a little does not restart it.
+    let counted = false;
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting === inView) return;
-        inView = e.isIntersecting;
-        if (inView) run();
-        else {
+        if (!counted && e.intersectionRatio >= 0.6) {
+          counted = true;
+          run();
+        } else if (counted && !e.isIntersecting) {
+          counted = false;
           cancelAnimationFrame(frame);
           n.textContent = "0";
           n.style.transform = "";
         }
       },
-      { threshold: 1, rootMargin: "-10% 0px -10% 0px" },
+      { threshold: [0, 0.6] },
     );
     // The line it sits in, not the number itself: the pop scales the number past its own box.
     io.observe(n.parentElement ?? n);

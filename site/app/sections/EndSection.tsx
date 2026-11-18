@@ -15,6 +15,7 @@ import { CALM, DONE, FINALE_EVENT, playDone, shape } from "@/lib/blink";
 import { spring } from "@/lib/spring";
 import meet from "./MeetBlinkSection.module.css";
 import WindowsMark from "./WindowsMark";
+import PhoneBuyNote from "./PhoneBuyNote";
 import styles from "./EndSection.module.css";
 
 type Stage = "hidden" | "shown" | "wink" | "done" | "splash";
@@ -206,12 +207,17 @@ export default function EndSection() {
         <p className={styles.offer}>
           <b>{product.price}</b>
         </p>
-        <a className={styles.buy} href={product.buyUrl}>
-          Buy
-        </a>
+        <div>
+          <a className={styles.buy} href={product.buyUrl}>
+            Buy
+          </a>
+          <PhoneBuyNote dark />
+        </div>
         <p className={styles.fine}>
           One-time purchase. {product.trialDays}-day free trial.{" "}
           <WindowsMark>{product.requirements}.</WindowsMark>
+          <br />
+          Coming soon for Mac: macOS 15 or later, Apple silicon and Intel.
         </p>
       </div>
     </section>

@@ -20,6 +20,7 @@ import TechSpecsSection from "./sections/TechSpecsSection";
 import SmallThingsSection from "./sections/SmallThingsSection";
 import EndSection from "./sections/EndSection";
 import WindowsMark from "./sections/WindowsMark";
+import PhoneBuyNote from "./sections/PhoneBuyNote";
 
 export default function Home() {
   return (
@@ -68,6 +69,7 @@ export default function Home() {
           <a className={styles.buy} href={product.buyUrl}>
             Buy for {product.price}
           </a>
+          <PhoneBuyNote />
           <p className={styles.small}>
             One-time purchase · {product.trialDays}-day free trial · <WindowsMark>{product.requirements}</WindowsMark>
           </p>

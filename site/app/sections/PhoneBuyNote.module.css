@@ -1,0 +1,21 @@
+/* halo-mac.com's .send-mac-note and .send-mac (apple.css), value for value. */
+.note {
+  max-width: 32ch;
+  margin: 14px auto 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #6e6e73;
+}
+.dark {
+  color: #86868b;
+}
+.send {
+  display: block;
+  width: fit-content;
+  margin: 8px auto 0;
+  font-size: 15px;
+  color: #0066cc;
+}
+.send:hover {
+  text-decoration: underline;
+}
