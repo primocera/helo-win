@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Icon, Mark } from '../common/icons';
 import { MASCOT_NAME } from '../../../shared/brand';
-import type { AgentName, FeatureFlags, SettingsInfo, StartupApp } from '../../../shared/types';
+import type { AgentName, DictationKey, FeatureFlags, SettingsInfo, StartupApp } from '../../../shared/types';
+import { DICTATION_KEY_NAMES } from '../../../shared/dictation';
 
 type Section = 'general' | 'features' | 'startup' | 'agents' | 'license';
 
@@ -324,6 +325,15 @@ function Features({ info, update }: { info: SettingsInfo; update: (p: Patch) => 
           <Row label="Break length"><NumberField label="Break minutes" value={s.timer.breakMin} min={1} max={60} suffix="min" onChange={(n) => update({ timer: { breakMin: n } })} /></Row>
           <Row label="Long break length"><NumberField label="Long break minutes" value={s.timer.longBreakMin} min={1} max={120} suffix="min" onChange={(n) => update({ timer: { longBreakMin: n } })} /></Row>
           <Row label="Long break after" hint="0 turns the long break off."><NumberField label="Focus sessions before a long break" value={s.timer.longEvery} min={0} max={12} suffix="sessions" onChange={(n) => update({ timer: { longEvery: n } })} /></Row>
+        </FeatureRow>
+        <FeatureRow {...p} k="dictation" label="Dictation" hint="Hold the key and say what you want to write. Your words show in the island as you speak, and when you let go they are typed wherever the cursor is. It uses Windows' own speech recognition on this PC; nothing is sent anywhere. Pressing another key while you hold it cancels, so shortcuts still work.">
+          <Row label="Hold to talk" hint="Right Alt is AltGr on many keyboards.">
+            <select value={s.dictation.key} onChange={(e) => update({ dictation: { key: e.target.value as DictationKey } })}>
+              {(Object.keys(DICTATION_KEY_NAMES) as DictationKey[]).map((k) => (
+                <option key={k} value={k}>{DICTATION_KEY_NAMES[k]}</option>
+              ))}
+            </select>
+          </Row>
         </FeatureRow>
         <FeatureRow {...p} k="clipboard" label="Clipboard history" hint="Keeps recent copies on this PC only, encrypted on disk. Password managers that mark their copies as private are skipped. A password copied from a web page is not marked, so pause before copying one, or remove it from the list.">
           <Row label="Pause" hint="Nothing new is saved while this is on.">

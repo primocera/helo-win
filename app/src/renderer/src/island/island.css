@@ -54,7 +54,7 @@ button { font: inherit; color: inherit; }
 }
 .island.mode-idle { --r: 14px; box-shadow: none; }
 .island.mode-hud { --r: 16px; }
-.island.mode-banner { --r: 22px; }
+.island.mode-banner, .island.mode-dictation { --r: 22px; }
 .island.mode-menu { --r: 18px; }
 .island.mode-card { --r: 24px; }
 .island.mode-panel { --r: 26px; }
@@ -86,7 +86,7 @@ button { font: inherit; color: inherit; }
   border-radius: inherit;
   animation: content-in 0.26s ease both;
 }
-.mode-idle .island-content, .mode-hud .island-content, .mode-banner .island-content, .mode-menu .island-content { height: 100%; }
+.mode-idle .island-content, .mode-hud .island-content, .mode-banner .island-content, .mode-menu .island-content, .mode-dictation .island-content { height: 100%; }
 
 /* Right-click menu */
 .island-menu { height: 100%; display: flex; align-items: center; gap: 4px; padding: 0 8px; }
@@ -618,3 +618,18 @@ input[type="range"]:disabled::-webkit-slider-runnable-track { background: linear
 .wm-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wm-took { flex: none; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; opacity: 0.8; }
 .wm-empty { padding: 10px; color: var(--dim); line-height: 1.45; }
+
+/* Dictation: a mic tile, "Listening" and the words so far, and level bars in the accent colour. */
+.dictation { height: 100%; display: flex; align-items: center; gap: 12px; padding: 0 18px 0 16px; }
+.dict-icon { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: #0b0b0c; background: var(--mint); }
+.dictation.error .dict-icon { background: #ff9f0a; }
+.dict-lines { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.dict-title { font-size: 13px; font-weight: 650; }
+.dict-text { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dict-bars { flex: none; display: inline-flex; align-items: center; gap: 2px; height: 16px; }
+.dict-bars i { width: 2.5px; height: 15px; border-radius: 2px; background: var(--mint); transform: scaleY(0.35); animation: dict-level 0.9s ease-in-out infinite alternate; }
+.dict-bars i:nth-child(2) { animation-duration: 0.7s; animation-delay: -0.3s; }
+.dict-bars i:nth-child(3) { animation-duration: 1.05s; animation-delay: -0.5s; }
+.dict-bars i:nth-child(4) { animation-duration: 0.8s; animation-delay: -0.2s; }
+@keyframes dict-level { 0% { transform: scaleY(0.3); } 50% { transform: scaleY(0.95); } 100% { transform: scaleY(0.5); } }
+@media (prefers-reduced-motion: reduce) { .dict-bars i { animation: none; transform: scaleY(0.6); } }

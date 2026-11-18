@@ -498,6 +498,171 @@ try {
 }
 [HeloHelper.Input]::Start()
 
+# ---- Dictation: hold a key and talk ------------------------------------------
+# Windows' own speech recognition (System.Speech, on this PC, no account). A thread watches the key: held alone for
+# 250 ms, it listens; let go, and what was heard is typed where the cursor is, as Unicode key presses, into whatever
+# window has the keyboard (the island never takes it). Pressing another key while holding it cancels, so Ctrl
+# shortcuts with the same key still work. Compiled on its own, so a PC without System.Speech keeps the rest.
+$dictationCs = @'
+using System;
+using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using System.Speech.Recognition;
+
+namespace HeloHelper {
+  public static class Dictation {
+    [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vk);
+    [StructLayout(LayoutKind.Sequential)] struct KEYBDINPUT { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr extra; }
+    [StructLayout(LayoutKind.Sequential)] struct MOUSEINPUT { public int dx; public int dy; public uint data; public uint flags; public uint time; public IntPtr extra; }
+    [StructLayout(LayoutKind.Explicit)] struct UNION { [FieldOffset(0)] public MOUSEINPUT mi; [FieldOffset(0)] public KEYBDINPUT ki; }
+    [StructLayout(LayoutKind.Sequential)] struct INPUT { public uint type; public UNION u; }
+    [DllImport("user32.dll", SetLastError = true)] static extern uint SendInput(uint n, INPUT[] inputs, int size);
+
+    static readonly ConcurrentQueue<string> events = new ConcurrentQueue<string>();
+    static readonly object gate = new object();
+    static volatile int key;
+    static Thread watcher;
+    static SpeechRecognitionEngine engine;
+    static readonly StringBuilder heard = new StringBuilder();
+    static volatile bool listening;
+    static readonly ManualResetEvent stopped = new ManualResetEvent(true);
+
+    // 0 turns it off; otherwise the virtual key to hold (0xA3 right Ctrl, 0xA1 right Shift, 0xA5 right Alt).
+    public static void Configure(int vk) {
+      key = vk;
+      if (vk != 0 && watcher == null) {
+        watcher = new Thread(Watch);
+        watcher.IsBackground = true;
+        watcher.Start();
+      }
+    }
+
+    // The next event as "kind|text" (listen, partial, typed, empty, cancel, error), or null.
+    public static string Next() { string e; return events.TryDequeue(out e) ? e : null; }
+
+    static bool Down(int vk) { return (GetAsyncKeyState(vk) & 0x8000) != 0; }
+
+    // Any other key down: everything from Backspace up, except the generic Shift/Ctrl/Alt codes (they mirror the
+    // held key) and the held key itself.
+    static bool OtherDown(int held) {
+      for (int vk = 0x08; vk <= 0xFE; vk++) {
+        if (vk == held || vk == 0x10 || vk == 0x11 || vk == 0x12) continue;
+        if (Down(vk)) return true;
+      }
+      return false;
+    }
+
+    static void Watch() {
+      while (true) {
+        Thread.Sleep(15);
+        int vk = key;
+        if (vk == 0 || !Down(vk)) continue;
+        // The key went down while something else was held (a shortcut being typed): not for us.
+        if (OtherDown(vk)) { while (Down(vk)) Thread.Sleep(15); continue; }
+        DateTime since = DateTime.UtcNow;
+        bool cancelled = false;
+        while (Down(vk) && !listening) {
+          if (OtherDown(vk)) { cancelled = true; break; }
+          if ((DateTime.UtcNow - since).TotalMilliseconds >= 250) {
+            Start();
+            if (!listening) break; // could not start; the error is already queued
+          }
+          Thread.Sleep(15);
+        }
+        while (listening && Down(vk)) {
+          if (OtherDown(vk)) { cancelled = true; break; }
+          Thread.Sleep(15);
+        }
+        if (listening) Finish(cancelled);
+        while (Down(vk)) Thread.Sleep(15);
+      }
+    }
+
+    static void Start() {
+      lock (gate) {
+        try {
+          if (engine == null) {
+            RecognizerInfo pick = null;
+            foreach (RecognizerInfo r in SpeechRecognitionEngine.InstalledRecognizers()) {
+              if (pick == null || r.Culture.Name == System.Globalization.CultureInfo.CurrentUICulture.Name) pick = r;
+            }
+            if (pick == null) { events.Enqueue("error|No speech language is installed. Add one in Windows Settings, Time & Language, Speech."); return; }
+            engine = new SpeechRecognitionEngine(pick);
+            engine.LoadGrammar(new DictationGrammar());
+            engine.SpeechHypothesized += (s, e) => { lock (gate) { if (listening) events.Enqueue("partial|" + (heard.ToString() + e.Result.Text).Trim()); } };
+            engine.SpeechRecognized += (s, e) => { lock (gate) { heard.Append(e.Result.Text).Append(' '); if (listening) events.Enqueue("partial|" + heard.ToString().Trim()); } };
+            engine.RecognizeCompleted += (s, e) => stopped.Set();
+          }
+          engine.SetInputToDefaultAudioDevice();
+          heard.Clear();
+          stopped.Reset();
+          engine.RecognizeAsync(RecognizeMode.Multiple);
+          listening = true;
+          events.Enqueue("listen|");
+        } catch (Exception ex) {
+          listening = false;
+          stopped.Set();
+          string m = ex.Message;
+          if (m.IndexOf("data item", StringComparison.OrdinalIgnoreCase) >= 0 || m.IndexOf("audio", StringComparison.OrdinalIgnoreCase) >= 0) m = "No microphone found.";
+          events.Enqueue("error|" + m);
+        }
+      }
+    }
+
+    static void Finish(bool cancelled) {
+      try {
+        if (cancelled) engine.RecognizeAsyncCancel(); else engine.RecognizeAsyncStop();
+      } catch { }
+      // RecognizeAsyncStop lets it finish the words already spoken.
+      stopped.WaitOne(4000);
+      string text;
+      lock (gate) { listening = false; text = heard.ToString().Trim(); heard.Clear(); }
+      try { engine.SetInputToNull(); } catch { }
+      if (cancelled) { events.Enqueue("cancel|"); return; }
+      if (text.Length == 0) { events.Enqueue("empty|"); return; }
+      Type(text);
+      events.Enqueue("typed|" + text);
+    }
+
+    // Types text into the window that has the keyboard, as Unicode key presses.
+    public static bool Type(string text) {
+      INPUT[] inputs = new INPUT[text.Length * 2];
+      for (int i = 0; i < text.Length; i++) {
+        for (int up = 0; up < 2; up++) {
+          INPUT k = new INPUT();
+          k.type = 1;
+          k.u.ki.wScan = text[i];
+          k.u.ki.dwFlags = 0x0004u | (up == 1 ? 0x0002u : 0u); // UNICODE, KEYUP
+          inputs[i * 2 + up] = k;
+        }
+      }
+      return SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT))) == inputs.Length;
+    }
+
+    // Recognizes a WAV file with the same grammar, for checking on a PC without a microphone.
+    public static string FromFile(string path) {
+      using (SpeechRecognitionEngine e = new SpeechRecognitionEngine(SpeechRecognitionEngine.InstalledRecognizers()[0])) {
+        e.LoadGrammar(new DictationGrammar());
+        e.SetInputToWaveFile(path);
+        StringBuilder sb = new StringBuilder();
+        RecognitionResult r;
+        while ((r = e.Recognize()) != null) sb.Append(r.Text).Append(' ');
+        return sb.ToString().Trim();
+      }
+    }
+  }
+}
+'@
+$dictationReady = $false
+try {
+  Add-Type -TypeDefinition $dictationCs -Language CSharp -ReferencedAssemblies System.Speech
+  $dictationReady = $true
+} catch {
+  Send @{ type = 'error'; where = 'dictation-init'; message = $_.Exception.Message }
+}
+
 # ---- WinRT: system media transport controls --------------------------------
 $media = $null
 $asTask = $null
@@ -759,7 +924,7 @@ while ($true) {
       $id = $msg.id
       $result = $null
       switch ($msg.cmd) {
-        'enable' { foreach ($p in $msg.features.PSObject.Properties) { $features[$p.Name] = [bool]$p.Value }; $lastMediaJson = ''; $lastVolume = ''; $lastMic = $null; $lastCam = $null; $lastMicMuted = $null; $lastPower = ''; $lastBrightness = -1; $result = $true }
+        'enable' { foreach ($p in $msg.features.PSObject.Properties) { $features[$p.Name] = [bool]$p.Value }; if ($dictationReady) { [HeloHelper.Dictation]::Configure([int]$msg.features.dictationKey) }; $lastMediaJson = ''; $lastVolume = ''; $lastMic = $null; $lastCam = $null; $lastMicMuted = $null; $lastPower = ''; $lastBrightness = -1; $result = $true }
         'media' { $result = Invoke-Media $msg.action $msg.value; Poll-Media $true }
         'volume' { $result = [HeloHelper.Audio]::Set([int]$msg.value) }
         'mute' { $result = [HeloHelper.Audio]::Mute([bool]$msg.value) }
@@ -807,6 +972,14 @@ while ($true) {
   }
 
   $tick++
+  if ($dictationReady) {
+    $d = [HeloHelper.Dictation]::Next()
+    while ($null -ne $d) {
+      $cut = $d.IndexOf('|')
+      Send @{ type = 'dictation'; kind = $d.Substring(0, $cut); text = $d.Substring($cut + 1) }
+      $d = [HeloHelper.Dictation]::Next()
+    }
+  }
   try {
     if ($features.volume) {
       $v = [HeloHelper.Audio]::Get()

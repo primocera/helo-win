@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon, Mark } from '../common/icons';
 import { relativeTime } from '../../../shared/time';
-import type { Banner, BannerKind, Behavior, DiffView, Hud, IslandState, PermissionView } from '../../../shared/types';
+import type { Banner, BannerKind, Behavior, DiffView, DictationState, Hud, IslandState, PermissionView } from '../../../shared/types';
 
 const STILL = [0.3, 0.3, 0.3, 0.3];
 
@@ -379,6 +379,21 @@ export function HudView({ hud }: { hud: Hud }) {
         <span className="hud-fill" style={{ width: `${hud.muted ? 0 : hud.level}%` }} />
       </span>
       <span className="hud-value">{hud.muted ? 'Muted' : `${hud.level}`}</span>
+    </div>
+  );
+}
+
+/** Dictation: listening, with the words so far (they are typed where the cursor is when the key is let go). */
+export function DictationView({ dictation }: { dictation: DictationState }) {
+  const error = dictation.phase === 'error';
+  return (
+    <div className={`dictation${error ? ' error' : ''}`}>
+      <span className="dict-icon"><Icon name={error ? 'alert' : 'mic'} size={17} /></span>
+      <span className="dict-lines">
+        <span className="dict-title">{error ? 'Dictation' : 'Listening'}</span>
+        <span className="dict-text">{dictation.text || 'Say what you want to write.'}</span>
+      </span>
+      {!error && <span className="dict-bars" aria-hidden="true"><i /><i /><i /><i /></span>}
     </div>
   );
 }

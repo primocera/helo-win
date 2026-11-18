@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type MouseEvent, type PointerEvent } from 'react';
 import { useIslandState, useNow } from './store';
-import { IdleView, BannerView, CardView, HudView, MenuView } from './Views';
+import { IdleView, BannerView, CardView, HudView, MenuView, DictationView } from './Views';
 import { Panel, visibleTabs } from './Panel';
 import { BlinkFace, FACE_LABELS } from './Blink';
 import { playChime } from './sound';
@@ -8,10 +8,10 @@ import { idleSong } from '../../../shared/playback';
 import { faceFor, strongestMood, watchMood } from '../../../shared/face';
 import type { Behavior, ConvertFormat, Face, IslandState, PanelTab, SmokeView } from '../../../shared/types';
 
-type Mode = 'idle' | 'banner' | 'card' | 'hud' | 'panel' | 'menu';
+type Mode = 'idle' | 'banner' | 'card' | 'hud' | 'panel' | 'menu' | 'dictation';
 
-const WIDTH: Record<Mode, number> = { idle: 214, banner: 440, card: 488, hud: 300, panel: 648, menu: 396 };
-const FIXED_HEIGHT: Partial<Record<Mode, number>> = { idle: 34, banner: 62, hud: 40, menu: 44 };
+const WIDTH: Record<Mode, number> = { idle: 214, banner: 440, card: 488, hud: 300, panel: 648, menu: 396, dictation: 440 };
+const FIXED_HEIGHT: Partial<Record<Mode, number>> = { idle: 34, banner: 62, hud: 40, menu: 44, dictation: 62 };
 /** The closed island with a song title in it. */
 const SONG_WIDTH = 320;
 /** The island as a thin line, while a window lies under it. */
@@ -128,6 +128,7 @@ export function App() {
     if (state.requests.length && state.settings.features.agents) mode = 'card';
     else if ((menuOpen || smoke?.menu) && forcedPanel === null) mode = 'menu';
     else if (showPanel) mode = 'panel';
+    else if (state.dictation && state.settings.features.dictation) mode = 'dictation';
     else if (state.hud && state.settings.features.hud) mode = 'hud';
     else if (state.banner) mode = 'banner';
   }
@@ -332,6 +333,7 @@ export function App() {
               {mode === 'banner' && state.banner && <BannerView banner={state.banner} now={now} />}
               {mode === 'card' && <CardView request={state.requests[0]} more={state.requests.length - 1} onDecide={decide} />}
               {mode === 'hud' && state.hud && <HudView hud={state.hud} />}
+              {mode === 'dictation' && state.dictation && <DictationView dictation={state.dictation} />}
               {mode === 'menu' && <MenuView onDone={() => setMenuOpen(false)} />}
               {mode === 'panel' && (
                 <div ref={panelRef}>

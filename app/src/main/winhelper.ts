@@ -32,6 +32,8 @@ export interface HelperFeatures {
   clipboard: boolean;
   brightness: boolean;
   notifications: boolean;
+  /** The virtual key held to dictate, or 0 for off (resources/winhelper.ps1, Dictation). */
+  dictationKey: number;
 }
 
 export type HelperMessage = Record<string, unknown> & { type: string };
@@ -52,7 +54,7 @@ export class WinHelper extends EventEmitter {
   private proc: ChildProcessWithoutNullStreams | null = null;
   private nextId = 1;
   private pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: NodeJS.Timeout }>();
-  private features: HelperFeatures = { media: false, volume: false, privacy: false, power: false, clipboard: false, brightness: false, notifications: false };
+  private features: HelperFeatures = { media: false, volume: false, privacy: false, power: false, clipboard: false, brightness: false, notifications: false, dictationKey: 0 };
   private restarts = 0;
   private stopped = false;
   private restartTimer: NodeJS.Timeout | null = null;

@@ -20,6 +20,7 @@ import { MAP_SETUP } from '../shared/workmap';
 import type { WinHelper } from './winhelper';
 import type { ClipboardHistory } from './clipboard-history';
 import type { IslandState, PanelTab, SmokeView } from '../shared/types';
+import { liveText } from '../shared/dictation';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -217,6 +218,9 @@ export async function runSmoke(ctx: SmokeCtx) {
     push({ requests: [], agents: { ...ctx.state.agents, mood: 'idle' }, hud: { kind: 'volume', level: 64, muted: false, at: Date.now() } });
     await shot('06-hud-volume');
     push({ hud: null });
+    push({ settings: { ...ctx.state.settings, features: { ...ctx.state.settings.features, dictation: true } }, dictation: { phase: 'listening', text: liveText('Ship the new landing page tonight and send the film to the team') } });
+    await shot('06b-dictation');
+    push({ dictation: null, settings: { ...ctx.state.settings, features: { ...ctx.state.settings.features, dictation: false } } });
     smoke({ menu: true });
     await shot('07-menu');
     push({ map: sampleMap() });

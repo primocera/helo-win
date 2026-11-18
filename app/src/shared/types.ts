@@ -287,6 +287,17 @@ export interface FeatureFlags {
   notifications: boolean;
   /** A warning when the Windows drive is nearly full. */
   disk: boolean;
+  /** Hold a key and talk: the words are typed where the cursor is (Windows' own speech recognition, on this PC). */
+  dictation: boolean;
+}
+
+/** The key held down to dictate. Right Alt is AltGr on many keyboards, so it is not the default. */
+export type DictationKey = 'rctrl' | 'rshift' | 'ralt';
+
+/** Dictation on the island: listening (with the words so far), or a problem to show. */
+export interface DictationState {
+  phase: 'listening' | 'error';
+  text: string;
 }
 
 export type Edge = 'top' | 'bottom';
@@ -323,6 +334,7 @@ export interface Settings {
   /** Warn when the Windows drive has less than this many GB free. */
   disk: { lowGb: number };
   calendar: { icsUrl: string };
+  dictation: { key: DictationKey };
   finished: { addToShelf: boolean };
   shelf: { screenshots: boolean };
   /** The sound when an agent needs the user. `volume`: 0-100. `fullscreen`: also over a game or a fullscreen video. */
@@ -383,6 +395,7 @@ export interface IslandState {
   power: PowerState | null;
   volume: { level: number | null; muted: boolean } | null;
   hud: Hud | null;
+  dictation: DictationState | null;
   displays: DisplayControl[];
   bluetooth: BluetoothBattery[];
   calendar: CalendarState;

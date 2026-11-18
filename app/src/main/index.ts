@@ -43,6 +43,7 @@ import { documentPage, docTargets } from './documents';
 import { parseLink, findLink, shownPath, LinkLimiter, LINK_SCHEME } from './links';
 import { formatDuration } from '../shared/time';
 import { nextRepeat } from '../shared/playback';
+import { DICTATION_VK, nextDictation } from '../shared/dictation';
 import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
 import type {
   AgentName, Banner, Behavior, ConnectionState, ConvertFormat, FinishedItem, IslandState, PermissionView, Settings, SettingsInfo,
@@ -172,6 +173,7 @@ const state: IslandState = {
   power: null,
   volume: null,
   hud: null,
+  dictation: null,
   displays: [],
   bluetooth: [],
   calendar: { events: [], error: '', fetchedAt: 0 },
@@ -567,9 +569,10 @@ function applySettings(prev: Settings | null) {
 
 function syncHelperFeatures() {
   const f = settings.features;
-  const wantHelper = f.media || f.hud || f.privacy || f.battery || f.clipboard || f.displays || f.notifications;
+  const wantHelper = f.media || f.hud || f.privacy || f.battery || f.clipboard || f.displays || f.notifications || f.dictation;
   if (!helper) return;
-  helper.setFeatures({ media: f.media, volume: f.hud, privacy: f.privacy, power: f.battery, clipboard: f.clipboard, brightness: f.hud, notifications: f.notifications });
+  helper.setFeatures({ media: f.media, volume: f.hud, privacy: f.privacy, power: f.battery, clipboard: f.clipboard, brightness: f.hud, notifications: f.notifications, dictationKey: f.dictation ? DICTATION_VK[settings.dictation.key] : 0 });
+  if (!f.dictation && state.dictation) push({ dictation: null });
   if (wantHelper && helper.status === 'off') helper.start();
   if (!wantHelper && helper.status !== 'off') helper.stop();
   if (!f.media) push({ media: null, lyrics: null });
@@ -1008,6 +1011,18 @@ function onHelperMessage(msg: HelperMessage) {
       if (!first && level !== null && settings.features.hud) showHud('volume', level, muted);
       break;
     }
+    case 'dictation': {
+      const kind = typeof msg.kind === 'string' ? msg.kind : '';
+      const text = typeof msg.text === 'string' ? msg.text : '';
+      if (dictationTimer) clearTimeout(dictationTimer);
+      dictationTimer = null;
+      if (kind === 'error') log(`dictation: ${text}`);
+      const next = nextDictation(state.dictation, kind, text);
+      if (next !== state.dictation) push({ dictation: next });
+      // A problem stays up for a few seconds.
+      if (next?.phase === 'error') dictationTimer = setTimeout(() => push({ dictation: null }), 4000);
+      break;
+    }
     case 'brightness': {
       if (typeof msg.level === 'number' && settings.features.hud) showHud('brightness', msg.level, false);
       break;
@@ -1076,6 +1091,8 @@ function returnToCall(name: string) {
   if (!key || !helper || helper.status !== 'running') return;
   helper.request('activate-app', { key }, 8000).catch((err) => log(`return to call: ${(err as Error).message}`));
 }
+
+let dictationTimer: NodeJS.Timeout | null = null;
 
 function showHud(kind: 'volume' | 'brightness', level: number, muted: boolean) {
   if (hudTimer) clearTimeout(hudTimer);

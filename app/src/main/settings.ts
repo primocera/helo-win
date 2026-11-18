@@ -26,6 +26,7 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   watchApp: true,
   notifications: true,
   disk: true,
+  dictation: false, // listens to the microphone while the key is held, so it is opt-in
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -37,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   battery: { lowPercent: 20 },
   disk: { lowGb: 10 },
   calendar: { icsUrl: '' },
+  dictation: { key: 'rctrl' },
   finished: { addToShelf: true },
   shelf: { screenshots: true },
   sound: { on: true, volume: 60, fullscreen: true },
@@ -96,6 +98,7 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
   const snd = isObj(r.sound) ? r.sound : {};
   const lnk = isObj(r.links) ? r.links : {};
   const notif = isObj(r.notifications) ? r.notifications : {};
+  const dict = isObj(r.dictation) ? r.dictation : {};
   return {
     features,
     notifications: { apps: cleanApps(notif.apps, base.notifications.apps) },
@@ -110,6 +113,7 @@ export function normalizeSettings(raw: unknown, base: Settings = DEFAULT_SETTING
     battery: { lowPercent: int(b.lowPercent, 5, 50, base.battery.lowPercent) },
     disk: { lowGb: int(dk.lowGb, 1, 500, base.disk.lowGb) },
     calendar: { icsUrl: 'icsUrl' in cal ? cleanIcsUrl(cal.icsUrl) : base.calendar.icsUrl },
+    dictation: { key: dict.key === 'rctrl' || dict.key === 'rshift' || dict.key === 'ralt' ? dict.key : base.dictation.key },
     finished: { addToShelf: bool(fin.addToShelf, base.finished.addToShelf) },
     shelf: { screenshots: bool(sh.screenshots, base.shelf.screenshots) },
     sound: { on: bool(snd.on, base.sound.on), volume: int(snd.volume, 0, 100, base.sound.volume), fullscreen: bool(snd.fullscreen, base.sound.fullscreen) },
