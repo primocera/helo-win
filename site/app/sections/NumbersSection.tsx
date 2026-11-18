@@ -7,12 +7,16 @@ import WindowsMark from "./WindowsMark";
 import shared from "./shared.module.css";
 import styles from "./NumbersSection.module.css";
 
-// As halo-mac.com's: only the first figure counts up (with the page's gold-to-indigo gradient, .stat-t .num); the
-// other two are plain. "More than 20": the app has product.featureSwitches (23) features with their own switch.
+// The first and last figures count up (CountUp), stopping for half a second at a round number and then ticking on.
+// "More than 22": the app has product.featureSwitches (23) features with their own switch. "Under 125 MB": the
+// installer's size, rounded up (product.downloadMax).
+const [downloadNumber, downloadUnit] = product.downloadMax.split(" ");
+const download = Number(downloadNumber);
+
 const figures = [
-  { key: "features", before: "More than", figure: <><CountUp to={20} className={`${shared.gradient} ${styles.num}`} /> features</>, after: "in one island" },
+  { key: "features", before: "More than", figure: <><CountUp to={product.featureSwitches - 1} pauseAt={20} className={`${shared.gradient} ${styles.num} ${styles.numGradient}`} /> features</>, after: "in one island" },
   { key: "accounts", before: "Exactly", figure: "0 accounts", after: "a license key is all it asks" },
-  { key: "download", before: "Under", figure: product.downloadMax, after: <>download, for <WindowsMark>{product.requirements}</WindowsMark></> },
+  { key: "download", before: "Under", figure: <><CountUp to={download} pauseAt={download - 5} className={styles.num} /> {downloadUnit}</>, after: <>download, for <WindowsMark>{product.requirements}</WindowsMark></> },
 ];
 
 export default function NumbersSection() {

@@ -14,27 +14,31 @@ import styles from "./DictationSection.module.css";
 
 const WORDS = "Ship the new landing page tonight and send the film to the team.";
 
-/** The island while you talk: a mic tile, "Listening" and the words so far, level bars; Blink beside it. */
+// The languages Windows' own speech recognition comes in (Windows Speech Recognition: English, French, German,
+// Japanese, Simplified and Traditional Chinese, Spanish). Each needs Windows' speech pack for it.
+const LANGUAGES = ["English", "Español", "Deutsch", "Français", "日本語", "简体中文", "繁體中文"];
+
+/**
+ * The island while you talk, as the app draws it (DictationView): Blink joined at the left, a mic and level bars in
+ * the top row, and the words so far under them.
+ */
 function MockListening() {
   const size = { "--iw-w": 440, "--iw-n": 340, "--ih-w": 62, "--ih-n": 62 } as CSSProperties;
   return (
     <div className={`${mock.top} ${mock.n540} ${styles.listen}`} style={size}>
       <Blink face="calm" />
       <div className={`${mock.island} ${mock.rBanner}`}>
-        <div className={mock.banner}>
-          <span className={`${mock.appIcon} ${styles.micTile}`}>
-            <Icon name="mic" size={17} />
+        <div className={styles.listenInner}>
+          <span className={styles.listenRow}>
+            <Icon name="mic" size={14} className={styles.mic} />
+            <span className={styles.bars} aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
           </span>
-          <span className={mock.bannerLines}>
-            <span className={mock.bannerTitle}>Listening</span>
-            <span className={mock.bannerText}>{WORDS.slice(0, -1)}</span>
-          </span>
-          <span className={styles.bars} aria-hidden="true">
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
+          <span className={styles.words}>{WORDS.slice(0, -1)}</span>
         </div>
       </div>
     </div>
@@ -86,9 +90,14 @@ export default function DictationSection() {
           </div>
         </Desktop>
 
+        <ul className={styles.langs} aria-label="Languages Windows' speech recognition comes in">
+          {LANGUAGES.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
         <p className={styles.fine}>
-          Free, with Windows&apos; own speech recognition, on your PC: nothing is sent anywhere. Off until you turn it on
-          in Settings.
+          Free, with Windows&apos; own speech recognition, on your PC once Windows has the speech pack for your
+          language. Nothing is sent anywhere. Off until you turn it on in Settings.
         </p>
       </div>
     </section>

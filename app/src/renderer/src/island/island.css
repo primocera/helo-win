@@ -619,13 +619,13 @@ input[type="range"]:disabled::-webkit-slider-runnable-track { background: linear
 .wm-took { flex: none; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; opacity: 0.8; }
 .wm-empty { padding: 10px; color: var(--dim); line-height: 1.45; }
 
-/* Dictation: a mic tile, "Listening" and the words so far, and level bars in the accent colour. */
-.dictation { height: 100%; display: flex; align-items: center; gap: 12px; padding: 0 18px 0 16px; }
-.dict-icon { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: #0b0b0c; background: var(--mint); }
-.dictation.error .dict-icon { background: #ff9f0a; }
-.dict-lines { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.dict-title { font-size: 13px; font-weight: 650; }
-.dict-text { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Dictation, as Halo's: the mic and level bars in a top row the closed island's height, the words centred under them. */
+.dictation { height: 100%; display: flex; flex-direction: column; padding: 0 16px; }
+.dict-row { flex: none; height: 30px; display: flex; align-items: center; justify-content: space-between; }
+.dict-icon { display: grid; place-items: center; color: var(--mint); }
+.dictation.error .dict-icon { color: #ff9f0a; }
+.dict-label { font-size: 12px; font-weight: 650; color: var(--muted); }
+.dict-text { font-size: 12px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dict-bars { flex: none; display: inline-flex; align-items: center; gap: 2px; height: 16px; }
 .dict-bars i { width: 2.5px; height: 15px; border-radius: 2px; background: var(--mint); transform: scaleY(0.35); animation: dict-level 0.9s ease-in-out infinite alternate; }
 .dict-bars i:nth-child(2) { animation-duration: 0.7s; animation-delay: -0.3s; }

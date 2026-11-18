@@ -383,17 +383,19 @@ export function HudView({ hud }: { hud: Hud }) {
   );
 }
 
-/** Dictation: listening, with the words so far (they are typed where the cursor is when the key is let go). */
+/**
+ * Dictation, as Halo's: a top row the height of the closed island with a mic (or a warning) and level bars, and the
+ * words so far under it (they are typed where the cursor is when the key is let go).
+ */
 export function DictationView({ dictation }: { dictation: DictationState }) {
   const error = dictation.phase === 'error';
   return (
     <div className={`dictation${error ? ' error' : ''}`}>
-      <span className="dict-icon"><Icon name={error ? 'alert' : 'mic'} size={17} /></span>
-      <span className="dict-lines">
-        <span className="dict-title">{error ? 'Dictation' : 'Listening'}</span>
-        <span className="dict-text">{dictation.text || 'Say what you want to write.'}</span>
+      <span className="dict-row">
+        <span className="dict-icon"><Icon name={error ? 'alert' : 'mic'} size={14} /></span>
+        {error ? <span className="dict-label">Dictation</span> : <span className="dict-bars" aria-hidden="true"><i /><i /><i /><i /></span>}
       </span>
-      {!error && <span className="dict-bars" aria-hidden="true"><i /><i /><i /><i /></span>}
+      <span className="dict-text">{dictation.text || 'Say what you want to write.'}</span>
     </div>
   );
 }

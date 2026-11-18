@@ -53,7 +53,7 @@
   min-width: 1.2ch;
   font-size: inherit;
   font-weight: inherit;
-  color: transparent;
+  color: inherit;
   font-variant-numeric: tabular-nums;
 }
 .stats em {
@@ -68,4 +68,8 @@
     grid-template-columns: 1fr;
     gap: 40px;
   }
+}
+/* The gradient number's own colour is see-through, so the gradient shows (shared.module.css .gradient). */
+.stats b .numGradient {
+  color: transparent;
 }

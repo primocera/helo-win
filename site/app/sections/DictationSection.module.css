@@ -67,8 +67,30 @@
   100% { opacity: 1; transform: none; }
 }
 
-.micTile {
-  background: #ff8fb4;
+/* The island's inside: a top row the height of the closed island (34) with the mic and the bars, the words under it. */
+.listenInner {
+  display: flex;
+  flex-direction: column;
+  height: calc(62 * var(--u));
+  padding: 0 calc(16 * var(--u));
+}
+.listenRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: calc(30 * var(--u));
+}
+.mic {
+  color: #ff8fb4;
+}
+.words {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: calc(12 * var(--u));
+  font-weight: 600;
+  color: #f5f5f7;
 }
 
 .bars {
@@ -229,9 +251,39 @@
   50% { opacity: 0; }
 }
 
+/* The languages, as halo-mac.com's .langs pills (v2.css), value for value. */
+.langs {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 64px auto 18px;
+  padding: 0;
+}
+.langs li {
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  transition:
+    transform 0.4s cubic-bezier(0.28, 0.11, 0.32, 1),
+    box-shadow 0.4s;
+}
+.langs li:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 10px 24px -10px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+/* Halo's .fine under the pills: 14px, grey. */
 .fine {
   max-width: 640px;
-  margin: 40px auto 0;
+  margin: 14px auto 0;
   font-size: 14px;
   line-height: 1.45;
   color: #6e6e73;

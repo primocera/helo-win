@@ -118,6 +118,46 @@
   background: radial-gradient(circle at 100% 100%, transparent calc(9.5 * var(--u)), #000 calc(10 * var(--u)));
 }
 
+/* Joined, as the app's "Join it to the island" (island.css .stage.joined): Blink is the left end of the island, in
+   one piece. No gap, Blink's own right ear and the island's left ear go, and a taller island (a banner, a card) gets
+   that ear back below Blink, where its left side meets him. Where Blink is hidden (narrow desktops), the island keeps
+   its own ears. */
+.blink {
+  right: 100%;
+  z-index: 1;
+  border-radius: 0 0 0 calc(14 * var(--u));
+}
+.blink::after {
+  display: none;
+}
+.blink + .island::before {
+  top: calc(34 * var(--u));
+}
+.blink + .rIdle {
+  border-bottom-left-radius: 0;
+}
+.blink + .rIdle::before {
+  display: none;
+}
+@container desk (max-width: 540px) {
+  .n540 .blink + .island::before {
+    top: 0;
+    display: block;
+  }
+  .n540 .blink + .rIdle {
+    border-bottom-left-radius: var(--r);
+  }
+}
+@container desk (max-width: 640px) {
+  .n640 .blink + .island::before {
+    top: 0;
+    display: block;
+  }
+  .n640 .blink + .rIdle {
+    border-bottom-left-radius: var(--r);
+  }
+}
+
 .face {
   display: block;
   width: calc(26.67 * var(--u));
