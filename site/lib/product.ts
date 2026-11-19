@@ -3,7 +3,7 @@
 // The site does not mention the trial for now (the user's choice, 2026-11-18); trialDays stays for when it does.
 // and the feature switches (DEFAULT_FEATURES in app/src/main/settings.ts).
 export const product = {
-  name: "Helo", // placeholder until the final name is chosen
+  name: "Blink", // the product's name on the site (the app itself still says Helo; renaming it moves the data folder and hooks)
   mascot: "Blink",
   tagline: "The island for your Windows screen",
   price: "$9.99",

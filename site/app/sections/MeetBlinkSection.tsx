@@ -212,7 +212,8 @@ export default function MeetBlinkSection() {
       </div>
 
       <p className={styles.kicker}>
-        {product.name} {product.mascot}
+        {/* Where Blink is introduced it keeps its full old name, at the user's wish. */}
+        Helo {product.mascot}
       </p>
       <h2 className={styles.title}>
         Meet <span className={styles.name}>{product.mascot}.</span>
