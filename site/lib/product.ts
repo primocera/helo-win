@@ -61,6 +61,7 @@ export const utilities: Feature[] = [
   { title: "Know when it's done", text: "A banner names the project, how long it worked, the lines changed and how its last message begins.", shipped: true },
   { title: "Two usage rings", text: "Your Claude 5-hour and weekly limits, and Codex's, in the Agents tab.", shipped: true },
   { title: "Four agents", text: "Claude Code and Codex ask in the island; Gemini CLI and Cursor show working and finished.", shipped: true },
+  { title: "Claude on the web", text: "Blink thinks while Claude or ChatGPT answers in Chrome or Edge, and a banner says when it's done.", shipped: true },
   { title: "Yes or no from the keyboard", text: "Alt+Shift+Y allows and Alt+Shift+N denies, from any app, while a request waits.", shipped: true },
   { title: "A live work map", text: "The files, commands and sites your agent is touching, as it works. It never leaves your PC.", shipped: true },
   { title: "Dictation", text: "Hold Right Ctrl and talk, and the words land where your cursor is.", shipped: true },

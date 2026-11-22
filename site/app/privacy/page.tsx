@@ -46,6 +46,11 @@ export default function PrivacyPage() {
           What your coding agents ask and report. Claude Code, Codex CLI, Gemini CLI and Cursor send their events to{" "}
           {n} on your own machine (address 127.0.0.1). Other computers cannot reach it, and {n} sends none of it on.
         </li>
+        <li>
+          Claude and ChatGPT in the browser, if you add {n}&apos;s extension to Chrome or Edge. It tells {n} on your
+          PC when an answer starts and ends, with the chat&apos;s title. It reads nothing else from the conversation
+          and talks only to 127.0.0.1.
+        </li>
         <li>The work map shows the names of files and tools. It does not keep file contents.</li>
         <li>
           Codex&apos;s usage limits. Codex CLI writes them into its own session files on your PC, and {n} reads them
