@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Icon, Mark } from '../common/icons';
-import { MASCOT_NAME } from '../../../shared/brand';
+import { APP_NAME, MASCOT_NAME } from '../../../shared/brand';
 import type { AgentName, DictationEngine, DictationKey, FeatureFlags, SettingsInfo, StartupApp } from '../../../shared/types';
 import { DICTATION_KEY_NAMES } from '../../../shared/dictation';
 
@@ -528,13 +528,28 @@ function Agents({ info, update, setInfo }: { info: SettingsInfo; update: (p: Pat
   );
 }
 
-function WebChat({ info }: { info: SettingsInfo }) {
+function WebChat({ info: initial }: { info: SettingsInfo }) {
+  const [info, setInfo] = useState(initial);
   const [copied, setCopied] = useState(false);
+  const [byHand, setByHand] = useState(false);
+  useEffect(() => setInfo(initial), [initial]);
+  // While the extension may pair, look every two seconds so "Connected" shows as soon as it has.
+  useEffect(() => {
+    if (!info.webPairing || info.webConnected) return;
+    const id = window.setInterval(() => void window.helo.settingsInfo().then(setInfo), 2000);
+    return () => window.clearInterval(id);
+  }, [info.webPairing, info.webConnected]);
+  const add = (browser: 'edge' | 'chrome' | 'connect') => {
+    window.helo.addExtension(browser);
+    void window.helo.settingsInfo().then(setInfo);
+  };
   const copy = async () => {
     await navigator.clipboard.writeText(info.webPairingCode);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   };
+  const stores = info.webStores.edge || info.webStores.chrome;
+  const status = info.webConnected ? 'Connected.' : info.webPairing ? 'Waiting for the extension...' : '';
   return (
     <div className="agent">
       <div className="agent-head">
@@ -543,17 +558,36 @@ function WebChat({ info }: { info: SettingsInfo }) {
           <div className="row-hint">{MASCOT_NAME} thinks while an answer is being written, and a banner tells you when it is done if you have switched to another tab or app.</div>
         </div>
       </div>
-      <ol className="steps">
-        <li>In Chrome or Edge, open the Extensions page and turn on Developer mode.</li>
-        <li>Choose "Load unpacked" and pick the extension folder.</li>
-        <li>Click the extension's icon and paste the pairing code.</li>
-      </ol>
-      <div className="row">
-        <div className="row-control">
-          <button type="button" className="button" onClick={() => window.helo.openExtensionFolder()}>Open extension folder</button>
-          <button type="button" className="button" onClick={copy}>{copied ? 'Copied' : 'Copy pairing code'}</button>
-        </div>
-      </div>
+      {stores && (
+        <>
+          <p className="row-hint">Add the extension to your browser. It connects to {APP_NAME} by itself.</p>
+          <div className="row">
+            <div className="row-control">
+              {info.webStores.edge && <button type="button" className="button" onClick={() => add('edge')}>Add to Edge</button>}
+              {info.webStores.chrome && <button type="button" className="button" onClick={() => add('chrome')}>Add to Chrome</button>}
+              <button type="button" className="button" onClick={() => add('connect')}>Connect</button>
+            </div>
+          </div>
+        </>
+      )}
+      {status && <p className="row-hint">{status}</p>}
+      {stores && !byHand ? (
+        <button type="button" className="link-button" onClick={() => setByHand(true)}>Load it by hand instead</button>
+      ) : (
+        <>
+          <ol className="steps">
+            <li>In Chrome or Edge, open the Extensions page and turn on Developer mode.</li>
+            <li>Choose "Load unpacked" and pick the extension folder.</li>
+            <li>It connects by itself. If it does not, click its icon and paste the pairing code.</li>
+          </ol>
+          <div className="row">
+            <div className="row-control">
+              <button type="button" className="button" onClick={() => { add('connect'); window.helo.openExtensionFolder(); }}>Open extension folder</button>
+              <button type="button" className="button" onClick={copy}>{copied ? 'Copied' : 'Copy pairing code'}</button>
+            </div>
+          </div>
+        </>
+      )}
       <p className="row-hint">The extension talks only to this app on your PC. It sends the chat's title and whether an answer is in progress, nothing from the conversation.</p>
     </div>
   );

@@ -12,8 +12,8 @@ Helo is an island at the top of your Windows screen, with Blink, a small face be
 With this extension, Blink thinks while Claude or ChatGPT writes an answer, and if you were
 looking at another window, a banner tells you when the answer is done.
 
-It needs the Helo app (https://helo-win.vercel.app). In Helo, open Settings, AI agents,
-Claude and ChatGPT in the browser, copy the pairing code and paste it in the extension.
+It needs the Helo app (https://helo-win.vercel.app). Add it from Helo's Settings (AI agents,
+Add to Edge or Add to Chrome) and it connects to Helo by itself.
 
 It reads only whether an answer is being written and the chat's title. Nothing from the
 conversation is read, and nothing is sent anywhere except to Helo on your own PC (127.0.0.1).
@@ -23,7 +23,7 @@ conversation is read, and nothing is sent anywhere except to Helo on your own PC
 **Single purpose:** Tell the Helo desktop app on the same PC when a Claude or ChatGPT answer starts and ends.
 
 **Permission justifications:**
-- `storage`: keeps the pairing code the user pastes in.
+- `storage`: keeps the pairing code it gets from Helo (or that the user pastes in).
 - Host `http://127.0.0.1/*`: sends "answering" and "finished" to the Helo app on the user's own PC.
 - Content script on claude.ai, chatgpt.com, chat.openai.com: checks whether the page shows its stop button
   (an answer in progress) and reads the page title.
@@ -35,3 +35,7 @@ conversation is read, and nothing is sent anywhere except to Helo on your own PC
 
 **Still needed:** at least one screenshot, 1280 x 800 (the island thinking next to a claude.ai tab),
 and a small promo tile, 440 x 280.
+
+**After publishing:** put the two store page addresses in `app/src/main/config.ts` (`extension.edge`,
+`extension.chrome`). Until then Settings shows the "Load unpacked" steps; with them it shows
+"Add to Edge" and "Add to Chrome", and the extension pairs by itself.

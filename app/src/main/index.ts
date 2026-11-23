@@ -8,6 +8,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { config } from './config';
 import * as hooks from './hooks-install';
 import { createBridge, type HookInput, type PermissionReply } from './bridge';
@@ -45,7 +46,7 @@ import { formatDuration } from '../shared/time';
 import { nextRepeat } from '../shared/playback';
 import { DICTATION_VK, nextDictation } from '../shared/dictation';
 import { transcribe, cleanGroqKey, GroqError } from './groq';
-import { parseWebMessage, trackerEvent, webBanner, pairingCode, WEB_SOURCE, WEB_SILENCE_MS } from './webchat';
+import { parseWebMessage, trackerEvent, webBanner, pairingCode, chromePath, WEB_SOURCE, WEB_SILENCE_MS, PAIR_WINDOW_MS } from './webchat';
 import type {
   AgentName, Banner, Behavior, ConnectionState, ConvertFormat, FinishedItem, IslandState, PermissionView, Settings, SettingsInfo,
   StartupApp, WatchCondition, WatchTarget, DocFormat, DictationState,
@@ -425,6 +426,32 @@ function onEvent(input: HookInput, agent: AgentName) {
 
 // Browser chats (claude.ai, chatgpt.com) reported by the extension.
 const webSilence = new Map<string, NodeJS.Timeout>();
+/** Until when the extension may fetch its pairing code (set by "Add to Edge / Chrome" and "Connect"). */
+let webPairUntil = 0;
+let webConnected = false;
+
+function webPairCode(): string | null {
+  if (Date.now() > webPairUntil) return null;
+  return pairingCode(livePort || bridgeInfo.port, bridgeInfo.webToken);
+}
+
+/** Opens the extension's store page in that browser, and lets the extension pair for a few minutes. */
+function addExtension(browser: 'edge' | 'chrome' | 'connect') {
+  webPairUntil = Date.now() + PAIR_WINDOW_MS;
+  if (browser === 'connect') return;
+  const url = config.extension[browser];
+  if (!url) {
+    void shell.openPath(extensionDir);
+    return;
+  }
+  if (browser === 'edge') {
+    void shell.openExternal(`microsoft-edge:${url}`);
+    return;
+  }
+  const chrome = chromePath(process.env, (p) => fs.existsSync(p));
+  if (chrome) spawn(chrome, [url], { detached: true, stdio: 'ignore' }).unref();
+  else void shell.openExternal(url);
+}
 
 function onWeb(body: Record<string, unknown>) {
   if (!settings.features.agents) return;
@@ -596,6 +623,9 @@ function settingsInfo(): SettingsInfo {
     version: app.getVersion(),
     agents: connectionStates(),
     webPairingCode: pairingCode(livePort || bridgeInfo.port, bridgeInfo.webToken),
+    webStores: { edge: Boolean(config.extension.edge), chrome: Boolean(config.extension.chrome) },
+    webConnected,
+    webPairing: Date.now() <= webPairUntil,
     groqKeySaved: Boolean(groqKey()),
   };
 }
@@ -1910,6 +1940,7 @@ function registerIpc() {
     return settingsInfo();
   });
   on('web:openFolder', isSettings, () => void shell.openPath(extensionDir));
+  on('web:add', isSettings, (_e, browser) => addExtension(browser === 'edge' || browser === 'chrome' ? browser : 'connect'));
   handle('startup:list', isSettings, () => startupApps());
   handle('startup:set', isSettings, async (_e, id, v) => {
     try {
@@ -2181,7 +2212,7 @@ app.whenReady().then(async () => {
   state.shelf = shelf.list();
   registerIpc();
 
-  const bridge = createBridge({ token: bridgeInfo.token, onPermission, onEvent, onStatus, webToken: bridgeInfo.webToken, onWeb });
+  const bridge = createBridge({ token: bridgeInfo.token, onPermission, onEvent, onStatus, webToken: bridgeInfo.webToken, onWeb, webPairCode, onWebSeen: () => { webConnected = true; } });
   let bridgePort = 0;
   try {
     bridgePort = testMode ? await bridge.listen(0) : await bridge.listenOrFallback(bridgeInfo.port);

@@ -60,3 +60,18 @@ export function webBanner(msg: WebMessage): Banner | null {
 export function pairingCode(port: number, token: string): string {
   return `${port}-${token}`;
 }
+
+export type ExtensionBrowser = 'edge' | 'chrome';
+
+/** How long after "Add to Edge / Chrome" (or "Connect") the extension may fetch its pairing code. */
+export const PAIR_WINDOW_MS = 15 * 60_000;
+
+/** Where Chrome is installed (per machine or per user), or null when it is not. */
+export function chromePath(env: Record<string, string | undefined>, exists: (p: string) => boolean): string | null {
+  const roots = [env.ProgramFiles, env['ProgramFiles(x86)'], env.LOCALAPPDATA].filter((r): r is string => Boolean(r));
+  for (const root of roots) {
+    const file = `${root}\Google\Chrome\Application\chrome.exe`;
+    if (exists(file)) return file;
+  }
+  return null;
+}

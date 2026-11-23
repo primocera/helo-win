@@ -111,3 +111,5 @@ select:focus, input:focus { border-color: var(--blue); }
 .row-hint.clip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .steps { margin: 12px 0 4px; padding-left: 20px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+.link-button { margin: 8px 0 0; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.link-button:hover { color: inherit; }

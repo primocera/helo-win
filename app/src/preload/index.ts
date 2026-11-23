@@ -77,6 +77,7 @@ const api: HeloApi = {
   refreshCalendar: () => ipcRenderer.invoke('calendar:refresh'),
   listStartupApps: () => ipcRenderer.invoke('startup:list'),
   openExtensionFolder: () => ipcRenderer.send('web:openFolder'),
+  addExtension: (browser) => ipcRenderer.send('web:add', browser === 'chrome' || browser === 'edge' ? browser : 'connect'),
   setStartupApp: (id, enabled) => ipcRenderer.invoke('startup:set', String(id), Boolean(enabled)),
 };
 

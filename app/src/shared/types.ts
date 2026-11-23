@@ -442,6 +442,12 @@ export interface SettingsInfo {
   agents: Record<AgentName, ConnectionState>;
   /** Pasted into the browser extension so it can reach this app. */
   webPairingCode: string;
+  /** Which browsers have a store page to add the extension from (otherwise it is loaded by hand). */
+  webStores: { edge: boolean; chrome: boolean };
+  /** The extension has paired or sent something since the app started. */
+  webConnected: boolean;
+  /** The extension may fetch its pairing code right now (a few minutes after "Add to ..." or "Connect"). */
+  webPairing: boolean;
   /** Whether a Groq key for Whisper dictation is saved (the key itself never leaves the main process). */
   groqKeySaved: boolean;
 }
@@ -568,5 +574,7 @@ export interface HeloApi {
   listStartupApps(): Promise<StartupApp[]>;
   /** Opens the folder that holds the browser extension, for "Load unpacked". */
   openExtensionFolder(): void;
+  /** Opens the extension's store page in Edge or Chrome ('connect' only lets it pair), and lets it pair for a few minutes. */
+  addExtension(browser: 'edge' | 'chrome' | 'connect'): void;
   setStartupApp(id: string, enabled: boolean): Promise<ActionResult & { apps: StartupApp[] }>;
 }

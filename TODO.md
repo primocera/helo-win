@@ -66,7 +66,7 @@ Finding IDs (S1, R2, ...) point to `audit/`. Tick a box when the item is built a
 - [ ] A visible status line in Claude Code when the app is not running (B2, second half)
 - [ ] Move clipboard encryption to `safeStorage`'s async calls (Electron 45 marks the ones used as deprecated; they still work)
 - [ ] Precompile the Windows helper's C# (A2)
-- [ ] Browser extension: publish to the stores (R5). Icons, zip (`app/dist/helo-extension-0.1.0.zip`) and listing text (`app/extension/STORE.md`) are ready; needs a $5 developer account, a 1280x800 screenshot and a 440x280 tile
+- [ ] Browser extension: publish to the stores (R5). Icons, zip (`app/dist/helo-extension-0.1.0.zip`) and listing text (`app/extension/STORE.md`) are ready; needs a $5 developer account (Edge Add-ons is free), a 1280x800 screenshot and a 440x280 tile; then put both store addresses in `config.ts` (`extension`) so Settings shows Add to Edge / Add to Chrome. The extension pairs by itself (`/helo/pair`, extension origins only, 15 min after a click in Settings); not tried in a real browser yet
 - [ ] CI: type check, tests, build (P2)
 
 ## App: features Halo has

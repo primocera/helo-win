@@ -8,15 +8,14 @@ function show(text, ok) {
 
 async function test() {
   const result = await chrome.runtime.sendMessage({ type: 'helo-test' });
+  if (result && result.pairing && !code.value) code.value = result.pairing;
   if (result && result.ok) show('Connected to Helo.', true);
   else show((result && result.error) || 'Could not reach Helo.', false);
 }
 
 chrome.storage.local.get('pairing').then(({ pairing }) => {
-  if (pairing) {
-    code.value = pairing;
-    test();
-  }
+  if (pairing) code.value = pairing;
+  test();
 });
 
 document.getElementById('save').addEventListener('click', async () => {

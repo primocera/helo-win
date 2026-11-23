@@ -13,6 +13,16 @@ export const WEB_PATH = '/helo/web';
 /** Answers "this port is Helo" without a token, so a port can be checked before it is trusted. */
 export const HELLO_PATH = '/helo/hello';
 export const HELLO_REPLY = '{"app":"helo"}';
+/** The browser extension asks here for its pairing code, so nobody has to copy it by hand. */
+export const PAIR_PATH = '/helo/pair';
+
+/**
+ * True for a browser extension's own origin (Chrome and Edge both send chrome-extension://<32 letters a-p>).
+ * A web page cannot send this Origin, so claude.ai or any other site can never read the code.
+ */
+export function isExtensionOrigin(origin: string | undefined): boolean {
+  return typeof origin === 'string' && /^(chrome-)?extension:\/\/[a-p]{32}$/.test(origin);
+}
 
 /** How many ports after the saved one are tried when it is taken, before any free port is used. */
 export const PORT_TRIES = 10;
@@ -52,6 +62,10 @@ export interface BridgeHandlers {
   /** Secret for the browser extension. It opens only the web route, never the hook routes. */
   webToken?: string;
   onWeb?: (body: Record<string, unknown>) => void;
+  /** The pairing code while the user has just asked to connect a browser, otherwise null. */
+  webPairCode?: () => string | null;
+  /** The extension paired or sent something with the right code. */
+  onWebSeen?: () => void;
   decisionTimeoutMs?: number;
 }
 
@@ -75,13 +89,23 @@ function watchReply(agent: AgentName, input: HookInput | null): string {
   return agent === 'cursor' && input?.hook_event_name === 'beforeSubmitPrompt' ? '{"continue":true}' : '{}';
 }
 
-export function createBridge({ token, onPermission, onEvent, onStatus, webToken, onWeb, decisionTimeoutMs = 280_000 }: BridgeHandlers) {
+export function createBridge({ token, onPermission, onEvent, onStatus, webToken, onWeb, webPairCode, onWebSeen, decisionTimeoutMs = 280_000 }: BridgeHandlers) {
   const normalize = createNormalizer();
   const server = http.createServer((req, res) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1');
     const route = url.pathname;
     if (req.method === 'GET' && route === HELLO_PATH) {
       res.writeHead(200, { 'Content-Type': 'application/json' }).end(HELLO_REPLY);
+      return;
+    }
+    if (req.method === 'GET' && route === PAIR_PATH) {
+      const code = isExtensionOrigin(req.headers.origin) && webToken ? webPairCode?.() : null;
+      if (!code) {
+        res.writeHead(403).end();
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ code }));
+      onWebSeen?.();
       return;
     }
     const isWeb = route === WEB_PATH && Boolean(webToken);
@@ -123,6 +147,7 @@ export function createBridge({ token, onPermission, onEvent, onStatus, webToken,
       }
       if (isWeb) {
         res.writeHead(200).end();
+        onWebSeen?.();
         if (input.state !== 'ping') {
           try {
             onWeb?.(input);

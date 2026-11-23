@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createBridge } from '../src/main/bridge';
 import { AgentTracker } from '../src/main/agents';
-import { parseWebMessage, chatTitle, trackerEvent, webBanner, pairingCode, WEB_SOURCE } from '../src/main/webchat';
+import { parseWebMessage, chatTitle, trackerEvent, webBanner, pairingCode, chromePath, WEB_SOURCE } from '../src/main/webchat';
 
 const HOOK_TOKEN = 'h'.repeat(48);
 const WEB_TOKEN = 'a'.repeat(48);
@@ -111,4 +111,40 @@ test('extension: the manifest is valid and only reaches the chat sites and this 
   for (const file of [manifest.background.service_worker, manifest.action.default_popup, ...manifest.content_scripts[0].js, 'popup.js']) {
     expect(fs.existsSync(path.join(dir, file))).toBe(true);
   }
+});
+
+test('bridge: the pairing code goes only to an extension, and only while Settings is waiting for one', async () => {
+  let open = true;
+  let seen = 0;
+  const bridge = createBridge({
+    token: HOOK_TOKEN,
+    webToken: WEB_TOKEN,
+    onPermission: async () => 'allow',
+    onEvent: () => {},
+    webPairCode: () => (open ? pairingCode(47615, WEB_TOKEN) : null),
+    onWebSeen: () => { seen++; },
+  });
+  const port = await bridge.listen(0);
+  const ask = (origin?: string) => fetch(`http://127.0.0.1:${port}/helo/pair`, { headers: origin ? { Origin: origin } : {} });
+  try {
+    const ext = 'chrome-extension://' + 'abcdefghijklmnopabcdefghijklmnop';
+    const res = await ask(ext);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ code: pairingCode(47615, WEB_TOKEN) });
+    expect(seen).toBe(1);
+    expect((await ask('extension://' + 'p'.repeat(32))).status).toBe(200); // Edge's spelling
+    expect((await ask('https://claude.ai')).status).toBe(403);
+    expect((await ask('chrome-extension://short')).status).toBe(403);
+    expect((await ask()).status).toBe(403);
+    open = false;
+    expect((await ask(ext)).status).toBe(403);
+  } finally {
+    await bridge.close();
+  }
+});
+
+test('webchat: Chrome is found per machine or per user', () => {
+  const env = { ProgramFiles: 'C:\PF', 'ProgramFiles(x86)': 'C:\PF86', LOCALAPPDATA: 'C:\U\AppData\Local' };
+  expect(chromePath(env, (p) => p.startsWith('C:\U'))).toBe('C:\U\AppData\Local\Google\Chrome\Application\chrome.exe');
+  expect(chromePath(env, () => false)).toBeNull();
 });

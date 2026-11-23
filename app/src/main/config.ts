@@ -15,4 +15,9 @@ export const config = {
     storeId: null as number | null,
     productId: null as number | null,
   },
+  // The browser extension's store pages. Until they are set, Settings shows the "Load unpacked" steps.
+  extension: {
+    edge: null as string | null, // https://microsoftedge.microsoft.com/addons/detail/<id>
+    chrome: null as string | null, // https://chromewebstore.google.com/detail/<id>
+  },
 };
